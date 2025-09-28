@@ -11,9 +11,9 @@ const path = require('path')
 
 const app = express()
 
-app.use(express.static(path.join(__dirname,"dist")))
-app.get("/*",(req,res)=>{
-    res.sendFile(path.join(__dirname,"dist","index.html"))
+app.use(express.static(path.join(__dirname,"../frontEnd/dist")))
+app.get(/.*/,(req,res)=>{
+    res.sendFile(path.join(__dirname,"dist","../frontEnd/dist/index.html"))
 })
 // middleware
 app.use(express.json())
