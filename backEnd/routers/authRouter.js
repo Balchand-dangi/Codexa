@@ -47,7 +47,12 @@ authRouter.post('/signIn', async (req, res) => {
         }
         // jwt
         const token = jwt.sign({ _id: data._id, email: data.email }, process.env.SECRET_KEY, { expiresIn: "3d" })
-        res.cookie("token", token) 
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+            maxAge: 3 * 24 * 60 * 60 * 1000 // 3 days
+        });
         res.status(200).send('Login successfully, Welcome back')
     }
     catch (err) {
