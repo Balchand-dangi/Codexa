@@ -7,9 +7,14 @@ const getProjects = require('./routers/getProjects')
 const redisClient = require('./config/redis');
 const rate_limiter = require('./middleware/rate_limiter')
 require("dotenv").config()
+const path = require('path')
 
 const app = express()
 
+app.use(express.static(path.join(__dirname,"dist")))
+app.get("*",(req,res)=>{
+    res.sendFile(path.join(__dirname,"dist","index.html"))
+})
 // middleware
 app.use(express.json())
 app.use(cookieParser())
