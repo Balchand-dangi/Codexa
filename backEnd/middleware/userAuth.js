@@ -9,7 +9,7 @@ const userAuth = async (req, res, next) => {
         // 1. Get token from cookies
         const { token } = req.cookies;
         if (!token) {
-            return res.status(401).json({ error: "Token doesn't exist!" });
+            return res.status(401).json({ error: "Token doesn't exist! plz sign in" });
         }
 
         // 2. Verify token
@@ -28,7 +28,7 @@ const userAuth = async (req, res, next) => {
         }
 
         // 5. Attach user info to request
-        req.user = result;  // better name than req.result
+        req.user = result;  
         next();
 
     } catch (err) {

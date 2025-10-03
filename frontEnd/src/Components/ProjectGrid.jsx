@@ -17,12 +17,13 @@ const ProjectGrid = ({ loggedIn }) => {
       setProject([])
       return
     }
-    axios.get("/api/getProjects")
+    
+    axios.get('/api/getProjects',)
       .then((response) => {
         setProject(response.data)
       })
       .catch((err) => {
-        console.log(err)
+        console.log("something is wrong",err)
       })
   }, [loggedIn])   //runs when login state changes
 
@@ -60,8 +61,9 @@ const ProjectGrid = ({ loggedIn }) => {
                   <p className="text-gray-950 text-md mt-2">{project.description}</p>
                   
 
-                  <div className="flex opacity-70 mt-2">
-                  <h3 className="font-medium pt-2 mr-20">{project.category}</h3>
+                  <div className="flex opacity-70 mt-2 justify-between">
+                  <h3 className="font-medium pt-2 mr-25">{project.category}</h3>
+                  <span>
                     <button onClick={() => alert("This will be available soon")} >
                       <BiLike className="size-6  mx-2.5 " />
                     </button>
@@ -69,6 +71,7 @@ const ProjectGrid = ({ loggedIn }) => {
                     <button onClick={() => alert("This will be available soon.")}>
                       <MdOutlineInsertComment className="size-6 mx-2.5 " />
                     </button>
+                    </span>
                   </div>
                   <div>
 

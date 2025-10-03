@@ -12,12 +12,12 @@ function validProject(data){
     //     return 'Invalid Email'
     // }
 
-    if(typeof data.title !== 'string' || data.title.length<5 || data.title.length>100){
-        return 'Title length should be in b/w 5-100 characters'
+    if(typeof data.title !== 'string' || data.title.length<5 || data.title.length>50){
+        return 'Title length should be in b/w 5-50 characters'
     }
 
-    if(typeof data.description !== 'string' || data.description.length<10 || data.description.length>500){
-        return 'Description length should be in b/w 10-500 characters'
+    if(typeof data.description !== 'string' || data.description.length<20 || data.description.length>300){
+        return 'Description length should be in b/w 20-300 characters'
     }
 
     return null // means valid

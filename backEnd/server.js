@@ -6,24 +6,26 @@ const authRouter = require('./routers/authRouter')
 const getProjects = require('./routers/getProjects')
 const redisClient = require('./config/redis');
 const rate_limiter = require('./middleware/rate_limiter')
-require("dotenv").config()
+
 const path = require('path')
 
 const app = express()
 
-app.use(express.static(path.join(__dirname,"../frontEnd/dist")))
-app.get(/.*/,(req,res)=>{
-    res.sendFile(path.join(__dirname,"dist","../frontEnd/dist/index.html"))
-})
+
 // middleware
 app.use(express.json())
 app.use(cookieParser())
-// app.use(rate_limiter)
+// app.use(rate_limiter)  
 
-app.use('/api/auth',rate_limiter, authRouter)
-app.use('/api/uploadProject',rate_limiter, projectRouter)
-app.use('/api/getProjects', getProjects)
+app.use('/api/auth', rate_limiter, authRouter)
+app.use('/api/uploadProject', rate_limiter, projectRouter)
 
+app.use('/api/getProjects',  getProjects)
+
+app.use(express.static(path.join(__dirname, "../frontEnd/dist")))
+app.get(/.*/, (req, res) => {
+    res.sendFile(path.join(__dirname, "../frontEnd/dist/index.html"))
+})
 
 const PORT = process.env.PORT || 5000
 const initialize_connection = async () => {

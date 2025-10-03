@@ -36,7 +36,7 @@ const SignupForm = () => {
                 setAge("")
                 setSkills("")
                 setCollege("")
-                console.log("navigating to signIn")
+                // console.log("navigating to signIn")
                 navigate("/signIn")
             }
             else{
@@ -126,6 +126,10 @@ const SignupForm = () => {
                     className="w-full mb-4 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
 
+                
+                <span>If already have an account - </span>
+                <Link to="/signIn" style={{color:"green", text:"bold", textDecoration:"underline"}}>Sign in</Link>
+                
 
                 <button
                     type="submit"
