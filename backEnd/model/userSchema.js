@@ -38,6 +38,11 @@ const userSchema = new mongoose.Schema({
     college:{
         type:String,
         required:true
+    },
+
+    isVerified:{
+        type:Boolean,
+        default:false
     }
 
 

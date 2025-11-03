@@ -17,13 +17,13 @@ const ProjectGrid = ({ loggedIn }) => {
       setProject([])
       return
     }
-    
+
     axios.get('/api/getProjects',)
       .then((response) => {
         setProject(response.data)
       })
       .catch((err) => {
-        console.log("something is wrong",err)
+        console.log("something is wrong", err)
       })
   }, [loggedIn])   //runs when login state changes
 
@@ -59,23 +59,27 @@ const ProjectGrid = ({ loggedIn }) => {
                   <h2 className="text-lg font-semibold text-blue-800"> by - {project.email} </h2>
                   <h2 className="text-lg font-semibold text-blue-800">from - {project.college}</h2>
                   <p className="text-gray-950 text-md mt-2">{project.description}</p>
-                  
+
 
                   <div className="flex opacity-70 mt-2 justify-between">
-                  <h3 className="font-medium pt-2 mr-25">{project.category}</h3>
-                  <span>
-                    <button onClick={() => alert("This will be available soon")} >
-                      <BiLike className="size-6  mx-2.5 " />
-                    </button>
+                    <h3 className="font-medium pt-2 mr-25">{project.category}</h3>
+                    <span>
+                      <button onClick={() => alert("This will be available soon")} >
+                        <BiLike className="size-6  mx-2.5 " />
+                      </button>
 
-                    <button onClick={() => alert("This will be available soon.")}>
-                      <MdOutlineInsertComment className="size-6 mx-2.5 " />
-                    </button>
+                      <button onClick={() => alert("This will be available soon.")}>
+                        <MdOutlineInsertComment className="size-6 mx-2.5 " />
+                      </button>
                     </span>
-                  </div>
-                  <div>
+
+
 
                   </div>
+                  <div className="flex justify-center">
+                    <button className="bg-yellow-600 rounded-2xl px-10 py-2 mt-5 " onClick={() => alert("This will be available soon.")}>Send collab request to owner</button>
+                  </div>
+
 
                 </div>
               ))

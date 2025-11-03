@@ -25,7 +25,10 @@ authRouter.post('/signUp', async (req, res) => {
             ...req.body,
             password: hashedPassword
         }
+
         await User.create(newUser)
+
+
         res.status(201).send("You'r successfully registered")
 
     }
@@ -63,7 +66,7 @@ authRouter.post('/signIn', async (req, res) => {
 authRouter.post("/logOut", userAuth, async (req, res) => {
     try {
         const { token } = req.cookies;
-        if (!token) return res.status(400).json({ error: "No token found" });
+        if (!token) return res.status(400).json({ error: "No token found login first" });
 
         const payload = jwt.decode(token);  //to extract expiry time and also verify that token is not tempered and expired
 
@@ -72,7 +75,7 @@ authRouter.post("/logOut", userAuth, async (req, res) => {
         await redisClient.expireAt(`token:${token}`, payload.exp);
 
           // Clear cookie in browser
-          res.clearCookie("token", {
+        res.clearCookie("token", {
             httpOnly: true,
             secure: true,
             sameSite: "strict"

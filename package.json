@@ -4,9 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-     "start": "node backend/server.js",
+    "start": "node backend/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
-
   },
   "keywords": [],
   "author": "",
@@ -20,6 +19,7 @@
     "install": "^0.13.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.18.1",
+    "nodemailer": "^7.0.9",
     "npm": "^11.6.0",
     "redis": "^5.8.2",
     "validator": "^13.15.15"
