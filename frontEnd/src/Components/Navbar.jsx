@@ -99,7 +99,7 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
                     handleLogOut(e);
                     setMenuOpen(false);
                   }}
-                  className="w-full px-4 py-2 border border-blue-700 text-blue-700 rounded-lg hover:bg-blue-600 hover:text-white transition"
+                  className="px-4 py-2 border border-blue-700 text-blue-700 rounded-lg hover:bg-blue-600 hover:text-white transition"
                 >
                   Logout
                 </button>
