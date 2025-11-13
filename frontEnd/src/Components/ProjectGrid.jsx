@@ -37,7 +37,7 @@ const ProjectGrid = ({ loggedIn }) => {
             <h1 className="bg-blue-800 text-5xl text-amber-400 font-bold px-6 py-4 rounded-lg">
               Welcome to Developers World
             </h1>
-            <button onClick={() => navigate("signUp")}>
+            <button onClick={() => navigate("/signUp")}>
               <h3 className="bg-red-600 mt-6 text-lg text-white font-medium px-4 py-2 rounded-md">
                 Please register yourself to see all the projects
               </h3>
