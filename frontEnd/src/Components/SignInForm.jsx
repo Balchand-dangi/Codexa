@@ -3,7 +3,7 @@ import axios from 'axios'
 import React, { useState } from 'react'
 import { AiOutlineEyeInvisible, AiOutlineEye } from 'react-icons/ai'
 import { Link, useNavigate } from 'react-router-dom'
-function SignInForm() {
+function SignInForm({setLoggedIn}) {
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     const [showPassword, setShowPassword] = useState(false)
@@ -19,8 +19,10 @@ function SignInForm() {
         const userData = { email, password }
 
         try {
-            const response = await axios.post('/api/auth/signIn', userData)
+            const response = await axios.post('/api/auth/signIn', userData, { withCredentials: true });
+
             if (response.data === "Login successfully, Welcome back") {
+                setLoggedIn(true);
                 alert(response.data)
                 setEmail("")
                 setPassword("")

@@ -1,75 +1,188 @@
 import axios from "axios";
 import React, { useState } from "react";
-import { NavLink, Link, useNavigate } from "react-router-dom";
-const Navbar = ({ setLoggedIn }) => {
+import { NavLink, Link } from "react-router-dom";
 
+const Navbar = ({ loggedIn, setLoggedIn }) => {
+
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const handleLogOut = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
     try {
-      const response = await axios.post('/api/auth/logOut')
-      // console.log(response.data.message)
-      setLoggedIn(false)
-      alert(response.data.message)
+      const response = await axios.post('/api/auth/logOut', {}, { withCredentials: true });
 
-    }
-    catch (err) {
-      if (err.response.data || err.response) {
-        console.log(err)
-        alert(err.response.data.err)
+      setLoggedIn(false);
+      alert(response.data.message);
+
+    } catch (err) {
+      if (err.response?.data) {
+        console.log(err);
+        alert(err.response.data.err);
       } else {
-        alert("Something went wrong")
+        alert("Something went wrong");
       }
     }
-  }
-
+  };
 
   return (
     <>
-      <nav className="bg-white relative shadow-md w-full py-3 z-1 flex  justify-around items-center fixed">
+      <nav className="bg-white fixed top-0 left-0 right-0 shadow-md w-full py-3 z-10">
 
-        <h1 className="text-2xl ml-2 font-bold pl-10 text-blue-600">Developer Colleboration Tool</h1>
+        <div className="flex justify-between items-center px-4 sm:px-8">
 
-        <ul className="hidden md:flex space-x-2 p-3 text-gray-700 font-bold cursor-pointer  ">
-          <NavLink className={({ isActive }) =>
-            `hover:text-blue-600 ${isActive ? "bg-red-400" : ""} px-3 py-1 rounded`
-          } to="/">Home</NavLink>
-          <NavLink className={({ isActive }) => { return `hover:text-blue-600 ${isActive ? "bg-red-400" : ""} px-2 py-1 rounded` }
-          } to="/about">About</NavLink>
-          <NavLink className={({ isActive }) =>
-            `hover:text-blue-600 ${isActive ? "bg-red-400" : ""} px-2 py-1 rounded`
-          } to="/contact">Contact</NavLink>
-        </ul>
+          {/* Logo */}
+          <h1 className="text-xl sm:text-2xl font-bold text-blue-600">
+            Developer Collaboration Tool
+          </h1>
 
-
-        <div className="flex space-x-10 px-10">
-          <Link to="/signIn">
-            <button
-              className="px-4 cursor-pointer py-2 border border-blue-700 text-blue-700 rounded-lg hover:bg-blue-600 hover:text-white transition">
-              Sign in
-            </button>
-          </Link>
-
-          <Link to="/signUp">
-            <button className="px-4 cursor-pointer py-2 border border-blue-700 text-blue-700 rounded-lg hover:bg-blue-600 hover:text-white transition">
-              Sign up
-            </button>
-          </Link>
-
-
-          <button onClick={handleLogOut} className="px-4 cursor-pointer py-2 border border-blue-700 text-blue-700 rounded-lg hover:bg-blue-600 hover:text-white transition">
-            logOut
+          {/* Hamburger Button - Mobile */}
+          <button
+            className="md:hidden text-2xl"
+            onClick={() => setMenuOpen(!menuOpen)}
+          >
+            ☰
           </button>
 
+          {/* Desktop Navigation */}
+          <ul className="hidden md:flex space-x-4 text-gray-700 font-bold">
+            <NavLink
+              to="/"
+              className={({ isActive }) =>
+                `hover:text-blue-600 px-3 py-1 rounded ${isActive ? "bg-red-400" : ""}`
+              }
+            >
+              Home
+            </NavLink>
+
+            <NavLink
+              to="/about"
+              className={({ isActive }) =>
+                `hover:text-blue-600 px-3 py-1 rounded ${isActive ? "bg-red-400" : ""}`
+              }
+            >
+              About
+            </NavLink>
+
+            <NavLink
+              to="/contact"
+              className={({ isActive }) =>
+                `hover:text-blue-600 px-3 py-1 rounded ${isActive ? "bg-red-400" : ""}`
+              }
+            >
+              Contact
+            </NavLink>
+          </ul>
+
+          {/* Desktop Buttons */}
+          <div className="hidden md:flex space-x-4">
+            {!loggedIn && (
+              <>
+                <Link to="/signIn">
+                  <button className="px-4 py-2 border border-blue-700 text-blue-700 rounded-lg hover:bg-blue-600 hover:text-white transition">
+                    Sign In
+                  </button>
+                </Link>
+
+                <Link to="/signUp">
+                  <button className="px-4 py-2 border border-blue-700 text-blue-700 rounded-lg hover:bg-blue-600 hover:text-white transition">
+                    Sign Up
+                  </button>
+                </Link>
+              </>
+            )}
+
+            {loggedIn && (
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();       // prevent menu close before click
+                    handleLogOut(e);
+                    setMenuOpen(false);
+                  }}
+                  className="w-full px-4 py-2 border border-blue-700 text-blue-700 rounded-lg hover:bg-blue-600 hover:text-white transition"
+                >
+                  Logout
+                </button>
 
 
-          <Link to="/upload">
-            <button className="px-4 cursor-pointer py-2 border border-blue-700 text-blue-700 rounded-lg hover:bg-blue-600 hover:text-white transition"
-            >Upload project
-            </button>
-          </Link>
-
+                <Link to="/upload">
+                  <button className="px-4 py-2 border border-blue-700 text-blue-700 rounded-lg hover:bg-blue-600 hover:text-white transition">
+                    Upload Project
+                  </button>
+                </Link>
+              </>
+            )}
+          </div>
         </div>
+
+        {/* Mobile Menu Dropdown */}
+        {menuOpen && (
+          <div className="md:hidden bg-white w-full px-4 py-3 space-y-4 shadow-inner">
+
+            <NavLink
+              to="/"
+              onClick={() => setMenuOpen(false)}
+              className="block font-semibold py-1"
+            >
+              Home
+            </NavLink>
+
+            <NavLink
+              to="/about"
+              onClick={() => setMenuOpen(false)}
+              className="block font-semibold py-1"
+            >
+              About
+            </NavLink>
+
+            <NavLink
+              to="/contact"
+              onClick={() => setMenuOpen(false)}
+              className="block font-semibold py-1"
+            >
+              Contact
+            </NavLink>
+
+            {!loggedIn && (
+              <>
+                <Link to="/signIn" onClick={() => setMenuOpen(false)}>
+                  <button className="w-full px-4 py-2 border border-blue-700 text-blue-700 rounded-lg hover:bg-blue-600 hover:text-white transition">
+                    Sign In
+                  </button>
+                </Link>
+
+                <Link to="/signUp" onClick={() => setMenuOpen(false)}>
+                  <button className="w-full px-4 py-2 border border-blue-700 text-blue-700 rounded-lg hover:bg-blue-600 hover:text-white transition">
+                    Sign Up
+                  </button>
+                </Link>
+              </>
+            )}
+
+            {loggedIn && (
+              <>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleLogOut(e);
+                    setMenuOpen(false);
+                  }}
+                  className="w-full px-4 py-2 border border-blue-700 text-blue-700 rounded-lg hover:bg-blue-600 hover:text-white transition"
+                >
+                  Logout
+                </button>
+
+                <Link to="/upload" onClick={() => setMenuOpen(false)}>
+                  <button className="w-full px-4 py-2 border border-blue-700 text-blue-700 rounded-lg hover:bg-blue-600 hover:text-white transition">
+                    Upload Project
+                  </button>
+                </Link>
+              </>
+            )}
+
+          </div>
+        )}
 
       </nav>
     </>

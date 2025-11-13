@@ -6,17 +6,16 @@ import About from './Footer/About'
 
 
 
-function Home() {
-  const [loggedIn, setLoggedIn] = useState(true)  // assuming sign in
+function Home({ loggedIn, setLoggedIn }) {
   return (
-    <div>
-      
-      <Navbar setLoggedIn={setLoggedIn} />
-       <ProjectGrid loggedIn={loggedIn} /> 
+    <>
+      <Navbar loggedIn={loggedIn} setLoggedIn={setLoggedIn} />
+      <ProjectGrid loggedIn={loggedIn} />
       <About />
       <Contact />
-    </div>
-  )
+    </>
+  );
 }
+
 
 export default Home

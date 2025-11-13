@@ -1,13 +1,10 @@
 import React from 'react'
 import SignInForm from '../Components/SignInForm'
 
-function SignIn() {
-  return (
-    <div>
-      <SignInForm/>
-    </div>
-  )
+function SignIn({ setLoggedIn }) {
+  return <SignInForm setLoggedIn={setLoggedIn} />;
 }
+
 
 export default SignIn
 

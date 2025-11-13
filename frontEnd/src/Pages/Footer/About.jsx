@@ -1,28 +1,23 @@
 import React from 'react'
 
-
 function About() {
     return (
         <>
-
-            <div className='py-20 px-28 bg-blue-950 mt-5 text-white'>
-
-                <h1> <b>About Us -</b>
-                    <div className='p-2'></div>
-                    <div>
-                        <p>
-                            "Developer Collaboration Tool is a platform designed to bring developers, students,
-                            and tech enthusiasts together. Here, users can showcase their innovative projects, 
-                            explore ideas from others, and collaborate to turn concepts into reality.
-                            Our goal is to create a community where learning, sharing, and growth happen seamlessly,
-                            making it easier for aspiring developers to connect and thrive."
-                            
-                        </p>
-                    </div>
+            <div className="bg-blue-950 text-white py-16 px-6 md:px-20 lg:px-32 mt-5">
+                <h1 className="text-2xl md:text-3xl font-bold mb-4">
+                    About Us
                 </h1>
 
+                <p className="text-sm md:text-base leading-relaxed">
+                    Developer Collaboration Tool is a platform designed to bring developers, students,
+                    and tech enthusiasts together. Here, users can showcase their innovative projects,
+                    explore ideas from others, and collaborate to turn concepts into reality.
+                    Our goal is to create a community where learning, sharing, and growth happen seamlessly,
+                    making it easier for aspiring developers to connect and thrive.
+                </p>
             </div>
-            <div className='py-1 bg-black'></div>
+
+            <div className="py-1 bg-black"></div>
         </>
     )
 }

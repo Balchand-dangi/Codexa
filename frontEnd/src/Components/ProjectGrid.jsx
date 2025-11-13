@@ -49,7 +49,7 @@ const ProjectGrid = ({ loggedIn }) => {
         <div className="p-6">
           <h2 className="text-2xl flex justify-center font-bold text-gray-800 mb-5 ">Projects</h2>
           {/* Grid layout */}
-          <div className="grid gap-10 grid-cols-1 sm:grid-cols-2 md:grid-cols-3  mx-25">
+          <div className="grid gap-10 grid-cols-1 sm:grid-cols-2 md:grid-cols-3  mx-3 break-words">
             {
 
               project.map((project, index) => (
