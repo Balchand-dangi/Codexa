@@ -173,7 +173,7 @@ function SignInForm({setLoggedIn}) {
 
                     <button
                         type='Submit' disabled={isSubmitting} className="w-full bg-blue-500 text-white cursor-pointer py-2 rounded-md hover:bg-blue-600 mb-4 mt-5 transition">
-                        Sign in
+                        {isSubmitting ? "Signning in..." : "Sign in"}
                     </button>
                 </form>
             </div>

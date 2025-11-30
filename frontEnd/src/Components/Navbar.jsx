@@ -201,9 +201,13 @@ import NotificationBell from "./NotificationBell";
 
 const Navbar = ({ loggedIn, setLoggedIn }) => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
 
   const handleLogOut = async (e) => {
     e.preventDefault();
+    if(isSubmitting) return
+    setIsSubmitting(true)
     try {
       const response = await axios.post('/api/auth/logOut', {}, { withCredentials: true });
       setLoggedIn(false);
@@ -212,6 +216,9 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
     } catch (err) {
       console.log(err);
       alert(err.response?.data?.error || "Something went wrong");
+    }
+    finally{
+      setIsSubmitting(false)
     }
   };
 
@@ -295,7 +302,7 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
                   }}
                   className="px-4 py-2 border border-blue-700 text-blue-700 rounded-lg hover:bg-blue-600 hover:text-white transition"
                 >
-                  Logout
+                  {isSubmitting ? "logging Out..." : "log out"}
                 </button>
 
                 <Link to="/upload">
