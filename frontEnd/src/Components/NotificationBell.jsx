@@ -24,7 +24,7 @@ const NotificationBell = () => {
     useEffect(() => {
         fetchNotifications()
         // Poll for new notifications every 30 seconds
-        const interval = setInterval(fetchNotifications, 30000)
+        const interval = setInterval(fetchNotifications, 60000)
         return () => clearInterval(interval)
     }, [])
 
@@ -120,9 +120,8 @@ const NotificationBell = () => {
                                 {notifications.map((notification) => (
                                     <div
                                         key={notification._id}
-                                        className={`p-4 border-b hover:bg-gray-50 transition ${
-                                            !notification.isRead ? 'bg-blue-50' : ''
-                                        }`}
+                                        className={`p-4 border-b hover:bg-gray-50 transition ${!notification.isRead ? 'bg-blue-50' : ''
+                                            }`}
                                         onClick={() => !notification.isRead && markAsRead(notification._id)}
                                     >
                                         <div className="flex items-start gap-3">
@@ -137,12 +136,26 @@ const NotificationBell = () => {
                                                     {' '}
                                                     {notification.type === 'like' && 'liked your project'}
                                                     {notification.type === 'comment' && 'commented on your project'}
-                                                    {notification.type === 'collaboration_request' && 'sent a collaboration request'}
+                                                    {notification.type === 'collaboration_request' && 'sent a collaboration request for'}
                                                     {' '}
                                                     <span className="font-medium">
                                                         "{notification.projectTitle}"
                                                     </span>
                                                 </p>
+                                                {notification.type === 'collaboration_request' && (
+                                                    <p className="text-xs text-gray-600 mt-1">
+                                                        Contact:
+                                                        <a
+                                                            href={`mailto:${notification.sender}`}
+                                                            className="text-blue-600 hover:underline ml-1"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        >
+                                                            {notification.sender}
+                                                        </a>
+                                                    </p>
+                                                )}
+
+
                                                 {notification.commentText && (
                                                     <p className="text-xs text-gray-600 mt-1 italic">
                                                         "{notification.commentText}"

@@ -1,106 +1,3 @@
-
-/*
-import React, { useState, useEffect } from "react";
-import axios from 'axios'
-import { MdOutlineInsertComment } from "react-icons/md";
-import { BiLike } from "react-icons/bi";
-import { useNavigate } from "react-router";
-
-
-const ProjectGrid = ({ loggedIn }) => {
-  const [project, setProject] = useState([])
-
-  const navigate = useNavigate()
-
-
-  useEffect(() => {
-
-    if (!loggedIn) {
-      setProject([])
-      return
-    }
-
-    axios.get('/api/getProjects',)
-      .then((response) => {
-        setProject(response.data)
-      })
-      .catch((err) => {
-        console.log("something is wrong", err)
-      })
-  }, [loggedIn])   //runs when login state changes
-
-
-  return (
-    <>
-      {project.length === 0 ? (
-
-        <div className="grid place-items-center  bg-white py-20">
-          <div className="text-center p-6 rounded-2xl m-5   shadow-lg bg-gray-200">
-            <h1 className="bg-blue-800 text-5xl text-amber-400 font-bold px-6 py-4 rounded-lg">
-              Welcome to Developers World
-            </h1>
-            <button onClick={() => navigate("/signUp")}>
-              <h3 className="bg-red-600 mt-6 text-lg text-white font-medium px-4 py-2 rounded-md">
-                Please register yourself to see all the projects
-              </h3>
-            </button>
-          </div>
-        </div>
-
-      ) : (
-        <div className="p-6 mt-12">
-          <h2 className="text-2xl flex justify-center font-bold text-gray-800 mb-5 ">Projects</h2>
-          // Grid layout 
-          <div className="grid gap-10 grid-cols-1 sm:grid-cols-2 md:grid-cols-3  mx-3 break-words">
-            {
-
-              project.map((project, index) => (
-                <div key={project._id}
-                  className="bg-gray-100 shadow-md rounded-xl p-4 hover:shadow-lg transition">
-                  <h2 className="text-2xl font-semibold text-blue-700">{index + 1}. {project.title}  </h2>
-                  <h2 className="text-lg font-semibold text-blue-800"> by - {project.email} </h2>
-                  <h2 className="text-lg font-semibold text-blue-800">from - {project.college}</h2>
-                  <p className="text-gray-950 text-md mt-2">{project.description}</p>
-
-
-                  <div className="flex opacity-70 mt-2 justify-between">
-                    <h3 className="font-medium pt-2 mr-25">{project.category}</h3>
-                    <span>
-                      <button onClick={() => alert("This will be available soon")} >
-                        <BiLike className="size-6  mx-2.5 " />
-                      </button>
-
-                      <button onClick={() => alert("This will be available soon.")}>
-                        <MdOutlineInsertComment className="size-6 mx-2.5 " />
-                      </button>
-                    </span>
-
-
-
-                  </div>
-                  <div className="flex justify-center">
-                    <button className="bg-yellow-600 rounded-2xl px-10 py-2 mt-5 " onClick={() => alert("This will be available soon.")}>Send collab request to owner</button>
-                  </div>
-
-
-                </div>
-              ))
-            }
-          </div>
-        </div>
-      )
-
-      }
-    </>
-  );
-
-};
-
-export default ProjectGrid;
-
-*/
-
-
 import React, { useState, useEffect } from "react";
 import axios from 'axios'
 import { MdOutlineInsertComment } from "react-icons/md";
@@ -116,6 +13,7 @@ const ProjectGrid = ({ loggedIn }) => {
   const [comments, setComments] = useState({})
   const [showCollabModal, setShowCollabModal] = useState(null)
   const [collabMessage, setCollabMessage] = useState('')
+  const [isSent, setIsSent] = useState(false)
   
   const navigate = useNavigate()
 
@@ -257,7 +155,12 @@ const ProjectGrid = ({ loggedIn }) => {
   }
 
   return (
-    <div className="p-6 mt-14">
+    <div className="p-6 mt-14 
+   bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-500
+
+
+
+">
       <h2 className="text-2xl flex justify-center font-bold text-gray-800 mb-5">Projects</h2>
       
       <div className="grid gap-10 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 mx-3 break-words">
@@ -344,16 +247,19 @@ const ProjectGrid = ({ loggedIn }) => {
             <div className="flex justify-center mt-4">
               <button
                 onClick={() => setShowCollabModal(project._id)}
-                className="bg-yellow-600 rounded-2xl px-6 py-2 text-white hover:bg-yellow-700 transition"
+                className="bg-blue-600 rounded-2xl px-6 py-2 text-white hover:bg-blue-700 cursor-pointer transition"
               >
                 Send Collab Request
               </button>
+              
+      
             </div>
 
             {/* Collaboration Modal */}
             {showCollabModal === project._id && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+              <div className="fixed inset-0    bg-gray-400
+ bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-gray-200 rounded-lg p-6 max-w-md w-full mx-4">
                   <h3 className="text-xl font-bold mb-4">Collaboration Request</h3>
                   <p className="text-sm text-gray-600 mb-4">
                     Send a collaboration request to the project owner
@@ -367,21 +273,27 @@ const ProjectGrid = ({ loggedIn }) => {
                     maxLength="500"
                   />
                   <div className="flex gap-3 justify-end">
-                    <button
-                      onClick={() => {
-                        setShowCollabModal(null)
-                        setCollabMessage('')
-                      }}
-                      className="px-4 py-2 border rounded hover:bg-gray-100"
-                    >
-                      Cancel
+
+                    <button onClick={()=> alert("This will be available soon, project owner will contact you via Email.")} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                      check status
                     </button>
+
                     <button
                       onClick={() => handleCollabRequest(project._id)}
                       className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                     >
                       Send Request
                     </button>
+                    <button
+                      onClick={() => {
+                        setShowCollabModal(null)
+                        setCollabMessage('')
+                      }}
+                      className="px-4 py-2 border bg-red-500 rounded hover:bg-red-700"
+                    >
+                      Cancel
+                    </button>
+                    
                   </div>
                 </div>
               </div>

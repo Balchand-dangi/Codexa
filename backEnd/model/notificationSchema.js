@@ -11,6 +11,7 @@ const notificationSchema = new mongoose.Schema({
         required: true,
         ref: 'User' // email of the user who triggered notification
     },
+
     projectId: {
         type: mongoose.Schema.Types.ObjectId,
         required: true,

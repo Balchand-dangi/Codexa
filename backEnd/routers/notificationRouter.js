@@ -10,7 +10,7 @@ router.get('/', userAuth, async (req, res) => {
         const userEmail = req.user.email
         const notifications = await Notification.find({ recipient: userEmail })
             .sort({ createdAt: -1 })
-            .limit(50) // Limit to last 50 notifications
+            .limit(30) // Limit to last 50 notifications
         
         const unreadCount = notifications.filter(n => !n.isRead).length
         
@@ -78,6 +78,20 @@ router.patch('/mark-all-read', userAuth, async (req, res) => {
     }
 })
 
+// Clear all notifications
+router.delete('/clear-all', userAuth, async (req, res) => {
+    try {
+        const userEmail = req.user.email
+        
+        await Notification.deleteMany({ recipient: userEmail })
+
+        res.status(200).json({ message: 'All notifications cleared' })
+    } catch (err) {
+        res.status(500).json({ message: err.message })
+    }
+})
+
+
 // Delete a notification
 router.delete('/:notificationId', userAuth, async (req, res) => {
     try {
@@ -94,19 +108,6 @@ router.delete('/:notificationId', userAuth, async (req, res) => {
         }
 
         res.status(200).json({ message: 'Notification deleted' })
-    } catch (err) {
-        res.status(500).json({ message: err.message })
-    }
-})
-
-// Clear all notifications
-router.delete('/clear-all', userAuth, async (req, res) => {
-    try {
-        const userEmail = req.user.email
-        
-        await Notification.deleteMany({ recipient: userEmail })
-
-        res.status(200).json({ message: 'All notifications cleared' })
     } catch (err) {
         res.status(500).json({ message: err.message })
     }
