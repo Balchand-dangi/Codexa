@@ -19,7 +19,7 @@ const SignupForm = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if(isSubmitting) return
+        if (isSubmitting) return
         setIsSubmitting(true)
 
         const userData = { name, email, password, age, skills, college }
@@ -27,30 +27,26 @@ const SignupForm = () => {
         try {
             const response = await axios.post("/api/auth/signUp", userData);
             ; // success message
-            if( (response.data.message || response.data) === "You'r successfully registered") {
-                alert(response.data)
-                setName("")
-                setEmail("")
-                setPassword("")
-                setAge("")
-                setSkills("")
-                setCollege("")
-                // console.log("navigating to signIn")
-                navigate("/signIn")
-            }
-            else{
-                alert(response.data)
-            }
+            alert(response.data.message || response.data);
+            setName("")
+            setEmail("")
+            setPassword("")
+            setAge("")
+            setSkills("")
+            setCollege("")
+            // console.log("navigating to signIn")
+            // verify user first
+            navigate("/signIn")
 
         } catch (error) {
             console.log(error);
             if (error.response && error.response.data) {
-                alert(error.response.data.message || error.response.data );
+                alert(error.response.data.message || error.response.data);
             } else {
                 alert("Something went wrong");
             }
         }
-        finally{
+        finally {
             setIsSubmitting(false)
         }
 
@@ -125,17 +121,17 @@ const SignupForm = () => {
                     className="w-full mb-4 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
 
-                
+
                 <span>If already have an account - </span>
-                <Link to="/signIn" style={{color:"green", text:"bold", textDecoration:"underline"}}>Sign in</Link>
-                
+                <Link to="/signIn" style={{ color: "green", text: "bold", textDecoration: "underline" }}>Sign in</Link>
+
 
                 <button
                     type="submit"
                     disabled={isSubmitting}
                     className="w-full bg-blue-500 text-white mt-5 cursor-pointer py-2 rounded-md hover:bg-blue-600 transition"
                 >
-                    {isSubmitting ? "Submitting..." : "Sign Up" }
+                    {isSubmitting ? "Submitting..." : "Sign Up"}
                 </button>
 
             </form>
