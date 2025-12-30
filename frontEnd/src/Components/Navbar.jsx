@@ -14,8 +14,9 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
     setIsSubmitting(true)
     try {
       const response = await axios.post('/api/auth/logOut', {}, { withCredentials: true });
+      localStorage.removeItem("isLoggedIn");
+       localStorage.removeItem('userEmail'); // Clear stored email
       setLoggedIn(false);
-      localStorage.removeItem('userEmail'); // Clear stored email
       alert(response.data.message);
     } catch (err) {
       console.log(err);
@@ -70,7 +71,7 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
                 `hover:text-blue-600 px-3 py-1 rounded ${isActive ? "bg-red-400" : ""}`
               }
             >
-              Contact
+              Support
             </NavLink>
 
            

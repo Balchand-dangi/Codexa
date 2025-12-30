@@ -13,7 +13,7 @@ uploadRouter.post('/', async (req, res) => {
     try{
       const error = validProject(req.body)
       if(error){
-        res.status(400).json({message:error})
+        return res.status(400).json({message:error})
       }
       const existingProject = await Project.findOne({title:req.body.title ,description:req.body.description})
       if(existingProject){

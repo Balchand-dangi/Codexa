@@ -7,7 +7,10 @@ import { Route, Routes } from "react-router-dom";
 import ScrollToTop from "./Components/ScrollTop";
 
 function App() {
-  const [loggedIn, setLoggedIn] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(
+  localStorage.getItem("isLoggedIn") === "true"
+);
+
 
   return (
     <>

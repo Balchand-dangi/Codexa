@@ -13,8 +13,8 @@ const ProjectGrid = ({ loggedIn }) => {
   const [comments, setComments] = useState({})
   const [showCollabModal, setShowCollabModal] = useState(null)
   const [collabMessage, setCollabMessage] = useState('')
-  const [isSent, setIsSent] = useState(false)
-  
+
+
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -30,7 +30,7 @@ const ProjectGrid = ({ loggedIn }) => {
     try {
       const response = await axios.get('/api/getProjects', { withCredentials: true })
       setProjects(response.data)
-      
+
       // Fetch stats for each project
       response.data.forEach(project => {
         fetchProjectStats(project._id)
@@ -46,7 +46,7 @@ const ProjectGrid = ({ loggedIn }) => {
         axios.get(`/api/project/likes/${projectId}`, { withCredentials: true }),
         axios.get(`/api/project/comments/${projectId}`, { withCredentials: true })
       ])
-      
+
       setProjectStats(prev => ({
         ...prev,
         [projectId]: {
@@ -54,12 +54,12 @@ const ProjectGrid = ({ loggedIn }) => {
           comments: commentsRes.data.count
         }
       }))
-      
+
       // Check if user liked this project
       const userEmail = localStorage.getItem('userEmail') // You'll need to store this on login
       const userLiked = likesRes.data.likes.some(like => like.userEmail === userEmail)
       setUserLikes(prev => ({ ...prev, [projectId]: userLiked }))
-      
+
       setComments(prev => ({ ...prev, [projectId]: commentsRes.data.comments }))
     } catch (err) {
       console.error("Error fetching project stats:", err)
@@ -88,8 +88,8 @@ const ProjectGrid = ({ loggedIn }) => {
 
     try {
       await axios.post(
-        `/api/project/comment/${projectId}`, 
-        { text }, 
+        `/api/project/comment/${projectId}`,
+        { text },
         { withCredentials: true }
       )
       setCommentText(prev => ({ ...prev, [projectId]: '' }))
@@ -102,7 +102,7 @@ const ProjectGrid = ({ loggedIn }) => {
 
   const handleDeleteComment = async (commentId, projectId) => {
     if (!window.confirm("Delete this comment?")) return
-    
+
     try {
       await axios.delete(`/api/project/comment/${commentId}`, { withCredentials: true })
       fetchProjectStats(projectId)
@@ -134,21 +134,21 @@ const ProjectGrid = ({ loggedIn }) => {
   if (projects.length === 0) {
     return (
       <>
-      <div className="grid place-items-center bg-white py-20">
-        <div className="text-center p-6 rounded-2xl m-5 shadow-lg bg-gray-200">
-          <h1 className="bg-blue-800 text-5xl text-amber-400 font-bold px-6 py-4 rounded-lg">
-            Welcome to Developers World
-          </h1>
-          <button onClick={() => navigate("/signUp")}>
-            <h3 className="bg-red-600 mt-6 text-lg text-white font-medium px-4 py-2 rounded-md">
-              Please register yourself to see all the projects
-            </h3>
-          </button>
+        <div className="grid place-items-center bg-white py-20">
+          <div className="text-center p-6 rounded-2xl m-5 shadow-lg bg-gray-200">
+            <h1 className="bg-blue-800 text-5xl text-amber-400 font-bold px-6 py-4 rounded-lg">
+              Welcome to Developers World
+            </h1>
+            <button onClick={() => navigate("/signUp")}>
+              <h3 className="bg-red-600 mt-6 text-lg text-white font-medium px-4 py-2 rounded-md">
+                Please register yourself to see all the projects
+              </h3>
+            </button>
+          </div>
+
+          <p >𝑩𝒖𝒊𝒍𝒕 𝒃𝒚 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓, 𝒇𝒐𝒓 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓𝒔.</p>
         </div>
 
-        <p >𝑩𝒖𝒊𝒍𝒕 𝒃𝒚 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓, 𝒇𝒐𝒓 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓𝒔.</p>
-      </div>
-      
 
       </>
     )
@@ -162,20 +162,28 @@ const ProjectGrid = ({ loggedIn }) => {
 
 ">
       <h2 className="text-2xl flex justify-center font-bold text-gray-800 mb-5">Projects</h2>
-      
+
       <div className="grid gap-10 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 mx-3 break-words">
         {projects.map((project, index) => (
-          <div key={project._id} className="bg-gray-100 shadow-md rounded-xl p-4 hover:shadow-lg transition">
-            <h2 className="text-2xl font-semibold text-blue-700">
+          <div key={project._id} className="bg-gray-100 shadow-md rounded-xl px-3 pb-3.5 pt-1.5 hover:shadow-lg transition">
+            <div className="flex">
+              <p className="ml-auto leading-none text-sm text-gray-700">{new Date(project.createdAt).toLocaleDateString('en-IN', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+              })}</p>
+            </div>
+            <p className="text-2xl leading-none font-semibold text-blue-700">
               {index + 1}. {project.title}
-            </h2>
-            <h2 className="text-lg font-semibold text-blue-800">by - {project.email}</h2>
-            <h2 className="text-lg font-semibold text-blue-800">from - {project.college}</h2>
+            </p>
+            <h2 className="text-lg pt-0.5 font-semibold text-blue-800">by - {project.email}</h2>
+            <h2 className="text-lg  font-semibold text-blue-800">from - {project.college}</h2>
             <p className="text-gray-950 text-md mt-2">{project.description}</p>
+            <p className="text-gray-950 text-md mt-2">Tech Stack: {project.techStack.join(', ')}</p>
 
             <div className="flex justify-between items-center mt-3">
               <h3 className="font-medium text-sm">{project.category}</h3>
-              
+
               <div className="flex gap-3">
                 <button
                   onClick={() => handleLike(project._id)}
@@ -205,9 +213,9 @@ const ProjectGrid = ({ loggedIn }) => {
                 <div className="mb-3">
                   <textarea
                     value={commentText[project._id] || ''}
-                    onChange={(e) => setCommentText(prev => ({ 
-                      ...prev, 
-                      [project._id]: e.target.value 
+                    onChange={(e) => setCommentText(prev => ({
+                      ...prev,
+                      [project._id]: e.target.value
                     }))}
                     placeholder="Write a comment..."
                     className="w-full p-2 border rounded text-sm resize-none"
@@ -244,15 +252,15 @@ const ProjectGrid = ({ loggedIn }) => {
               </div>
             )}
 
-            <div className="flex justify-center mt-4">
+            <div className="flex justify-center mt-3">
               <button
                 onClick={() => setShowCollabModal(project._id)}
-                className="bg-blue-600 rounded-2xl px-6 py-2 text-white hover:bg-blue-700 cursor-pointer transition"
+                className="bg-blue-600 rounded-2xl px-6 py-1.5 text-white hover:bg-blue-700 cursor-pointer transition"
               >
                 Send Collab Request
               </button>
-              
-      
+
+
             </div>
 
             {/* Collaboration Modal */}
@@ -274,7 +282,7 @@ const ProjectGrid = ({ loggedIn }) => {
                   />
                   <div className="flex gap-3 justify-end">
 
-                    <button onClick={()=> alert("This will be available soon, project owner will contact you via Email.")} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                    <button onClick={() => alert("This will be available soon, project owner will contact you via Email.")} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
                       check status
                     </button>
 
@@ -293,7 +301,7 @@ const ProjectGrid = ({ loggedIn }) => {
                     >
                       Cancel
                     </button>
-                    
+
                   </div>
                 </div>
               </div>

@@ -19,13 +19,18 @@ const projectSchema = new mongoose.Schema({
         
     },
 
+    techStack:{
+        type:[String],
+        required:true
+    },
+
     college:{
         type:String,
         required:true
     },
     
     category:{
-        type:String,
+        type:[String],
         required:true
     }
 
