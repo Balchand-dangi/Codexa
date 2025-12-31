@@ -26,7 +26,7 @@ authRouter.post("/signUp", async (req, res) => {
         try {
             await sendEmail(
                 email,
-                "Verify your email address",
+                "Verify your email to access Developer Collaboration Platform",
                 `
                 <h2>Email Verification</h2>
                 <p>Click the link below to verify your email:</p>

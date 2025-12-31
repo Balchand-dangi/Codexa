@@ -3,16 +3,16 @@ import React, { useState } from 'react'
 import { AiOutlineEyeInvisible, AiOutlineEye } from 'react-icons/ai'
 import { Link, useNavigate } from 'react-router-dom'
 
-function SignInForm({setLoggedIn}) {
+function SignInForm({ setLoggedIn }) {
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     const [showPassword, setShowPassword] = useState(false)
-    const [isSubmitting,setIsSubmitting] = useState(false)
+    const [isSubmitting, setIsSubmitting] = useState(false)
     const navigate = useNavigate()
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if(isSubmitting) return;
+        if (isSubmitting) return;
         setIsSubmitting(true);
 
         const userData = { email, password }
@@ -22,7 +22,7 @@ function SignInForm({setLoggedIn}) {
 
             if (response.status === 200) {
                 localStorage.setItem("isLoggedIn", "true");
-                 // Store user email for checking likes/comments
+                // Store user email for checking likes/comments
                 localStorage.setItem('userEmail', email);
                 setLoggedIn(true);
                 alert(response.data)
@@ -30,7 +30,7 @@ function SignInForm({setLoggedIn}) {
                 setPassword("")
                 navigate("/")
             }
-            else{
+            else {
                 alert(response.data.message || response.data)
             }
         }
@@ -42,7 +42,7 @@ function SignInForm({setLoggedIn}) {
                 alert("something went wrong")
             }
         }
-        finally{
+        finally {
             setIsSubmitting(false)
         }
     }
@@ -69,13 +69,18 @@ function SignInForm({setLoggedIn}) {
                             placeholder='Enter your password'
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className='w-full mb-3 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400'
+                            className='w-full mb-0 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400'
                         />
                         <span className='absolute right-3 top-3.5 cursor-pointer'
                             onClick={() => setShowPassword(!showPassword)}>
                             {showPassword ? <AiOutlineEyeInvisible /> : <AiOutlineEye />}
                         </span>
                     </div>
+
+                    <button>
+                        <Link onClick={(e)=> alert('This is unavailable right now ! Will be available soon.')} className='text-sm pl-1 underline text-gray-700'>Reset password</Link>
+                    </button>
+
 
                     <button
                         type='Submit' disabled={isSubmitting} className="w-full bg-blue-500 text-white cursor-pointer py-2 rounded-md hover:bg-blue-600 mb-4 mt-5 transition">
