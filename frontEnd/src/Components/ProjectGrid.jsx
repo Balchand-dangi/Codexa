@@ -157,15 +157,12 @@ const ProjectGrid = ({ loggedIn }) => {
   return (
     <div className="p-6 mt-14 
    bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-500
-
-
-
 ">
-      <h2 className="text-2xl flex justify-center font-bold text-gray-800 mb-5">Projects</h2>
+      <h2 className="text-2xl flex justify-center font-bold text-black mb-5">Projects</h2>
 
       <div className="grid gap-10 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 mx-3 break-words">
         {projects.map((project, index) => (
-          <div key={project._id} className="bg-gray-100 shadow-md rounded-xl px-3 pb-3.5 pt-1.5 hover:shadow-lg transition">
+          <div key={project._id} className="bg-gray-100 shadow-md rounded-xl px-3 pb-5 pt-1.5 hover:shadow-lg transition">
             <div className="flex">
               <p className="ml-auto leading-none text-sm text-gray-700">{new Date(project.createdAt).toLocaleDateString('en-IN', {
                 day: '2-digit',

@@ -65,22 +65,27 @@ authRouter.post("/signUp", async (req, res) => {
 
 
 authRouter.get("/verify-email/:token", async (req, res) => {
-    const user = await User.findOne({
-        emailVerifyToken: req.params.token,
-        emailVerifyTokenExpiry: { $gt: Date.now() }
-    });
+    try {
+        const user = await User.findOne({
+            emailVerifyToken: req.params.token,
+            emailVerifyTokenExpiry: { $gt: Date.now() }
+        });
 
-    if (!user) {
-        return res.status(400).json({ message: "Invalid or expired link" });
+        if (!user) {
+            return res.status(400).json({ message: "Invalid or expired verification link" });
+        }
+
+        user.isVerified = true;
+        user.emailVerifyToken = undefined;
+        user.emailVerifyTokenExpiry = undefined;
+        await user.save();
+
+        res.json({ message: "Email verified successfully! You can now sign in." });
+    } catch (err) {
+        res.status(500).json({ message: "Verification failed. Please try again." });
     }
-
-    user.isVerified = true;
-    user.emailVerifyToken = undefined;
-    user.emailVerifyTokenExpiry = undefined;
-    await user.save();
-
-    res.json({ message: "Email verified successfully" });
 });
+
 
 
 
