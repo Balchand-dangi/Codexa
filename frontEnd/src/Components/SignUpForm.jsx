@@ -26,7 +26,7 @@ const SignupForm = () => {
 
         try {
             const response = await axios.post("/api/auth/signUp", userData);
-            ; // success message
+             // success message
             alert(response.data.message || response.data);
             setName("")
             setEmail("")
@@ -36,7 +36,7 @@ const SignupForm = () => {
             setCollege("")
             // console.log("navigating to signIn")
             // verify user first
-            navigate("/signIn")
+           //navigate("/signIn")
 
         } catch (error) {
             console.log(error);

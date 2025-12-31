@@ -1,23 +1,31 @@
+// free for 2 months only I have to switch resend.com after 2 months
+const sgMail = require('@sendgrid/mail');
 
-const nodemailer = require("nodemailer");
-
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
+// Initialize with API key
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 const sendEmail = async (to, subject, html) => {
-  await transporter.sendMail({
-    from: `"Skill Exchange Platform" <${process.env.EMAIL_USER}>`,
-    to,
-    subject,
-    html
-  });
+  try {
+    const msg = {
+      to: to,
+      from: process.env.EMAIL_USER, 
+      subject: subject,
+      html: html
+    };
+    
+    await sgMail.send(msg);
+    console.log('Email sent successfully via SendGrid to:', to);
+    return { success: true };
+    
+  } catch (error) {
+    console.error(' SendGrid error:', error.message);
+    
+    if (error.response) {
+      console.error('Response body:', error.response.body);
+    }
+    
+    throw error;
+  }
 };
 
 module.exports = sendEmail;

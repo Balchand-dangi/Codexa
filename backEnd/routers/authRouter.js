@@ -12,55 +12,57 @@ const authRouter = express.Router()
 
 authRouter.post("/signUp", async (req, res) => {
     try {
-        // Validate user input
         validUser(req.body);
-
         const email = req.body.email.trim().toLowerCase();
-
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(400).json({ message: "Email already registered" });
         }
-
         const hashedPassword = await bcrypt.hash(req.body.password, 10);
-
-        //Generate email verification token
         const emailToken = crypto.randomBytes(32).toString("hex");
+        const verifyLink = `${process.env.FRONTEND_URL}/verify-email/${emailToken}`;
 
-        // Create user (NOT verified yet)
+
+        try {
+            await sendEmail(
+                email,
+                "Verify your email address",
+                `
+                <h2>Email Verification</h2>
+                <p>Click the link below to verify your email:</p>
+                <a href="${verifyLink}">Verify Email</a>
+                <p>This link is valid for 24 hours.</p>
+                `
+            );
+        } catch (emailError) {
+            console.error("Email sending failed:", emailError);
+            return res.status(500).json({
+                message: "Failed to send verification email. Please check your email address or try again later."
+            });
+        }
+
         await User.create({
             ...req.body,
             email,
             password: hashedPassword,
             isVerified: false,
             emailVerifyToken: emailToken,
-            emailVerifyTokenExpiry: Date.now() + 24 * 60 * 60 * 1000 // 24 hrs
+            emailVerifyTokenExpiry: Date.now() + 24 * 60 * 60 * 1000
         });
-
-        //verification link
-        const verifyLink = `${process.env.FRONTEND_URL}/verify-email/${emailToken}`;
-
-        await sendEmail(
-            email,        
-            "Verify your email address",        
-            `
-        <h2>Email Verification</h2>
-        <p>Click the link below to verify your email:</p>
-        <a href="${verifyLink}">Verify Email</a>
-        <p>This link is valid for 24 hours.</p>
-      `
-        );
 
         return res.status(201).json({
             message: "Verification email sent. Please check your inbox."
         });
 
     } catch (err) {
+        console.log("signup error:", err);
         return res.status(500).json({
             message: err.message || "Signup failed"
         });
     }
 });
+
+
 
 authRouter.get("/verify-email/:token", async (req, res) => {
     const user = await User.findOne({
@@ -85,13 +87,13 @@ authRouter.get("/verify-email/:token", async (req, res) => {
 
 authRouter.post('/signIn', async (req, res) => {
     try {
-        
+
         const data = await User.findOne({ email: req.body.email })
         if (!data) {
             return res.status(401).json('Invalid credential')
         }
 
-        if(!data.isVerified){
+        if (!data.isVerified) {
             return res.status(400).json('Please verify your email before logging in')
         }
         const isAllowed = await bcrypt.compare(req.body.password, data.password)

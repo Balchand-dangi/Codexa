@@ -17,8 +17,10 @@ const app = express()
 app.use(express.json())
 app.use(cookieParser())
 
+
+
 // Routes
-app.use('/api/auth', rate_limiter, authRouter)
+app.use('/api/auth',  authRouter) //apply rate_limiter,
 app.use('/api/uploadProject', rate_limiter, projectRouter)
 app.use('/api/getProjects', getProjects)
 app.use('/api/project', projectInteractionRouter)
