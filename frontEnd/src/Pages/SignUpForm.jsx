@@ -123,7 +123,7 @@ const SignupForm = () => {
 
 
                 <span>If already have an account - </span>
-                <Link to="/signIn" style={{ color: "green", text: "bold", textDecoration: "underline" }}>Sign in</Link>
+                <Link to="/signInForm" style={{ color: "green", text: "bold", textDecoration: "underline" }}>Sign in</Link>
 
 
                 <button

@@ -19,7 +19,6 @@ function SignInForm({ setLoggedIn }) {
 
         try {
             const response = await axios.post('/api/auth/signIn', userData, { withCredentials: true });
-
             if (response.status === 200) {
                 localStorage.setItem("isLoggedIn", "true");
                 // Store user email for checking likes/comments
@@ -78,7 +77,7 @@ function SignInForm({ setLoggedIn }) {
                     </div>
 
                     <button>
-                        <Link onClick={(e)=> alert('This is unavailable right now ! Will be available soon.')} className='text-sm pl-1 underline text-gray-700'>Reset password</Link>
+                        <Link onClick={(e)=> alert('This is unavailable right now ! It Will be available soon.')} className='text-sm pl-1 underline text-gray-700'>Reset password</Link>
                     </button>
 
 

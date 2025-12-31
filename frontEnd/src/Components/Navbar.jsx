@@ -81,13 +81,13 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
           <div className="hidden md:flex space-x-4 items-center">
             {!loggedIn && (
               <>
-                <Link to="/signIn">
+                <Link to="/signInForm">
                   <button className="px-4 py-2 border border-blue-700 text-blue-700 rounded-lg hover:bg-blue-600 hover:text-white transition">
                     Sign In
                   </button>
                 </Link>
 
-                <Link to="/signUp">
+                <Link to="/signUpForm">
                   <button className="px-4 py-2 border border-blue-700 text-blue-700 rounded-lg hover:bg-blue-600 hover:text-white transition">
                     Sign Up
                   </button>

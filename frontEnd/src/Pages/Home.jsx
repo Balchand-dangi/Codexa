@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
+
 import Navbar from '../Components/Navbar'
-import ProjectGrid from '../Components/ProjectGrid'
+import ProjectGrid from './ProjectGrid'
 import Contact from './Footer/Contact'
 import About from './Footer/About'
 

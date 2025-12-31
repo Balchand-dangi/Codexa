@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import SignUp from "./Pages/SignUp";
-import SignIn from "./Pages/SignIn";
+
+import SignupForm from "./Pages/SignUpForm";
+import SignInForm from "./Pages/SignInForm";
 import Home from "./Pages/Home";
 import Upload from "./Pages/Upload";
 import { Route, Routes } from "react-router-dom";
 import ScrollToTop from "./Components/ScrollTop";
-import VerifyEmail from "./Pages/VerifyEmail";
+import VerifyEmail from "./Components/VerifyEmail";
 
 function App() {
   const [loggedIn, setLoggedIn] = useState(
@@ -46,18 +47,19 @@ function App() {
         />
 
         <Route
-          path="/signUp"
-          element={<SignUp setLoggedIn={setLoggedIn} />}
+          path="/signUpForm"
+          element={<SignupForm setLoggedIn={setLoggedIn} />}
+          
         />
         <Route
-          path="/signIn"
-          element={<SignIn setLoggedIn={setLoggedIn} />}
+          path="/signInForm"
+          element={<SignInForm setLoggedIn={setLoggedIn} />}
         />
 
 
         <Route
           path="/upload"
-          element={loggedIn ? <Upload /> : <SignIn setLoggedIn={setLoggedIn} />}
+          element={loggedIn ? <Upload /> : <SignInForm setLoggedIn={setLoggedIn} />}
         />
        <Route path="/verify-email/:token" element={<VerifyEmail />} />
 
