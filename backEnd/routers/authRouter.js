@@ -32,6 +32,9 @@ authRouter.post("/signUp", async (req, res) => {
                 <p>Click the link below to verify your email:</p>
                 <a href="${verifyLink}">Verify Email</a>
                 <p>This link is valid for 24 hours.</p>
+                <h4>Regards,<h4>
+                <h4>Developer Collaboration Platform<h4>
+                
                 `
             );
         } catch (emailError) {
