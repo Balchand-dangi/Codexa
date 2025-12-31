@@ -14,16 +14,10 @@ const sendEmail = async (to, subject, html) => {
     };
     
     await sgMail.send(msg);
-    console.log('Email sent successfully via SendGrid to:', to);
+    //console.log('Email sent successfully via SendGrid to:', to);
     return { success: true };
     
-  } catch (error) {
-    console.error(' SendGrid error:', error.message);
-    
-    if (error.response) {
-      console.error('Response body:', error.response.body);
-    }
-    
+  } catch (error) {    
     throw error;
   }
 };

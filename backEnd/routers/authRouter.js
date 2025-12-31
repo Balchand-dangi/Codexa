@@ -35,7 +35,7 @@ authRouter.post("/signUp", async (req, res) => {
                 `
             );
         } catch (emailError) {
-            console.error("Email sending failed:", emailError);
+            //console.error("Email sending failed:", emailError);
             return res.status(500).json({
                 message: "Failed to send verification email. Please check your email address or try again later."
             });
@@ -55,7 +55,7 @@ authRouter.post("/signUp", async (req, res) => {
         });
 
     } catch (err) {
-        console.log("signup error:", err);
+        //console.log("signup error:", err);
         return res.status(500).json({
             message: err.message || "Signup failed"
         });
