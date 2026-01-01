@@ -7,6 +7,7 @@ import Upload from "./Pages/Upload";
 import { Route, Routes } from "react-router-dom";
 import ScrollToTop from "./Components/ScrollTop";
 import VerifyEmail from "./Components/VerifyEmail";
+import ComingSoon from "./Components/ComingSoon";
 
 function App() {
   const [loggedIn, setLoggedIn] = useState(
@@ -62,6 +63,7 @@ function App() {
           element={loggedIn ? <Upload /> : <SignInForm setLoggedIn={setLoggedIn} />}
         />
        <Route path="/verify-email/:token" element={<VerifyEmail />} />
+       <Route path="/ComingSoon" element={<ComingSoon/>}/>
 
         
       </Routes>
