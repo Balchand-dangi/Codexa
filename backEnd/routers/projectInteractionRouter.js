@@ -4,6 +4,7 @@ const Notification = require('../model/notificationSchema')
 const Project = require('../model/projectSchema')
 const User = require('../model/userSchema')
 const userAuth = require('../middleware/userAuth')
+const rate_limiter = require('../middleware/rate_limiter')
 
 const router = express.Router()
 
@@ -84,7 +85,7 @@ router.get('/likes/:projectId', userAuth, async (req, res) => {
 })
 
 // Comment on a project
-router.post('/comment/:projectId', userAuth, async (req, res) => {
+router.post('/comment/:projectId', userAuth,rate_limiter, async (req, res) => {
     try {
         const { projectId } = req.params
         const { text } = req.body
@@ -170,7 +171,7 @@ router.delete('/comment/:commentId', userAuth, async (req, res) => {
 })
 
 // Send collaboration request
-router.post('/collaborate/:projectId', userAuth, async (req, res) => {
+router.post('/collaborate/:projectId', userAuth,rate_limiter, async (req, res) => {
     try {
         const { projectId } = req.params
         const { message } = req.body
@@ -185,7 +186,7 @@ router.post('/collaborate/:projectId', userAuth, async (req, res) => {
 
         // Check if requesting collaboration on own project
         if (project.email === requesterEmail) {
-            return res.status(400).json({ message: 'You cannot request collaboration on your own project' })
+            return res.status(400).json({ message: 'You cannot send collaboration request on your own project' })
         }
 
         // Check if already requested

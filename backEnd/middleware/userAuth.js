@@ -12,22 +12,22 @@ const userAuth = async (req, res, next) => {
             return res.status(401).json({ error: "Token doesn't exist! plz sign in" });
         }
 
-        // 2. Verify token
+        // Verify token
         const payload = jwt.verify(token, process.env.SECRET_KEY);
 
-        // 3. Check if user exists in DB
+        //  Check if user exists in DB
         const result = await User.findById(payload._id);
         if (!result) {
             return res.status(401).json({ error: "User not found!" });
         }
 
-        // 4. Check Redis blocklist
+        // Check Redis blocklist
         const isBlocked = await redisClient.exists(`token:${token}`);
         if (isBlocked) {
             return res.status(401).json({ error: "Token blocked! Please login again." });
         }
 
-        // 5. Attach user info to request
+        //  Attach user info to request
         req.user = result;  
         next();
 

@@ -76,9 +76,8 @@ function SignInForm({ setLoggedIn }) {
                         </span>
                     </div>
 
-                    <button>
-                        <Link onClick={(e)=> alert('This is unavailable right now ! It Will be available soon.')} className='text-sm pl-1 underline text-gray-700'>Reset password</Link>
-                    </button>
+                
+                    <Link to={'/ComingSoon'}  className='text-sm pl-1 underline text-gray-700'>Resent password</Link>
 
 
                     <button

@@ -43,8 +43,8 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
       setShowProfileMenu(false);
       alert(response.data.message);
     } catch (err) {
-      console.log(err);
-      alert(err.response?.data?.error || "Something went wrong");
+      //console.log(err);
+      alert(err.response?.data?.error || err.response?.data?.message || "Something went wrong");
     }
     finally{
       setIsSubmitting(false);
@@ -137,7 +137,7 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
 
                 {/* Upload Project Button */}
                 <Link to="/upload">
-                  <button className="px-4 py-2 bg-yellow-400 text-indigo-700 font-semibold rounded-lg hover:bg-yellow-300 transition flex items-center gap-2">
+                  <button className="px-4 py-2 bg-yellow-400 cursor-pointer text-indigo-700 font-semibold rounded-lg hover:bg-yellow-300 transition flex items-center gap-2">
                     
                     <span>Upload project</span>
                   </button>
@@ -200,7 +200,7 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
                           setShowProfileMenu(false);
                         }}
                         disabled={isSubmitting}
-                        className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-200 transition font-semibold"
+                        className="w-full cursor-pointer text-left px-4 py-2 text-red-600 hover:bg-red-200 transition font-semibold"
                       >
                         {isSubmitting ? '🔄 Logging Out...' : '🚪 Log Out'}
                       </button>

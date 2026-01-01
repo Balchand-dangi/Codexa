@@ -7,10 +7,10 @@ const userAuth = require('../middleware/userAuth');
 const redisClient = require("../config/redis")
 const crypto = require("crypto");
 const sendEmail = require("../utils/sendEmail");
-
+const rate_limiter = require('../middleware/rate_limiter')
 const authRouter = express.Router()
 
-authRouter.post("/signUp", async (req, res) => {
+authRouter.post("/signUp",rate_limiter, async (req, res) => {
     try {
         validUser(req.body);
         const email = req.body.email.trim().toLowerCase();
@@ -93,7 +93,7 @@ authRouter.get("/verify-email/:token", async (req, res) => {
 
 
 
-authRouter.post('/signIn', async (req, res) => {
+authRouter.post('/signIn',rate_limiter, async (req, res) => {
     try {
 
         const data = await User.findOne({ email: req.body.email })
