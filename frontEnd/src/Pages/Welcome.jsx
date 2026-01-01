@@ -7,7 +7,7 @@ function Welcome() {
   const navigate = useNavigate();
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-600 flex items-center justify-center px-4 pt-22 pb-7">
+    <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-600 flex items-center justify-center px-4 pt-27 pb-7">
       <div className="max-w-4xl w-full">
         {/* Main Card */}
         <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 md:p-12 shadow-2xl border border-white/20">
@@ -71,7 +71,7 @@ function Welcome() {
               <button
                 onClick={() => navigate("/signInForm")}
                 className="text-yellow-300 hover:text-yellow-200 font-semibold underline 
-                           transition-colors duration-200"
+                          transition-colors duration-200"
               >
                 Sign In
               </button>
