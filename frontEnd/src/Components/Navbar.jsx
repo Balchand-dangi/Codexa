@@ -260,7 +260,7 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
 
             {/* Mobile Notification Bell */}
             {loggedIn && (
-              <div className="py-2 border-t border-indigo-500">
+              <div className="py-1 border-t border-indigo-500">
                 <NotificationBell />
               </div>
             )}
@@ -274,7 +274,7 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
                 </Link>
 
                 <Link to="/signUpForm" onClick={() => setMenuOpen(false)}>
-                  <button className="w-full px-4 py-2 border-2 border-white text-white font-semibold rounded-lg hover:bg-white hover:text-indigo-600 transition">
+                  <button className="w-full px-4 py-2 mt-1 border-2 border-white text-white font-semibold rounded-lg hover:bg-white hover:text-indigo-600 transition">
                     Sign Up
                   </button>
                 </Link>
@@ -288,9 +288,16 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
                     👤 My Profile
                   </button>
                 </Link>
+                <Link to="/ComingSoon" onClick={() => setMenuOpen(false)}>
+                  <button className="w-full px-4 py-2 text-left text-white hover:bg-indigo-600 rounded-lg transition">
+                    📁 My Projects
+                  </button>
+                </Link>
+
+                
 
                 <Link to="/upload" onClick={() => setMenuOpen(false)}>
-                  <button className="w-full px-4 py-2 bg-yellow-400 text-indigo-700 font-semibold rounded-lg hover:bg-yellow-300 transition">
+                  <button className="w-full m-1 px-4 py-2 bg-yellow-400 text-indigo-700 font-semibold rounded-lg hover:bg-yellow-300 transition">
                     Upload Project
                   </button>
                 </Link>

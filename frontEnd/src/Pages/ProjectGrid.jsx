@@ -131,7 +131,7 @@ const ProjectGrid = ({ loggedIn }) => {
   return (
     <div className="min-h-screen p-6 pt-20 bg-gradient-to-br from-blue-400 via-indigo-500 to-purple-500">
       <h2 className="text-3xl md:text-4xl font-bold text-white text-center mb-8 drop-shadow-lg">
-        Discover Amazing Projects
+        Discover Projects
       </h2>
 
       <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-7xl mx-auto">
