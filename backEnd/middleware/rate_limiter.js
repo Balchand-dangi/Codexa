@@ -14,12 +14,11 @@ const rate_limiter = async (req, res, next) => {
             // redisClient.del(ip)
         }
 
-
         next()
 
     }
     catch (err) {
-        res.status(500).json({ message: "Internal server Error!" })
+        res.status(500).json({ message: "Internal server Error! " })
     }
 }
 

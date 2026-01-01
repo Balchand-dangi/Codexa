@@ -33,7 +33,7 @@ authRouter.post("/signUp", async (req, res) => {
                 <a href="${verifyLink}">Verify Email</a>
                 <p>This link is valid for 24 hours.</p>
                 <h4>Regards,<h4>
-                <h4>Developer Collaboration Platform<h4>
+                <h4>Developer Collaboration Platform team.<h4>
                 
                 `
             );
@@ -54,7 +54,7 @@ authRouter.post("/signUp", async (req, res) => {
         });
 
         return res.status(201).json({
-            message: "Verification email sent. Please check your inbox."
+            message: "Verification email sent. Please check your inbox/Spam."
         });
 
     } catch (err) {
@@ -83,7 +83,7 @@ authRouter.get("/verify-email/:token", async (req, res) => {
         user.emailVerifyTokenExpiry = undefined;
         await user.save();
 
-        res.json({ message: "Email verified successfully! You can now sign in." });
+        res.json({ message: "Email verified successfully!" });
     } catch (err) {
         res.status(500).json({ message: "Verification failed. Please try again." });
     }
