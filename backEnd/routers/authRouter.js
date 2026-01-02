@@ -34,7 +34,6 @@ authRouter.post("/signUp",rate_limiter, async (req, res) => {
                 <p>This link is valid for 24 hours.</p>
                 <h4>Regards,<h4>
                 <h4>Developer Collaboration Platform team.<h4>
-                
                 `
             );
         } catch (emailError) {
@@ -54,18 +53,16 @@ authRouter.post("/signUp",rate_limiter, async (req, res) => {
         });
 
         return res.status(201).json({
-            message: "Verification email sent. Please check your inbox/Spam."
+            message: "Check SPAM ! Verification email sent. Please check your inbox/Spam."
         });
 
     } catch (err) {
         //console.log("signup error:", err);
-        return res.status(500).json({
+        return res.status(400).json({
             message: err.message || "Signup failed"
         });
     }
 });
-
-
 
 authRouter.get("/verify-email/:token", async (req, res) => {
     try {
@@ -85,7 +82,7 @@ authRouter.get("/verify-email/:token", async (req, res) => {
 
         res.json({ message: "Email verified successfully!" });
     } catch (err) {
-        res.status(500).json({ message: "Verification failed. Please try again." });
+        res.status(400).json({ message: "Verification failed. Please try again." });
     }
 });
 
