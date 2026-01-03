@@ -2,7 +2,7 @@ import axios from "axios";
 import React, { useState, useEffect } from "react";
 import { NavLink, Link } from "react-router-dom";
 import NotificationBell from "./NotificationBell";
-import logo from '../assets/devHublogo.png'
+import devHubLogo from '../assets/devHubLogo.png'
 
 const Navbar = ({ loggedIn, setLoggedIn }) => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -55,7 +55,7 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
   return (
     <>
       {/* Sticky navbar with blur effect on scroll */}
-      <nav className={`fixed top-0 left-0 right-0 w-full py-3 z-50 transition-all duration-300 ${
+      <nav className={`fixed top-0 left-0 right-0 w-full py-1.5 z-50 transition-all duration-300 ${
         scrolled 
           ? 'bg-indigo-600/95 backdrop-blur-md shadow-lg' 
           : 'bg-indigo-600 shadow-lg'
@@ -64,7 +64,7 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
           
           {/* Logo */}
           <Link to="/">
-            <img className="h-10 w-auto rounded-lg" src={logo} alt="logo" />
+            <img className="h-10 w-auto rounded-lg" src={devHubLogo} alt="DevHubLogo" />
           </Link>
 
           {/* Hamburger Button - Mobile */}
