@@ -26,14 +26,14 @@ authRouter.post("/signUp",rate_limiter, async (req, res) => {
         try {
             await sendEmail(
                 email,
-                "Verify your email to access Developer Collaboration Platform",
+                "Verify your email to access Codexa platform",
                 `
                 <h2>Email Verification</h2>
                 <p>Click the link below to verify your email:</p>
                 <a href="${verifyLink}">Verify Email</a>
                 <p>This link is valid for 24 hours.</p>
                 <h4>Regards,<h4>
-                <h4>Developer Collaboration Platform team.<h4>
+                <h4>Codexa team.<h4>
                 `
             );
         } catch (emailError) {

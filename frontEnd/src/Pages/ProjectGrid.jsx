@@ -3,8 +3,11 @@ import axios from 'axios'
 import { MdOutlineInsertComment } from "react-icons/md";
 import { BiLike, BiSolidLike } from "react-icons/bi";
 import Welcome from "./Welcome";
+import {useNavigate} from "react-router-dom";
+
 
 const ProjectGrid = ({ loggedIn }) => {
+  const navigate = useNavigate();
   const [projects, setProjects] = useState([])
   const [projectStats, setProjectStats] = useState({})
   const [userLikes, setUserLikes] = useState({})
@@ -13,7 +16,7 @@ const ProjectGrid = ({ loggedIn }) => {
   const [comments, setComments] = useState({})
   const [showCollabModal, setShowCollabModal] = useState(null)
   const [collabMessage, setCollabMessage] = useState('')
-
+  
   useEffect(() => {
     if (!loggedIn) {
       setProjects([])
@@ -300,8 +303,8 @@ const ProjectGrid = ({ loggedIn }) => {
                     maxLength="500"
                   />
                   <div className="flex flex-col sm:flex-row gap-3">
-                    <button 
-                      onClick={() => alert("This will be available soon. Project owner will contact you via Email.")} 
+                   
+                    <button  onClick={()=> navigate('/comingSoon')}
                       className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium transition"
                     >
                       Check Status
