@@ -17,7 +17,7 @@ function Welcome() {
             <h1 className="text-4xl md:text-6xl font-bold text-white mb-4 leading-tight">
               Welcome to
               <span className="block bg-gradient-to-r from-yellow-300 to-orange-400 bg-clip-text text-transparent">
-                Developers World
+                Codexa
               </span>
             </h1>
             <p className="text-white/90 text-lg md:text-xl font-light">

@@ -2,7 +2,7 @@ import axios from "axios";
 import React, { useState, useEffect } from "react";
 import { NavLink, Link } from "react-router-dom";
 import NotificationBell from "./NotificationBell";
-import devHubLogo from '../assets/devHubLogo.png'
+import codexa from '../assets/codexaa.png'
 
 const Navbar = ({ loggedIn, setLoggedIn }) => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -60,7 +60,7 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
           
           {/* Logo */}
           <Link to="/">
-            <img className="h-10 w-auto rounded-lg" src={devHubLogo} alt="DevHubLogo" />
+            <img className="h-10 w-auto rounded-sm" src={codexa} alt="DevHubLogo" />
           </Link>
 
           {/* Hamburger Button - Mobile */}
@@ -148,7 +148,7 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
                     <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center font-bold text-indigo-700">
                       {userName.charAt(0).toUpperCase()}
                     </div>
-                    <span className="text-white font-semibold hidden lg:block">
+                    <span className="text-white font-semibold hidden lg:block ">
                       {userName}
                     </span>
                     <svg 
