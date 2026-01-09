@@ -279,7 +279,7 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
                     👤 My Profile
                   </button>
                 </Link>
-                <Link to="/ComingSoon" onClick={() => setMenuOpen(false)}>
+                <Link to="/MyProjects" onClick={() => setMenuOpen(false)}>
                   <button className="w-full px-4 py-2 text-left text-white hover:bg-indigo-600 rounded-lg transition">
                     📁 My Projects
                   </button>
