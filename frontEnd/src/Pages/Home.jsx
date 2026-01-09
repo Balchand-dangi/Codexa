@@ -3,6 +3,7 @@ import Navbar from '../Components/Navbar'
 import ProjectGrid from './ProjectGrid'
 import Contact from './Footer/Contact'
 import About from './Footer/About'
+import UserProjects from './MyProjects';
 
 
 

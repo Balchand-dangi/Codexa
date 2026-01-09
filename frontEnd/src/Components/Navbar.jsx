@@ -3,12 +3,12 @@ import React, { useState, useEffect } from "react";
 import { NavLink, Link } from "react-router-dom";
 import NotificationBell from "./NotificationBell";
 import codexa from '../assets/codexaa.png'
+import MyProjects from "../Pages/MyProjects";
 
 const Navbar = ({ loggedIn, setLoggedIn }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
   const [userName, setUserName] = useState("");
 
   // Detect scroll for blur effect
@@ -34,7 +34,7 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
 
   const handleLogOut = async (e) => {
     e.preventDefault();
-    if(isSubmitting) return;
+    if (isSubmitting) return;
     setIsSubmitting(true);
     try {
       const response = await axios.post('/api/auth/logOut', {}, { withCredentials: true });
@@ -47,17 +47,17 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
       //console.log(err);
       alert(err.response?.data?.error || err.response?.data?.message || "Something went wrong");
     }
-    finally{
+    finally {
       setIsSubmitting(false);
     }
   };
 
   return (
     <>
-     
+
       <nav className="fixed top-0 bg-indigo-600 shadow-lg z-1 w-full py-1.5 ">
         <div className="flex justify-between items-center px-4 sm:px-8">
-          
+
           {/* Logo */}
           <Link to="/">
             <img className="h-10 w-auto rounded-sm" src={codexa} alt="DevHubLogo" />
@@ -76,8 +76,7 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
             <NavLink
               to="/"
               className={({ isActive }) =>
-                `hover:text-yellow-300 px-3 py-2 rounded transition-colors ${
-                  isActive ? "bg-white/20 text-yellow-300" : ""
+                `hover:text-yellow-300 px-3 py-2 rounded transition-colors ${isActive ? "bg-white/20 text-yellow-300" : ""
                 }`
               }
             >
@@ -87,8 +86,7 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
             <NavLink
               to="/about"
               className={({ isActive }) =>
-                `hover:text-yellow-300 px-3 py-2 rounded transition-colors ${
-                  isActive ? "bg-white/20 text-yellow-300" : ""
+                `hover:text-yellow-300 px-3 py-2 rounded transition-colors ${isActive ? "bg-white/20 text-yellow-300" : ""
                 }`
               }
             >
@@ -98,8 +96,7 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
             <NavLink
               to="/contact"
               className={({ isActive }) =>
-                `hover:text-yellow-300 px-3 py-2 rounded transition-colors ${
-                  isActive ? "bg-white/20 text-yellow-300" : ""
+                `hover:text-yellow-300 px-3 py-2 rounded transition-colors ${isActive ? "bg-white/20 text-yellow-300" : ""
                 }`
               }
             >
@@ -133,7 +130,7 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
                 {/* Upload Project Button */}
                 <Link to="/upload">
                   <button className="px-4 py-2 bg-yellow-400 cursor-pointer text-indigo-700 font-semibold rounded-lg hover:bg-yellow-300 transition flex items-center gap-2">
-                    
+
                     <span>Upload project</span>
                   </button>
                 </Link>
@@ -151,10 +148,10 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
                     <span className="text-white font-semibold hidden lg:block ">
                       {userName}
                     </span>
-                    <svg 
+                    <svg
                       className={`w-4 h-4 text-white transition-transform ${showProfileMenu ? 'rotate-180' : ''}`}
-                      fill="none" 
-                      stroke="currentColor" 
+                      fill="none"
+                      stroke="currentColor"
                       viewBox="0 0 24 24"
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
@@ -170,25 +167,25 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
                           {localStorage.getItem('userEmail')}
                         </p>
                       </div>
-                      
-                      <Link 
-                        to="/ComingSoon" 
+
+                      <Link
+                        to="/ComingSoon"
                         onClick={() => setShowProfileMenu(false)}
                         className="block px-4 py-2 text-gray-700 hover:bg-indigo-50 transition"
                       >
                         👤 My Profile
                       </Link>
-                      
-                      <Link 
-                        to="/ComingSoon" 
+
+                      <Link
+                        to="/MyProjects"
                         onClick={() => setShowProfileMenu(false)}
                         className="block px-4 py-2 text-gray-700 hover:bg-indigo-50 transition"
                       >
                         📁 My Projects
                       </Link>
-                                            
+
                       <hr className="my-2" />
-                      
+
                       <button
                         onClick={(e) => {
                           handleLogOut(e);
@@ -208,10 +205,9 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
         </div>
 
         {/* Mobile Menu with slide animation */}
-        <div 
-          className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${
-            menuOpen ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'
-          }`}
+        <div
+          className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${menuOpen ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'
+            }`}
         >
           <div className="bg-indigo-700 px-4 py-3 space-y-3">
             {/* User info on mobile when logged in */}
@@ -289,7 +285,7 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
                   </button>
                 </Link>
 
-                
+
 
                 <Link to="/upload" onClick={() => setMenuOpen(false)}>
                   <button className="w-full m-1 px-4 py-2 bg-yellow-400 text-indigo-700 font-semibold rounded-lg hover:bg-yellow-300 transition">

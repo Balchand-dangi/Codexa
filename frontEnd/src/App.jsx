@@ -6,26 +6,27 @@ import Home from "./Pages/Home";
 import Upload from "./Pages/Upload";
 import { Route, Routes } from "react-router-dom";
 import ScrollToTop from "./Components/ScrollTop";
-import VerifyEmail from "./Components/VerifyEmail";
+import VerifyEmail from "./Pages/VerifyEmail";
 import ComingSoon from "./Components/ComingSoon";
+import MyProjects from "./Pages/MyProjects";
 
 function App() {
   const [loggedIn, setLoggedIn] = useState(
-  localStorage.getItem("isLoggedIn") === "true"
-);
+    localStorage.getItem("isLoggedIn") === "true"
+  );
 
 
   return (
     <>
 
-      <ScrollToTop 
+      <ScrollToTop
         topWhenHome={0}
-        topWhenAbout={700} 
+        topWhenAbout={700}
         topWhenContact={1400}
       />
 
       <Routes>
-    
+
         <Route
           path="/"
           element={
@@ -33,7 +34,7 @@ function App() {
           }
         />
 
- 
+
         <Route
           path="/about"
           element={
@@ -50,7 +51,7 @@ function App() {
         <Route
           path="/signUpForm"
           element={<SignupForm setLoggedIn={setLoggedIn} />}
-          
+
         />
         <Route
           path="/signInForm"
@@ -62,10 +63,12 @@ function App() {
           path="/upload"
           element={loggedIn ? <Upload /> : <SignInForm setLoggedIn={setLoggedIn} />}
         />
-       <Route path="/verify-email/:token" element={<VerifyEmail />} />
-       <Route path="/ComingSoon" element={<ComingSoon/>}/>
+        <Route path="/verify-email/:token" element={<VerifyEmail />} />
+        <Route path="/ComingSoon" element={<ComingSoon />} />
+        <Route path="/MyProjects" element={<MyProjects />} />
 
-        
+
+
       </Routes>
     </>
   );
