@@ -40,6 +40,15 @@ const notificationSchema = new mongoose.Schema({
     senderName: {
         type: String,
         required: true
+    },
+    status: {
+        type: String,
+        enum: ['pending', 'accepted', 'rejected'],
+        default: 'pending'
+    },
+    collaborationRequestId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'CollaborationRequest'
     }
 }, { timestamps: true })
 

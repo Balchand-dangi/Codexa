@@ -7,8 +7,9 @@ import Upload from "./Pages/Upload";
 import { Route, Routes } from "react-router-dom";
 import ScrollToTop from "./Components/ScrollTop";
 import VerifyEmail from "./Pages/VerifyEmail";
-import ComingSoon from "./Components/ComingSoon";
+import ComingSoon from "./Pages/ComingSoon";
 import MyProjects from "./Pages/MyProjects";
+import TeamStatus from "./Pages/TeamStatus";
 
 function App() {
   const [loggedIn, setLoggedIn] = useState(
@@ -56,6 +57,10 @@ function App() {
         <Route
           path="/signInForm"
           element={<SignInForm setLoggedIn={setLoggedIn} />}
+        />
+        <Route 
+        path="/teamStatus"
+        element={<TeamStatus/>}
         />
 
 

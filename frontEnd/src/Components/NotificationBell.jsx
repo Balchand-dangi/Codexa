@@ -55,6 +55,24 @@ const NotificationBell = () => {
         }
     }
 
+    const acceptCollaborationRequest = async (notificationId) => {
+        try {
+            await axios.patch(`/api/notifications/${notificationId}/accept`, {}, { withCredentials: true })
+            fetchNotifications()
+        } catch (err) {
+            console.error('Error accepting request:', err)
+        }
+    }
+
+    const rejectCollaborationRequest = async (notificationId) => {
+        try {
+            await axios.patch(`/api/notifications/${notificationId}/reject`, {}, { withCredentials: true })
+            fetchNotifications()
+        } catch (err) {
+            console.error('Error rejecting request:', err)
+        }
+    }
+
     const getNotificationIcon = (type) => {
         switch (type) {
             case 'like': return '👍'
@@ -155,12 +173,46 @@ const NotificationBell = () => {
                                                     </p>
                                                 )}
 
-
                                                 {notification.commentText && (
                                                     <p className="text-xs text-gray-600 mt-1 italic">
                                                         "{notification.commentText}"
                                                     </p>
                                                 )}
+
+                                                {notification.type === 'collaboration_request' && notification.status === 'pending' && (
+                                                    <div className="flex gap-2 mt-3">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                acceptCollaborationRequest(notification._id)
+                                                            }}
+                                                            className="text-xs bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded transition"
+                                                        >
+                                                            Accept
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                rejectCollaborationRequest(notification._id)
+                                                            }}
+                                                            className="text-xs bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded transition"
+                                                        >
+                                                            Reject
+                                                        </button>
+                                                    </div>
+                                                )}
+
+                                                {notification.type === 'collaboration_request' && notification.status !== 'pending' && (
+                                                    <div className="mt-2">
+                                                        <span className={`text-xs px-2 py-1 rounded ${notification.status === 'accepted'
+                                                                ? 'bg-green-100 text-green-700'
+                                                                : 'bg-red-100 text-red-700'
+                                                            }`}>
+                                                            {notification.status?.charAt(0).toUpperCase() + notification.status?.slice(1)}
+                                                        </span>
+                                                    </div>
+                                                )}
+
                                                 <div className="flex justify-between items-center mt-2">
                                                     <span className="text-xs text-gray-500">
                                                         {formatTime(notification.createdAt)}

@@ -16,7 +16,9 @@ const ProjectGrid = ({ loggedIn }) => {
   const [comments, setComments] = useState({})
   const [showCollabModal, setShowCollabModal] = useState(null)
   const [collabMessage, setCollabMessage] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
   
+
   useEffect(() => {
     if (!loggedIn) {
       setProjects([])
@@ -109,6 +111,8 @@ const ProjectGrid = ({ loggedIn }) => {
   }
 
   const handleCollabRequest = async (projectId) => {
+    if (isSubmitting) return  
+    setIsSubmitting(true)
     try {
       await axios.post(
         `/api/project/collaborate/${projectId}`,
@@ -118,9 +122,13 @@ const ProjectGrid = ({ loggedIn }) => {
       setShowCollabModal(null)
       setCollabMessage('')
       alert("Collaboration request sent successfully!")
+
+      
     } catch (err) {
       alert(err.response?.data?.message || "Error sending request")
-    }
+    }finally{
+        setIsSubmitting(false)
+      }
   }
 
   const toggleComments = (projectId) => {
@@ -302,25 +310,25 @@ const ProjectGrid = ({ loggedIn }) => {
                     rows="4"
                     maxLength="500"
                   />
-                  <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="flex flex-col sm:flex-row gap-2.5">
                    
-                    <button  onClick={()=> navigate('/comingSoon')}
-                      className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium transition"
+                    <button  onClick={()=> navigate('/teamStatus')}
+                      className="flex-1 px-2 py-2 bg-green-400 text-black cursor-pointer rounded-lg hover:bg-green-500 font-medium transition"
                     >
-                      Check Status
+                     Team Status
                     </button>
-                    <button
+                    <button disabled={isSubmitting} 
                       onClick={() => handleCollabRequest(project._id)}
-                      className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-semibold transition"
+                      className="flex-1 px-4 py-2 bg-indigo-600 cursor-pointer text-white rounded-lg hover:bg-indigo-700 font-semibold transition"
                     >
-                      Send Request
+                      {isSubmitting ? 'Sending...' : 'Send Request'}
                     </button>
                     <button
                       onClick={() => {
                         setShowCollabModal(null)
                         setCollabMessage('')
                       }}
-                      className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 font-semibold transition"
+                      className="flex-1 px-4 py-2 bg-red-500 cursor-pointer text-black rounded-lg hover:bg-red-600 font-semibold transition"
                     >
                       Cancel
                     </button>

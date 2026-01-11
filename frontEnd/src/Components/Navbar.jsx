@@ -3,22 +3,13 @@ import React, { useState, useEffect } from "react";
 import { NavLink, Link } from "react-router-dom";
 import NotificationBell from "./NotificationBell";
 import codexa from '../assets/codexaa.png'
-import MyProjects from "../Pages/MyProjects";
+
 
 const Navbar = ({ loggedIn, setLoggedIn }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [userName, setUserName] = useState("");
-
-  // Detect scroll for blur effect
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   // Get user name from localStorage
   useEffect(() => {
@@ -54,10 +45,8 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
 
   return (
     <>
-
       <nav className="fixed top-0 bg-indigo-600 shadow-lg z-1 w-full py-1.5 ">
         <div className="flex justify-between items-center px-4 sm:px-8">
-
           {/* Logo */}
           <Link to="/">
             <img className="h-10 w-auto rounded-sm" src={codexa} alt="DevHubLogo" />

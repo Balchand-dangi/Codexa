@@ -11,12 +11,12 @@ router.get('/', userAuth, async (req, res) => {
         const notifications = await Notification.find({ recipient: userEmail })
             .sort({ createdAt: -1 })
             .limit(30) // Limit to last 50 notifications
-        
+
         const unreadCount = notifications.filter(n => !n.isRead).length
-        
-        res.status(200).json({ 
+
+        res.status(200).json({
             notifications,
-            unreadCount 
+            unreadCount
         })
     } catch (err) {
         res.status(500).json({ message: err.message })
@@ -27,11 +27,11 @@ router.get('/', userAuth, async (req, res) => {
 router.get('/unread-count', userAuth, async (req, res) => {
     try {
         const userEmail = req.user.email
-        const count = await Notification.countDocuments({ 
-            recipient: userEmail, 
-            isRead: false 
+        const count = await Notification.countDocuments({
+            recipient: userEmail,
+            isRead: false
         })
-        
+
         res.status(200).json({ unreadCount: count })
     } catch (err) {
         res.status(500).json({ message: err.message })
@@ -44,11 +44,11 @@ router.patch('/:notificationId/read', userAuth, async (req, res) => {
         const { notificationId } = req.params
         const userEmail = req.user.email
 
-        const notification = await Notification.findOne({ 
-            _id: notificationId, 
-            recipient: userEmail 
+        const notification = await Notification.findOne({
+            _id: notificationId,
+            recipient: userEmail
         })
-        
+
         if (!notification) {
             return res.status(404).json({ message: 'Notification not found' })
         }
@@ -66,7 +66,7 @@ router.patch('/:notificationId/read', userAuth, async (req, res) => {
 router.patch('/mark-all-read', userAuth, async (req, res) => {
     try {
         const userEmail = req.user.email
-        
+
         await Notification.updateMany(
             { recipient: userEmail, isRead: false },
             { isRead: true }
@@ -82,7 +82,7 @@ router.patch('/mark-all-read', userAuth, async (req, res) => {
 router.delete('/clear-all', userAuth, async (req, res) => {
     try {
         const userEmail = req.user.email
-        
+
         await Notification.deleteMany({ recipient: userEmail })
 
         res.status(200).json({ message: 'All notifications cleared' })
@@ -98,9 +98,9 @@ router.delete('/:notificationId', userAuth, async (req, res) => {
         const { notificationId } = req.params
         const userEmail = req.user.email
 
-        const result = await Notification.findOneAndDelete({ 
-            _id: notificationId, 
-            recipient: userEmail 
+        const result = await Notification.findOneAndDelete({
+            _id: notificationId,
+            recipient: userEmail
         })
 
         if (!result) {
@@ -108,6 +108,70 @@ router.delete('/:notificationId', userAuth, async (req, res) => {
         }
 
         res.status(200).json({ message: 'Notification deleted' })
+    } catch (err) {
+        res.status(500).json({ message: err.message })
+    }
+})
+
+
+
+// Accept collaboration request
+router.patch('/:notificationId/accept', userAuth, async (req, res) => {
+    try {
+        const { notificationId } = req.params
+        const userEmail = req.user.email
+
+        const notification = await Notification.findOne({
+            _id: notificationId,
+            recipient: userEmail,
+            type: 'collaboration_request'
+        })
+
+        if (!notification) {
+            return res.status(404).json({ message: 'Notification not found' })
+        }
+
+        notification.status = 'accepted'
+        notification.isRead = true
+        await notification.save()
+
+        // If this notification links to a collaboration request, update that request too
+        if (notification.collaborationRequestId) {
+            await CollaborationRequest.findByIdAndUpdate(notification.collaborationRequestId, { status: 'accepted' })
+        }
+
+        res.status(200).json({ message: 'Collaboration request accepted' })
+    } catch (err) {
+        res.status(500).json({ message: err.message })
+    }
+})
+
+// Reject collaboration request
+router.patch('/:notificationId/reject', userAuth, async (req, res) => {
+    try {
+        const { notificationId } = req.params
+        const userEmail = req.user.email
+
+        const notification = await Notification.findOne({
+            _id: notificationId,
+            recipient: userEmail,
+            type: 'collaboration_request'
+        })
+
+        if (!notification) {
+            return res.status(404).json({ message: 'Notification not found' })
+        }
+
+        notification.status = 'rejected'
+        notification.isRead = true
+        await notification.save()
+
+        // If this notification links to a collaboration request, update that request too
+        if (notification.collaborationRequestId) {
+            await CollaborationRequest.findByIdAndUpdate(notification.collaborationRequestId, { status: 'rejected' })
+        }
+
+        res.status(200).json({ message: 'Collaboration request rejected' })
     } catch (err) {
         res.status(500).json({ message: err.message })
     }
