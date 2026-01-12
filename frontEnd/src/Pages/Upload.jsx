@@ -61,7 +61,7 @@ function Upload() {
 
         <input
           type="email"
-          placeholder="Plz enter your registered email address"
+          placeholder="Enter your registered email address"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className='w-full mb-3 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400'

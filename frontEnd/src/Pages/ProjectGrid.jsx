@@ -3,11 +3,10 @@ import axios from 'axios'
 import { MdOutlineInsertComment } from "react-icons/md";
 import { BiLike, BiSolidLike } from "react-icons/bi";
 import Welcome from "./Welcome";
-import {useNavigate} from "react-router-dom";
-
+import CollabModel from "../Components/CollabModel";
+import CommentSection from "../Components/CommentSection";
 
 const ProjectGrid = ({ loggedIn }) => {
-  const navigate = useNavigate();
   const [projects, setProjects] = useState([])
   const [projectStats, setProjectStats] = useState({})
   const [userLikes, setUserLikes] = useState({})
@@ -17,7 +16,7 @@ const ProjectGrid = ({ loggedIn }) => {
   const [showCollabModal, setShowCollabModal] = useState(null)
   const [collabMessage, setCollabMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  
+
 
   useEffect(() => {
     if (!loggedIn) {
@@ -65,6 +64,8 @@ const ProjectGrid = ({ loggedIn }) => {
   }
 
   const handleLike = async (projectId) => {
+    if (isSubmitting) return
+    setIsSubmitting(true)
     try {
       if (userLikes[projectId]) {
         await axios.delete(`/api/project/unlike/${projectId}`, { withCredentials: true })
@@ -74,6 +75,8 @@ const ProjectGrid = ({ loggedIn }) => {
       fetchProjectStats(projectId)
     } catch (err) {
       alert(err.response?.data?.message || "Error processing like")
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -111,7 +114,7 @@ const ProjectGrid = ({ loggedIn }) => {
   }
 
   const handleCollabRequest = async (projectId) => {
-    if (isSubmitting) return  
+    if (isSubmitting) return
     setIsSubmitting(true)
     try {
       await axios.post(
@@ -123,12 +126,12 @@ const ProjectGrid = ({ loggedIn }) => {
       setCollabMessage('')
       alert("Collaboration request sent successfully!")
 
-      
+
     } catch (err) {
       alert(err.response?.data?.message || "Error sending request")
-    }finally{
-        setIsSubmitting(false)
-      }
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const toggleComments = (projectId) => {
@@ -147,8 +150,8 @@ const ProjectGrid = ({ loggedIn }) => {
 
       <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-7xl mx-auto">
         {projects.map((project, index) => (
-          <div 
-            key={project._id} 
+          <div
+            key={project._id}
             className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl  transition-all duration-300"
           >
             {/* Header with gradient */}
@@ -172,7 +175,7 @@ const ProjectGrid = ({ loggedIn }) => {
 
             {/* Content */}
             <div className="p-5">
-             
+
               <h2 className="text-xl font-bold text-gray-800 mb-3 truncate">
                 {project.title}
               </h2>
@@ -183,7 +186,7 @@ const ProjectGrid = ({ loggedIn }) => {
                   {project.name?.charAt(0).toUpperCase() || project.email.charAt(0).toUpperCase()}
                 </div>
                 <div className="text-sm">
-                  <p className="text-gray-800 font-semibold">{project.name || project.email.split('@')[0].slice(0,-2)}...</p>
+                  <p className="text-gray-800 font-semibold">{project.name || project.email.split('@')[0].slice(0, -2)}...</p>
                   <p className="text-gray-700 text-xs">{project.college}</p>
                 </div>
               </div>
@@ -198,7 +201,7 @@ const ProjectGrid = ({ loggedIn }) => {
                 <p className="text-xs text-gray-500 font-semibold mb-2">Tech Stack:</p>
                 <div className="flex flex-wrap gap-2">
                   {project.techStack.slice(0, 4).map((tech, i) => (
-                    <span 
+                    <span
                       key={i}
                       className="bg-indigo-50 text-indigo-700 text-xs font-medium px-3 py-1 rounded-full border border-indigo-200"
                     >
@@ -215,7 +218,7 @@ const ProjectGrid = ({ loggedIn }) => {
 
               {/* Action Buttons */}
               <div className="flex justify-between items-center py-0.5 border-t border-gray-100">
-                <button
+                <button disabled={isSubmitting}
                   onClick={() => handleLike(project._id)}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-indigo-50 transition-colors group"
                 >
@@ -241,49 +244,16 @@ const ProjectGrid = ({ loggedIn }) => {
               </div>
 
               {/* Comments Section */}
-              {showComments[project._id] && (
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <div className="mb-4">
-                    <textarea
-                      value={commentText[project._id] || ''}
-                      onChange={(e) => setCommentText(prev => ({
-                        ...prev,
-                        [project._id]: e.target.value
-                      }))}
-                      placeholder="Write a comment..."
-                      className="w-full p-3 border border-gray-300 rounded-lg text-sm resize-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      rows="3"
-                      maxLength="500"
-                    />
-                    <button
-                      onClick={() => handleComment(project._id)}
-                      className="mt-2 bg-indigo-600 text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition"
-                    >
-                      Post Comment
-                    </button>
-                  </div>
+              <CommentSection
+                projectId={project._id}
+                showComments={showComments}
+                commentText={commentText}
+                setCommentText={setCommentText}
+                handleComment={handleComment}
+                comments={comments}
+                handleDeleteComment={handleDeleteComment}
+              />
 
-                  <div className="space-y-3 max-h-60 overflow-y-auto">
-                    {comments[project._id]?.map(comment => (
-                      <div key={comment._id} className="bg-gray-50 p-3 rounded-lg">
-                        <div className="flex justify-between items-start mb-1">
-                          <p className="font-semibold text-sm text-gray-800">{comment.userName}</p>
-                          <button
-                            onClick={() => handleDeleteComment(comment._id, project._id)}
-                            className="text-xs text-red-500 hover:text-red-700 font-medium"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                        <p className="text-gray-700 text-sm">{comment.text}</p>
-                        <p className="text-xs text-gray-600 mt-2">
-                          {new Date(comment.createdAt).toLocaleString()}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {/* Collaborate Button */}
               <button
@@ -295,47 +265,16 @@ const ProjectGrid = ({ loggedIn }) => {
             </div>
 
             {/* Collaboration Modal */}
-            {showCollabModal === project._id && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
-                  <h3 className="text-2xl font-bold text-gray-800 mb-2">Collaboration Request</h3>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Send a collaboration request to project owner.
-                  </p>
-                  <textarea
-                    value={collabMessage}
-                    onChange={(e) => setCollabMessage(e.target.value)}
-                    placeholder="Add a message (optional)"
-                    className="w-full p-3 border border-gray-300 rounded-lg mb-4 resize-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    rows="4"
-                    maxLength="500"
-                  />
-                  <div className="flex flex-col sm:flex-row gap-2.5">
-                   
-                    <button  onClick={()=> navigate('/teamStatus')}
-                      className="flex-1 px-2 py-2 bg-green-400 text-black cursor-pointer rounded-lg hover:bg-green-500 font-medium transition"
-                    >
-                     Team Status
-                    </button>
-                    <button disabled={isSubmitting} 
-                      onClick={() => handleCollabRequest(project._id)}
-                      className="flex-1 px-4 py-2 bg-indigo-600 cursor-pointer text-white rounded-lg hover:bg-indigo-700 font-semibold transition"
-                    >
-                      {isSubmitting ? 'Sending...' : 'Send Request'}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowCollabModal(null)
-                        setCollabMessage('')
-                      }}
-                      className="flex-1 px-4 py-2 bg-red-500 cursor-pointer text-black rounded-lg hover:bg-red-600 font-semibold transition"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+            <CollabModel
+              showCollabModal={showCollabModal}
+              projectId={project._id}
+              collabMessage={collabMessage}
+              setCollabMessage={setCollabMessage}
+              handleCollabRequest={handleCollabRequest}
+              setShowCollabModal={setShowCollabModal}
+              isSubmitting={isSubmitting}
+            />
+
           </div>
         ))}
       </div>

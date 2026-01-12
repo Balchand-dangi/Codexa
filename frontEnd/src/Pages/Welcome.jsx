@@ -82,7 +82,7 @@ function Welcome() {
         {/* Footer Text */}
         <div className="text-center mt-8">
           <p className="text-white/90 text-lg font-light italic">
-            Built by Developers, for Developers.
+            Built by Developer, for Developers.
           </p>
         </div>
       </div>

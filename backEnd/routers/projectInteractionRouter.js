@@ -5,6 +5,9 @@ const Project = require('../model/projectSchema')
 const User = require('../model/userSchema')
 const userAuth = require('../middleware/userAuth')
 const rate_limiter = require('../middleware/rate_limiter')
+const mongoose = require('mongoose')
+
+
 
 const router = express.Router()
 
@@ -226,21 +229,39 @@ router.post('/collaborate/:projectId', userAuth,rate_limiter, async (req, res) =
     }
 })
 
-// Get collaboration requests for user's projects
+
+
 router.get('/collaboration-requests', userAuth, async (req, res) => {
-    try {
-        const userEmail = req.user.email
-        const requests = await CollaborationRequest.find({ 
-            projectOwnerEmail: userEmail 
-        })
-        .populate('projectId', 'title description')
-        .sort({ createdAt: -1 })
-        
-        res.status(200).json({ requests })
-    } catch (err) {
-        res.status(500).json({ message: err.message })
+  try {
+    const { projectId } = req.query
+    // console.log('Received projectId:', projectId)
+    // console.log('User:', req.user) 
+    if (!req.user || !req.user.email) {
+      return res.status(401).json({ message: 'User not authenticated' })
     }
+    const filter = { projectOwnerEmail: req.user.email }
+    if (projectId) {
+      if (mongoose.Types.ObjectId.isValid(projectId)) {
+        filter.projectId = new mongoose.Types.ObjectId(projectId)
+      } else {
+        return res.status(400).json({ message: 'Invalid project ID' })
+      }
+    }
+    // console.log('Filter:', filter)
+    const requests = await CollaborationRequest.find(filter)
+      .populate('projectId')
+      .sort({ createdAt: -1 })
+    // console.log('Found requests:', requests.length)
+    res.json({ requests })
+  } catch (error) {
+    // console.error('Error fetching collaboration requests:', error)
+    res.status(500).json({ 
+      message: 'Error fetching requests',
+      error: error.message 
+    })
+  }
 })
+
 
 // Update collaboration request status
 router.patch('/collaboration-request/:requestId', userAuth, async (req, res) => {
@@ -248,7 +269,7 @@ router.patch('/collaboration-request/:requestId', userAuth, async (req, res) => 
         const { requestId } = req.params
         const { status } = req.body
         const userEmail = req.user.email
-
+        
         if (!['accepted', 'rejected'].includes(status)) {
             return res.status(400).json({ message: 'Invalid status' })
         }
