@@ -30,7 +30,13 @@ function App() {
             <Home loggedIn={loggedIn} setLoggedIn={setLoggedIn} />
           }
         />
-
+        
+        <Route
+          path="/"
+          element={
+            <Home loggedIn={loggedIn} setLoggedIn={setLoggedIn} />
+          }
+        />
 
         <Route
           path="/about"
@@ -38,6 +44,7 @@ function App() {
             <Home loggedIn={loggedIn} setLoggedIn={setLoggedIn} />
           }
         />
+        
         <Route
           path="/support"
           element={
@@ -54,16 +61,17 @@ function App() {
           path="/signInForm"
           element={<SignInForm setLoggedIn={setLoggedIn} />}
         />
+
         <Route
           path="/teamStatus"
           element={<TeamStatus />}
         />
 
-
         <Route
           path="/upload"
           element={loggedIn ? <Upload /> : <SignInForm setLoggedIn={setLoggedIn} />}
         />
+
         <Route path="/verify-email/:token" element={<VerifyEmail />} />
         <Route path="/ComingSoon" element={<ComingSoon />} />
         <Route path="/MyProjects" element={<MyProjects />} />
