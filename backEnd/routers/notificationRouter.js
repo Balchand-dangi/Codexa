@@ -1,6 +1,7 @@
 const express = require('express')
 const Notification = require('../model/notificationSchema')
 const userAuth = require('../middleware/userAuth')
+const {CollaborationRequest} = require('../model/projectInteractionSchema')
 
 const router = express.Router()
 
@@ -114,7 +115,6 @@ router.delete('/:notificationId', userAuth, async (req, res) => {
 })
 
 
-
 // Accept collaboration request
 router.patch('/:notificationId/accept', userAuth, async (req, res) => {
     try {
@@ -135,13 +135,22 @@ router.patch('/:notificationId/accept', userAuth, async (req, res) => {
         notification.isRead = true
         await notification.save()
 
-        // If this notification links to a collaboration request, update that request too
+        // Update the collaboration request - WITH ERROR HANDLING
         if (notification.collaborationRequestId) {
-            await CollaborationRequest.findByIdAndUpdate(notification.collaborationRequestId, { status: 'accepted' })
+            const updatedRequest = await CollaborationRequest.findByIdAndUpdate(
+                notification.collaborationRequestId,
+                { status: 'accepted' },
+                { new: true, runValidators: true }  // ADD THESE OPTIONS
+            )
+            
+            if (!updatedRequest) {
+                console.error('Failed to update collaboration request:', notification.collaborationRequestId)
+            }
         }
 
         res.status(200).json({ message: 'Collaboration request accepted' })
     } catch (err) {
+        console.error('Error in accept handler:', err)
         res.status(500).json({ message: err.message })
     }
 })
@@ -166,13 +175,22 @@ router.patch('/:notificationId/reject', userAuth, async (req, res) => {
         notification.isRead = true
         await notification.save()
 
-        // If this notification links to a collaboration request, update that request too
+        // Update the collaboration request - WITH ERROR HANDLING
         if (notification.collaborationRequestId) {
-            await CollaborationRequest.findByIdAndUpdate(notification.collaborationRequestId, { status: 'rejected' })
+            const updatedRequest = await CollaborationRequest.findByIdAndUpdate(
+                notification.collaborationRequestId,
+                { status: 'rejected' },
+                { new: true, runValidators: true }  // ADD THESE OPTIONS
+            )
+            
+            if (!updatedRequest) {
+                console.error('Failed to update collaboration request:', notification.collaborationRequestId)
+            }
         }
 
         res.status(200).json({ message: 'Collaboration request rejected' })
     } catch (err) {
+        console.error('Error in reject handler:', err)
         res.status(500).json({ message: err.message })
     }
 })

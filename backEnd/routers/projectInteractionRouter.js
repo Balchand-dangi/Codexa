@@ -174,7 +174,7 @@ router.delete('/comment/:commentId', userAuth, async (req, res) => {
 })
 
 // Send collaboration request
-router.post('/collaborate/:projectId', userAuth,rate_limiter, async (req, res) => {
+router.post('/collaborate/:projectId', userAuth, rate_limiter, async (req, res) => {
     try {
         const { projectId } = req.params
         const { message } = req.body
@@ -203,8 +203,8 @@ router.post('/collaborate/:projectId', userAuth,rate_limiter, async (req, res) =
             })
         }
 
-        // Create collaboration request
-        await CollaborationRequest.create({
+        // Create collaboration request and STORE THE RETURNED DOCUMENT
+        const collaborationRequest = await CollaborationRequest.create({
             projectId,
             projectOwnerEmail: project.email,
             requesterEmail,
@@ -212,7 +212,7 @@ router.post('/collaborate/:projectId', userAuth,rate_limiter, async (req, res) =
             message: message || ''
         })
 
-        // Create notification for project owner
+        // Create notification for project owner WITH collaborationRequestId
         await Notification.create({
             recipient: project.email,
             sender: requesterEmail,
@@ -220,7 +220,8 @@ router.post('/collaborate/:projectId', userAuth,rate_limiter, async (req, res) =
             projectId,
             projectTitle: project.title,
             type: 'collaboration_request',
-            message: `${requesterName} sent a collaboration request for "${project.title}"`
+            message: `${requesterName} sent a collaboration request for "${project.title}"`,
+            collaborationRequestId: collaborationRequest._id  // ADD THIS LINE
         })
 
         res.status(201).json({ message: 'Collaboration request sent successfully' })
@@ -231,6 +232,7 @@ router.post('/collaborate/:projectId', userAuth,rate_limiter, async (req, res) =
 
 
 
+// to get team status
 router.get('/collaboration-requests', userAuth, async (req, res) => {
   try {
     const { projectId } = req.query
@@ -239,7 +241,8 @@ router.get('/collaboration-requests', userAuth, async (req, res) => {
     if (!req.user || !req.user.email) {
       return res.status(401).json({ message: 'User not authenticated' })
     }
-    const filter = { projectOwnerEmail: req.user.email }
+    // const filter = { projectOwnerEmail: req.user.email }  // I want the only owner can see the team status
+    const filter = {} // anyone can see the team status
     if (projectId) {
       if (mongoose.Types.ObjectId.isValid(projectId)) {
         filter.projectId = new mongoose.Types.ObjectId(projectId)
