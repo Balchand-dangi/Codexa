@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react'
 import { MdNotifications } from 'react-icons/md'
 import axios from 'axios'
 
+
 const NotificationBell = () => {
     const [notifications, setNotifications] = useState([])
     const [unreadCount, setUnreadCount] = useState(0)
     const [showDropdown, setShowDropdown] = useState(false)
     const [loading, setLoading] = useState(false)
+
 
     const fetchNotifications = async () => {
         try {
@@ -21,12 +23,14 @@ const NotificationBell = () => {
         }
     }
 
+
     useEffect(() => {
         fetchNotifications()
-        // Poll for new notifications every 30 seconds
+        // Poll for new notifications every 60 seconds
         const interval = setInterval(fetchNotifications, 60000)
         return () => clearInterval(interval)
     }, [])
+
 
     const markAsRead = async (notificationId) => {
         try {
@@ -37,6 +41,7 @@ const NotificationBell = () => {
         }
     }
 
+
     const markAllAsRead = async () => {
         try {
             await axios.patch('/api/notifications/mark-all-read', {}, { withCredentials: true })
@@ -45,6 +50,7 @@ const NotificationBell = () => {
             console.error('Error marking all as read:', err)
         }
     }
+
 
     const deleteNotification = async (notificationId) => {
         try {
@@ -55,6 +61,7 @@ const NotificationBell = () => {
         }
     }
 
+
     const acceptCollaborationRequest = async (notificationId) => {
         try {
             await axios.patch(`/api/notifications/${notificationId}/accept`, {}, { withCredentials: true })
@@ -63,6 +70,7 @@ const NotificationBell = () => {
             console.error('Error accepting request:', err)
         }
     }
+
 
     const rejectCollaborationRequest = async (notificationId) => {
         try {
@@ -73,6 +81,7 @@ const NotificationBell = () => {
         }
     }
 
+
     const getNotificationIcon = (type) => {
         switch (type) {
             case 'like': return '👍'
@@ -82,10 +91,12 @@ const NotificationBell = () => {
         }
     }
 
+
     const formatTime = (timestamp) => {
         const now = new Date()
         const time = new Date(timestamp)
         const diff = Math.floor((now - time) / 1000) // difference in seconds
+
 
         if (diff < 60) return 'Just now'
         if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
@@ -93,6 +104,7 @@ const NotificationBell = () => {
         if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`
         return time.toLocaleDateString()
     }
+
 
     return (
         <div className="relative">
@@ -108,24 +120,42 @@ const NotificationBell = () => {
                 )}
             </button>
 
+
             {showDropdown && (
                 <>
                     <div
                         className="fixed inset-0 z-10"
                         onClick={() => setShowDropdown(false)}
+                        onTouchStart={(e) => {
+                            e.stopPropagation()
+                            setShowDropdown(false)
+                        }}
                     />
-                    <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-2xl border z-20 max-h-96 overflow-y-auto">
-                        <div className="sticky top-0 bg-white border-b px-4 py-3 flex justify-between items-center">
+                    <div 
+                        className="absolute right-0 mt-2 bg-white rounded-lg shadow-2xl border z-20 overflow-y-auto sm:w-96 sm:max-h-[40vh] max-sm:fixed max-sm:inset-x-4 max-sm:top-16 max-sm:max-h-[50vh]"
+                        style={{ touchAction: 'auto' }}
+                    >
+                        <div className="sticky top-0 bg-white border-b px-3 py-2 flex justify-between items-center z-30">
                             <h3 className="font-bold text-lg">Notifications</h3>
-                            {unreadCount > 0 && (
+                            <div className="flex items-center gap-2">
+                                {unreadCount > 0 && (
+                                    <button
+                                        onClick={markAllAsRead}
+                                        className="text-sm text-blue-600 bg-gray-200 p-3 rounded hover:text-blue-800"
+                                    >
+                                        Mark all read
+                                    </button>
+                                )}
                                 <button
-                                    onClick={markAllAsRead}
-                                    className="text-sm text-blue-600 hover:text-blue-800"
+                                    onClick={() => setShowDropdown(false)}
+                                    className="sm:hidden text-black bg-gray-200 pb-1 rounded text-4xl px-2 "
+                                    aria-label="Close notifications"
                                 >
-                                    Mark all read
+                                    ×
                                 </button>
-                            )}
+                            </div>
                         </div>
+
 
                         {loading ? (
                             <div className="p-4 text-center text-gray-500">Loading...</div>
@@ -143,10 +173,10 @@ const NotificationBell = () => {
                                         onClick={() => !notification.isRead && markAsRead(notification._id)}
                                     >
                                         <div className="flex items-start gap-3">
-                                            <span className="text-2xl">
+                                            <span className="text-2xl flex-shrink-0">
                                                 {getNotificationIcon(notification.type)}
                                             </span>
-                                            <div className="flex-1">
+                                            <div className="flex-1 min-w-0">
                                                 <p className="text-sm text-gray-800">
                                                     <span className="font-semibold">
                                                         {notification.senderName}
@@ -161,7 +191,7 @@ const NotificationBell = () => {
                                                     </span>
                                                 </p>
                                                 {notification.type === 'collaboration_request' && (
-                                                    <p className="text-xs text-gray-600 mt-1">
+                                                    <p className="text-xs text-gray-600 mt-1 break-all">
                                                         Contact:
                                                         <a
                                                             href={`mailto:${notification.sender}`}
@@ -173,14 +203,16 @@ const NotificationBell = () => {
                                                     </p>
                                                 )}
 
+
                                                 {notification.commentText && (
-                                                    <p className="text-xs text-gray-600 mt-1 italic">
+                                                    <p className="text-xs text-gray-600 mt-1 italic break-words">
                                                         "{notification.commentText}"
                                                     </p>
                                                 )}
 
+
                                                 {notification.type === 'collaboration_request' && notification.status === 'pending' && (
-                                                    <div className="flex gap-2 mt-3">
+                                                    <div className="flex gap-2 mt-3 flex-wrap">
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation()
@@ -202,6 +234,7 @@ const NotificationBell = () => {
                                                     </div>
                                                 )}
 
+
                                                 {notification.type === 'collaboration_request' && notification.status !== 'pending' && (
                                                     <div className="mt-2">
                                                         <span className={`text-xs px-2 py-1 rounded ${notification.status === 'accepted'
@@ -213,8 +246,9 @@ const NotificationBell = () => {
                                                     </div>
                                                 )}
 
-                                                <div className="flex justify-between items-center mt-2">
-                                                    <span className="text-xs text-gray-500">
+
+                                                <div className="flex justify-between items-center mt-2 gap-2">
+                                                    <span className="text-xs text-gray-500 flex-shrink-0">
                                                         {formatTime(notification.createdAt)}
                                                     </span>
                                                     <button
@@ -222,7 +256,7 @@ const NotificationBell = () => {
                                                             e.stopPropagation()
                                                             deleteNotification(notification._id)
                                                         }}
-                                                        className="text-xs text-red-500 hover:text-red-700"
+                                                        className="text-xs text-red-500 hover:text-red-700 flex-shrink-0"
                                                     >
                                                         Delete
                                                     </button>
@@ -239,5 +273,6 @@ const NotificationBell = () => {
         </div>
     )
 }
+
 
 export default NotificationBell
