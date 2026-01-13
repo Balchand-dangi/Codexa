@@ -218,7 +218,7 @@ const NotificationBell = () => {
                                                                 e.stopPropagation()
                                                                 acceptCollaborationRequest(notification._id)
                                                             }}
-                                                            className="text-xs bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded transition"
+                                                            className="text-xs cursor-pointer bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded transition"
                                                         >
                                                             Accept
                                                         </button>
@@ -227,7 +227,7 @@ const NotificationBell = () => {
                                                                 e.stopPropagation()
                                                                 rejectCollaborationRequest(notification._id)
                                                             }}
-                                                            className="text-xs bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded transition"
+                                                            className="text-xs cursor-pointer bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded transition"
                                                         >
                                                             Reject
                                                         </button>

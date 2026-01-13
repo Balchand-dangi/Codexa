@@ -29,7 +29,7 @@ function App() {
       <Routes>
 
         <Route
-          path="/"
+          path="/Home"
           element={
             <Home loggedIn={loggedIn} setLoggedIn={setLoggedIn} />
           }
@@ -43,7 +43,7 @@ function App() {
           }
         />
         <Route
-          path="/contact"
+          path="/support"
           element={
             <Home loggedIn={loggedIn} setLoggedIn={setLoggedIn} />
           }

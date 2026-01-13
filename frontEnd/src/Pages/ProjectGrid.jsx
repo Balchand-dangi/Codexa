@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import axios from 'axios'
 import { MdOutlineInsertComment } from "react-icons/md";
 import { BiLike, BiSolidLike } from "react-icons/bi";
-import Welcome from "./Welcome";
 import CollabModel from "../Components/CollabModel";
 import CommentSection from "../Components/CommentSection";
 
@@ -17,6 +17,9 @@ const ProjectGrid = ({ loggedIn }) => {
   const [collabMessage, setCollabMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+
 
   useEffect(() => {
     if (!loggedIn) {
@@ -27,6 +30,8 @@ const ProjectGrid = ({ loggedIn }) => {
   }, [loggedIn])
 
   const fetchProjects = async () => {
+    setLoading(true)
+    setError(null)
     try {
       const response = await axios.get('/api/getProjects', { withCredentials: true })
       setProjects(response.data)
@@ -35,7 +40,10 @@ const ProjectGrid = ({ loggedIn }) => {
         fetchProjectStats(project._id)
       })
     } catch (err) {
-      console.error("Error fetching projects:", err)
+      console.error(err)
+      setError('Unable to fetch projects')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -138,146 +146,169 @@ const ProjectGrid = ({ loggedIn }) => {
     setShowComments(prev => ({ ...prev, [projectId]: !prev[projectId] }))
   }
 
-  if (projects.length === 0) {
-    return <Welcome />
-  }
-
   return (
     <div className="min-h-screen p-6 pt-18 bg-gradient-to-br from-blue-400 via-indigo-500 to-purple-500">
-      <h2 className="text-3xl md:text-4xl font-bold text-white text-center mb-6 drop-shadow-lg">
+      <h2 className="text-3xl md:text-3xl font-bold text-white text-center mb-6 drop-shadow-lg">
         Discover Projects
       </h2>
+      {loading && (
+        <div className="flex items-center justify-center min-h-[200px]">
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p>Loading your projects...</p>
+          </div>
+        </div>
+      )}
 
-      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-7xl mx-auto">
-        {projects.map((project, index) => (
-          <div
-            key={project._id}
-            className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl  transition-all duration-300"
-          >
-            {/* Header with gradient */}
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-3 flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <span className="bg-white text-indigo-600 font-bold text-sm px-3 py-1 rounded-full">
-                  {index + 1}
-                </span>
-                <span className="text-white/90 text-xs">
-                  {new Date(project.createdAt).toLocaleDateString('en-IN', {
-                    day: '2-digit',
-                    month: 'short',
-                    year: 'numeric'
-                  })}
-                </span>
-              </div>
-              <span className="bg-white/20 backdrop-blur text-white text-xs font-medium px-3 py-1 rounded-full">
-                {project.category}
-              </span>
-            </div>
 
-            {/* Content */}
-            <div className="p-5">
 
-              <h2 className="text-xl font-bold text-gray-800 mb-3 truncate">
-                {project.title}
-              </h2>
+      {!loading && error && (
+        <p className='text-sm text-red-600'>{error}</p>
+      )}
 
-              {/* Author Info */}
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-md">
-                  {project.name?.charAt(0).toUpperCase() || project.email.charAt(0).toUpperCase()}
-                </div>
-                <div className="text-sm">
-                  <p className="text-gray-800 font-semibold">{project.name || project.email.split('@')[0].slice(0, -2)}...</p>
-                  <p className="text-gray-700 text-xs">{project.college}</p>
-                </div>
-              </div>
+      {!loading && !error && projects.length === 0 && (
+        <div className='py-8 text-center'>
+          <p className='text-gray-700 mb-3'>There is no projects yet.</p>
+          <Link to='/upload' className='inline-block px-4 py-2 bg-indigo-600 text-white rounded-lg'>Upload the first project</Link>
+        </div>
+      )}
 
-              {/* Description */}
-              <p className="text-gray-700 text-sm h-18 leading-relaxed line-clamp-3 mb-4">
-                {project.description}
-              </p>
-
-              {/* Tech Stack */}
-              <div className="mb-4">
-                <p className="text-xs text-gray-500 font-semibold mb-2">Tech Stack:</p>
-                <div className="flex flex-wrap gap-2">
-                  {project.techStack.slice(0, 4).map((tech, i) => (
-                    <span
-                      key={i}
-                      className="bg-indigo-50 text-indigo-700 text-xs font-medium px-3 py-1 rounded-full border border-indigo-200"
-                    >
-                      {tech}
-                    </span>
-                  ))}
-                  {project.techStack.length > 4 && (
-                    <span className="text-indigo-600 text-xs font-semibold px-2 py-1">
-                      +{project.techStack.length - 4}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex justify-between items-center py-0.5 border-t border-gray-100">
-                <button disabled={isSubmitting}
-                  onClick={() => handleLike(project._id)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-indigo-50 transition-colors group"
-                >
-                  {userLikes[project._id] ? (
-                    <BiSolidLike className="w-5 h-5 text-indigo-600 group-hover:scale-125 transition-transform" />
-                  ) : (
-                    <BiLike className="w-5 h-5 text-gray-500 group-hover:text-indigo-600 group-hover:scale-125 transition-all" />
-                  )}
-                  <span className={`text-sm font-semibold ${userLikes[project._id] ? 'text-indigo-600' : 'text-gray-600'}`}>
-                    {projectStats[project._id]?.likes || 0}
+      {!loading && !error && projects.length > 0 && (
+        <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-7xl mx-auto">
+          {projects.map((project, index) => (
+            <div
+              key={project._id}
+              className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl  transition-all duration-300"
+            >
+              {/* Header with gradient */}
+              <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-3 flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <span className="bg-white text-indigo-600 font-bold text-sm px-3 py-1 rounded-full">
+                    {index + 1}
                   </span>
-                </button>
+                  <span className="text-white/90 text-xs">
+                    {new Date(project.createdAt).toLocaleDateString('en-IN', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric'
+                    })}
+                  </span>
+                </div>
+                <span className="bg-white/20 backdrop-blur text-white text-xs font-medium px-3 py-1 rounded-full">
+                  {project.category}
+                </span>
+              </div>
 
+              {/* Content */}
+              <div className="p-5">
+
+                <h2 className="text-xl font-bold text-gray-800 mb-3 truncate">
+                  {project.title}
+                </h2>
+
+                {/* Author Info */}
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-md">
+                    {project.name?.charAt(0).toUpperCase() || project.email.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="text-sm">
+                    <p className="text-gray-800 font-semibold">{project.name || project.email.split('@')[0].slice(0, -2)}...</p>
+                    <p className="text-gray-700 text-xs">{project.college}</p>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <p className="text-gray-700 text-sm h-18 leading-relaxed line-clamp-3 mb-4">
+                  {project.description}
+                </p>
+
+                {/* Tech Stack */}
+                <div className="mb-4">
+                  <p className="text-xs text-gray-500 font-semibold mb-2">Tech Stack:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {project.techStack.slice(0, 4).map((tech, i) => (
+                      <span
+                        key={i}
+                        className="bg-indigo-50 text-indigo-700 text-xs font-medium px-3 py-1 rounded-full border border-indigo-200"
+                      >
+                        {tech}
+                      </span>
+                    ))}
+                    {project.techStack.length > 4 && (
+                      <span className="text-indigo-600 text-xs font-semibold px-2 py-1">
+                        +{project.techStack.length - 4}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex justify-between items-center py-0.5 border-t border-gray-100">
+                  <button disabled={isSubmitting}
+                    onClick={() => handleLike(project._id)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-indigo-50 transition-colors group"
+                  >
+                    {userLikes[project._id] ? (
+                      <BiSolidLike className="w-5 h-5 text-indigo-600 group-hover:scale-125 transition-transform" />
+                    ) : (
+                      <BiLike className="w-5 h-5 text-gray-500 group-hover:text-indigo-600 group-hover:scale-125 transition-all" />
+                    )}
+                    <span className={`text-sm font-semibold ${userLikes[project._id] ? 'text-indigo-600' : 'text-gray-600'}`}>
+                      {projectStats[project._id]?.likes || 0}
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => toggleComments(project._id)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-purple-50 transition-colors group"
+                  >
+                    <MdOutlineInsertComment className="w-5 h-5 text-gray-500 group-hover:text-purple-600 group-hover:scale-125 transition-all" />
+                    <span className="text-sm font-semibold text-gray-600 group-hover:text-purple-600">
+                      {projectStats[project._id]?.comments || 0}
+                    </span>
+                  </button>
+                </div>
+
+                {/* Comments Section */}
+                <CommentSection
+                  projectId={project._id}
+                  showComments={showComments}
+                  commentText={commentText}
+                  setCommentText={setCommentText}
+                  handleComment={handleComment}
+                  comments={comments}
+                  handleDeleteComment={handleDeleteComment}
+                />
+
+
+                {/* Collaborate Button */}
                 <button
-                  onClick={() => toggleComments(project._id)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-purple-50 transition-colors group"
+                  onClick={() => setShowCollabModal(project._id)}
+                  className="w-full mt-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold py-3 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all transform cursor-pointer shadow-md"
                 >
-                  <MdOutlineInsertComment className="w-5 h-5 text-gray-500 group-hover:text-purple-600 group-hover:scale-125 transition-all" />
-                  <span className="text-sm font-semibold text-gray-600 group-hover:text-purple-600">
-                    {projectStats[project._id]?.comments || 0}
-                  </span>
+                  Send Collaboration Request
                 </button>
               </div>
 
-              {/* Comments Section */}
-              <CommentSection
+              {/* Collaboration Modal */}
+              <CollabModel
+                showCollabModal={showCollabModal}
                 projectId={project._id}
-                showComments={showComments}
-                commentText={commentText}
-                setCommentText={setCommentText}
-                handleComment={handleComment}
-                comments={comments}
-                handleDeleteComment={handleDeleteComment}
+                collabMessage={collabMessage}
+                setCollabMessage={setCollabMessage}
+                handleCollabRequest={handleCollabRequest}
+                setShowCollabModal={setShowCollabModal}
+                isSubmitting={isSubmitting}
               />
 
-
-              {/* Collaborate Button */}
-              <button
-                onClick={() => setShowCollabModal(project._id)}
-                className="w-full mt-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold py-3 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all transform cursor-pointer shadow-md"
-              >
-                Send Collaboration Request
-              </button>
             </div>
+          ))}
+        </div>
+      )}
 
-            {/* Collaboration Modal */}
-            <CollabModel
-              showCollabModal={showCollabModal}
-              projectId={project._id}
-              collabMessage={collabMessage}
-              setCollabMessage={setCollabMessage}
-              handleCollabRequest={handleCollabRequest}
-              setShowCollabModal={setShowCollabModal}
-              isSubmitting={isSubmitting}
-            />
-
-          </div>
-        ))}
-      </div>
     </div>
   )
 }

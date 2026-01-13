@@ -48,7 +48,7 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
       <nav className="fixed top-0 bg-indigo-600 shadow-lg z-1 w-full py-1.5 ">
         <div className="flex justify-between items-center px-4 sm:px-8">
           {/* Logo */}
-          <Link to="/">
+          <Link to="/Home">
             <img className="h-10 w-auto rounded-sm" src={codexa} alt="DevHubLogo" />
           </Link>
 
@@ -63,7 +63,7 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
           {/* Desktop Navigation */}
           <ul className="hidden md:flex space-x-4 text-white font-semibold items-center">
             <NavLink
-              to="/"
+              to="/Home"
               className={({ isActive }) =>
                 `hover:text-yellow-300 px-3 py-2 rounded transition-colors ${isActive ? "bg-white/20 text-yellow-300" : ""
                 }`
@@ -83,7 +83,7 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
             </NavLink>
 
             <NavLink
-              to="/contact"
+              to="/support"
               className={({ isActive }) =>
                 `hover:text-yellow-300 px-3 py-2 rounded transition-colors ${isActive ? "bg-white/20 text-yellow-300" : ""
                 }`

@@ -27,7 +27,7 @@ function SignInForm({ setLoggedIn }) {
                 alert(response.data)
                 setEmail("")
                 setPassword("")
-                navigate("/")
+                navigate("/Home")
             }
             else {
                 alert(response.data.message || response.data)
