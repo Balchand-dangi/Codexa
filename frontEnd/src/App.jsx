@@ -20,11 +20,7 @@ function App() {
   return (
     <>
 
-      <ScrollToTop
-        topWhenHome={0}
-        topWhenAbout={700}
-        topWhenContact={1400}
-      />
+      <ScrollToTop />
 
       <Routes>
 
@@ -58,9 +54,9 @@ function App() {
           path="/signInForm"
           element={<SignInForm setLoggedIn={setLoggedIn} />}
         />
-        <Route 
-        path="/teamStatus"
-        element={<TeamStatus/>}
+        <Route
+          path="/teamStatus"
+          element={<TeamStatus />}
         />
 
 

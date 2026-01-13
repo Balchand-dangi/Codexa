@@ -1,25 +1,13 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 
-function ScrollToTop({ topWhenHome, topWhenAbout, topWhenContact }) {
+function ScrollToTop() {
     const { pathname } = useLocation();
 
     useEffect(() => {
-        if (pathname === "/") {
-            window.scrollTo({ top: topWhenHome, behavior: "smooth" });
-        } 
-        else if(pathname === "/about"){
-            window.scrollTo({ top:topWhenAbout, behavior:"smooth"})
-        }
-
-        else if(pathname === "/contact"){
-            window.scrollTo({ top: topWhenContact, behavior: "smooth" });
-        }
-        else{
-           
-        }
-
-    }, [pathname, topWhenHome, topWhenAbout, topWhenContact]);
+        // Scroll to top on route change
+        window.scrollTo(0, 0);
+    }, [pathname]);
 
     return null;
 }
