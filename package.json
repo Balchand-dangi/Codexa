@@ -23,6 +23,7 @@
     "nodemailer": "^7.0.12",
     "npm": "^11.6.0",
     "redis": "^5.8.2",
+    "sitemap-generator": "^7.5.2",
     "validator": "^13.15.15"
   }
 }
