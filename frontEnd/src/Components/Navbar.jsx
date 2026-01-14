@@ -1,8 +1,9 @@
 import axios from "axios";
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { NavLink, Link } from "react-router-dom";
 import NotificationBell from "./NotificationBell";
 import codexa from '../assets/codexaa.png'
+
 
 
 const Navbar = ({ loggedIn, setLoggedIn }) => {
@@ -11,12 +12,12 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [userName, setUserName] = useState("");
 
+
   // Get user name from localStorage
   useEffect(() => {
     if (loggedIn) {
       const email = localStorage.getItem('userEmail');
       if (email) {
-        // Extract name from email (before @)
         const name = email.split('@')[0];
         setUserName(name);
       }
@@ -47,7 +48,6 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
     <>
       <nav className="fixed top-0 bg-indigo-600 shadow-lg z-1 w-full py-1.5 ">
         <div className="flex justify-between items-center px-4 sm:px-8">
-          {/* Logo */}
           <Link to="/Home">
             <img className="h-10 w-auto rounded-sm" src={codexa} alt="DevHubLogo" />
           </Link>
@@ -67,10 +67,10 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
               className={({ isActive }) =>
                 `hover:text-yellow-300 px-3 py-2 rounded transition-colors ${isActive ? "bg-white/20 text-yellow-300" : ""
                 }`
-              }
-            >
-              Home
+                }
+                >Home
             </NavLink>
+
 
             <NavLink
               to="/about"
@@ -78,9 +78,9 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
                 `hover:text-yellow-300 px-3 py-2 rounded transition-colors ${isActive ? "bg-white/20 text-yellow-300" : ""
                 }`
               }
-            >
-              About
+            >About
             </NavLink>
+
 
             <NavLink
               to="/support"
@@ -88,8 +88,7 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
                 `hover:text-yellow-300 px-3 py-2 rounded transition-colors ${isActive ? "bg-white/20 text-yellow-300" : ""
                 }`
               }
-            >
-              Support
+            >Support
             </NavLink>
           </ul>
 
@@ -103,6 +102,7 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
                   </button>
                 </Link>
 
+
                 <Link to="/signUpForm">
                   <button className="px-4 py-2 border-2 border-white text-white font-semibold rounded-lg hover:bg-white hover:text-indigo-600 transition">
                     Sign Up
@@ -111,18 +111,19 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
               </>
             )}
 
+
             {loggedIn && (
               <>
-                {/* Notification Bell with badge */}
+                {/* Notification Bell - Desktop Only */}
                 <NotificationBell />
 
                 {/* Upload Project Button */}
                 <Link to="/upload">
                   <button className="px-4 py-2 bg-yellow-400 cursor-pointer text-indigo-700 font-semibold rounded-lg hover:bg-yellow-300 transition flex items-center gap-2">
-
                     <span>Upload project</span>
                   </button>
                 </Link>
+
 
                 {/* Profile dropdown with avatar */}
                 <div className="relative">
@@ -147,6 +148,7 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
                     </svg>
                   </button>
 
+
                   {/* Dropdown Menu */}
                   {showProfileMenu && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-2 z-50">
@@ -157,6 +159,7 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
                         </p>
                       </div>
 
+
                       <Link
                         to="/ComingSoon"
                         onClick={() => setShowProfileMenu(false)}
@@ -164,6 +167,7 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
                       >
                         👤 My Profile
                       </Link>
+
 
                       <Link
                         to="/MyProjects"
@@ -173,7 +177,9 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
                         📁 My Projects
                       </Link>
 
+
                       <hr className="my-2" />
+
 
                       <button
                         onClick={(e) => {
@@ -192,6 +198,7 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
             )}
           </div>
         </div>
+
 
         {/* Mobile Menu with slide animation */}
         <div
@@ -214,13 +221,15 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
               </div>
             )}
 
+
             <NavLink
-              to="/"
+              to="/Home"
               onClick={() => setMenuOpen(false)}
               className="block font-semibold py-2 text-white hover:text-yellow-300 transition"
             >
               Home
             </NavLink>
+
 
             <NavLink
               to="/about"
@@ -230,20 +239,23 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
               About
             </NavLink>
 
+
             <NavLink
-              to="/contact"
+              to="/support"
               onClick={() => setMenuOpen(false)}
               className="block font-semibold py-2 text-white hover:text-yellow-300 transition"
             >
               Support
             </NavLink>
 
-            {/* Mobile Notification Bell */}
-            {loggedIn && (
+
+            {/* Mobile Notification Bell - Only when menu is open */}
+            {loggedIn && menuOpen && (
               <div className="py-1 border-t border-indigo-500">
                 <NotificationBell />
               </div>
             )}
+
 
             {!loggedIn && (
               <div className="space-y-3 pt-3">
@@ -253,6 +265,7 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
                   </button>
                 </Link>
 
+
                 <Link to="/signUpForm" onClick={() => setMenuOpen(false)}>
                   <button className="w-full px-4 py-2 mt-1 border-2 border-white text-white font-semibold rounded-lg hover:bg-white hover:text-indigo-600 transition">
                     Sign Up
@@ -260,6 +273,7 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
                 </Link>
               </div>
             )}
+
 
             {loggedIn && (
               <div className="space-y-3 pt-3 border-t border-indigo-500">
@@ -275,12 +289,12 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
                 </Link>
 
 
-
                 <Link to="/upload" onClick={() => setMenuOpen(false)}>
                   <button className="w-full m-1 px-4 py-2 bg-yellow-400 text-indigo-700 font-semibold rounded-lg hover:bg-yellow-300 transition">
                     Upload Project
                   </button>
                 </Link>
+
 
                 <button
                   onClick={(e) => {
@@ -300,5 +314,6 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
     </>
   );
 };
+
 
 export default Navbar;

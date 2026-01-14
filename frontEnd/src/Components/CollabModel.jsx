@@ -28,7 +28,7 @@ function CollabModel({
                     value={collabMessage}
                     onChange={(e) => setCollabMessage(e.target.value)}
                     placeholder="Add a message (optional)"
-                    className="w-full p-3 border border-gray-300 rounded-lg mb-4 resize-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="w-full p-3 border  rounded-lg mb-4 resize-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     rows="4"
                     maxLength="500"
                 />

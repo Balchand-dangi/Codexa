@@ -6,10 +6,10 @@ import { BrowserRouter } from 'react-router-dom'
 import ScrollToTop from './Components/ScrollTop'
 
 createRoot(document.getElementById('root')).render(
-    <StrictMode>
+   
     <BrowserRouter>
       <ScrollToTop topWhenHome={0} topWhenAbout={1000} topWhenContact={1000} />
       <App />
     </BrowserRouter>
-    </StrictMode>
+ 
 )

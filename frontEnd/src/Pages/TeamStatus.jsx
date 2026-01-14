@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 
 function TeamStatus() {
   const location = useLocation()
-  const navigate = useNavigate()
   const projectId = location.state?.projectId
   
   const [collaborationRequests, setCollaborationRequests] = useState({

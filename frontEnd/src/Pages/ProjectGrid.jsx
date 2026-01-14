@@ -6,6 +6,7 @@ import { BiLike, BiSolidLike } from "react-icons/bi";
 import CollabModel from "../Components/CollabModel";
 import CommentSection from "../Components/CommentSection";
 
+
 const ProjectGrid = ({ loggedIn }) => {
   const [projects, setProjects] = useState([])
   const [projectStats, setProjectStats] = useState({})
@@ -19,7 +20,6 @@ const ProjectGrid = ({ loggedIn }) => {
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-
 
   useEffect(() => {
     if (!loggedIn) {
@@ -36,52 +36,65 @@ const ProjectGrid = ({ loggedIn }) => {
       const response = await axios.get('/api/getProjects', { withCredentials: true })
       setProjects(response.data)
 
+      // Extract stats directly from response
+      const stats = {}
+      const likes = {}
+      const commentData = {}
+      
       response.data.forEach(project => {
-        fetchProjectStats(project._id)
+        stats[project._id] = {
+          likes: project.likesCount,
+          comments: project.commentsCount
+        }
+        likes[project._id] = project.userLiked
+        commentData[project._id] = project.comments
       })
+      
+      setProjectStats(stats)
+      setUserLikes(likes)
+      setComments(commentData)
     } catch (err) {
       console.error(err)
-      setError('Unable to load projects !')
+      setError('Unable to load projects!')
     } finally {
       setLoading(false)
-    }
-  }
-
-  const fetchProjectStats = async (projectId) => {
-    try {
-      const [likesRes, commentsRes] = await Promise.all([
-        axios.get(`/api/project/likes/${projectId}`, { withCredentials: true }),
-        axios.get(`/api/project/comments/${projectId}`, { withCredentials: true })
-      ])
-
-      setProjectStats(prev => ({
-        ...prev,
-        [projectId]: {
-          likes: likesRes.data.count,
-          comments: commentsRes.data.count
-        }
-      }))
-
-      const userEmail = localStorage.getItem('userEmail')
-      const userLiked = likesRes.data.likes.some(like => like.userEmail === userEmail)
-      setUserLikes(prev => ({ ...prev, [projectId]: userLiked }))
-      setComments(prev => ({ ...prev, [projectId]: commentsRes.data.comments }))
-    } catch (err) {
-      console.error("Error fetching project stats:", err)
     }
   }
 
   const handleLike = async (projectId) => {
     if (isSubmitting) return
     setIsSubmitting(true)
+    
+    // Store previous state for rollback
+    const previousLiked = userLikes[projectId]
+    const previousCount = projectStats[projectId]?.likes || 0
+    
+    // Optimistic update
+    setUserLikes(prev => ({ ...prev, [projectId]: !previousLiked }))
+    setProjectStats(prev => ({
+      ...prev,
+      [projectId]: {
+        ...prev[projectId],
+        likes: previousLiked ? previousCount - 1 : previousCount + 1
+      }
+    }))
+    
     try {
-      if (userLikes[projectId]) {
+      if (previousLiked) {
         await axios.delete(`/api/project/unlike/${projectId}`, { withCredentials: true })
       } else {
         await axios.post(`/api/project/like/${projectId}`, {}, { withCredentials: true })
       }
-      fetchProjectStats(projectId)
     } catch (err) {
+      // Rollback on error
+      setUserLikes(prev => ({ ...prev, [projectId]: previousLiked }))
+      setProjectStats(prev => ({
+        ...prev,
+        [projectId]: {
+          ...prev[projectId],
+          likes: previousCount
+        }
+      }))
       alert(err.response?.data?.message || "Error processing like")
     } finally {
       setIsSubmitting(false)
@@ -95,16 +108,62 @@ const ProjectGrid = ({ loggedIn }) => {
       return
     }
 
+    const userEmail = localStorage.getItem('userEmail')
+    const userName = localStorage.getItem('userName') || userEmail.split('@')[0]
+    
+    // Optimistic update
+    const newComment = {
+      _id: Date.now().toString(), // Temporary ID
+      projectId,
+      userEmail,
+      userName,
+      text,
+      createdAt: new Date().toISOString()
+    }
+    
+    setComments(prev => ({
+      ...prev,
+      [projectId]: [...(prev[projectId] || []), newComment]
+    }))
+    
+    setProjectStats(prev => ({
+      ...prev,
+      [projectId]: {
+        ...prev[projectId],
+        comments: (prev[projectId]?.comments || 0) + 1
+      }
+    }))
+    
+    setCommentText(prev => ({ ...prev, [projectId]: '' }))
+
     try {
-      await axios.post(
+      const response = await axios.post(
         `/api/project/comment/${projectId}`,
         { text },
         { withCredentials: true }
       )
-      setCommentText(prev => ({ ...prev, [projectId]: '' }))
-      fetchProjectStats(projectId)
-      alert("Comment added successfully!")
+      
+      // Replace temporary comment with real one from server
+      setComments(prev => ({
+        ...prev,
+        [projectId]: prev[projectId].map(c => 
+          c._id === newComment._id ? response.data.comment : c
+        )
+      }))
     } catch (err) {
+      // Rollback on error
+      setComments(prev => ({
+        ...prev,
+        [projectId]: prev[projectId].filter(c => c._id !== newComment._id)
+      }))
+      setProjectStats(prev => ({
+        ...prev,
+        [projectId]: {
+          ...prev[projectId],
+          comments: (prev[projectId]?.comments || 1) - 1
+        }
+      }))
+      setCommentText(prev => ({ ...prev, [projectId]: text }))
       alert(err.response?.data?.message || "Error adding comment")
     }
   }
@@ -112,11 +171,40 @@ const ProjectGrid = ({ loggedIn }) => {
   const handleDeleteComment = async (commentId, projectId) => {
     if (!window.confirm("Delete this comment?")) return
 
+    // Store previous state for rollback
+    const previousComments = comments[projectId] || []
+    const previousCount = projectStats[projectId]?.comments || 0
+    
+    // Optimistic update
+    setComments(prev => ({
+      ...prev,
+      [projectId]: prev[projectId].filter(c => c._id !== commentId)
+    }))
+    
+    setProjectStats(prev => ({
+      ...prev,
+      [projectId]: {
+        ...prev[projectId],
+        comments: Math.max(0, previousCount - 1)
+      }
+    }))
+
     try {
       await axios.delete(`/api/project/comment/${commentId}`, { withCredentials: true })
-      fetchProjectStats(projectId)
       alert("Comment deleted")
     } catch (err) {
+      // Rollback on error
+      setComments(prev => ({
+        ...prev,
+        [projectId]: previousComments
+      }))
+      setProjectStats(prev => ({
+        ...prev,
+        [projectId]: {
+          ...prev[projectId],
+          comments: previousCount
+        }
+      }))
       alert(err.response?.data?.message || "Error deleting comment")
     }
   }
@@ -133,8 +221,6 @@ const ProjectGrid = ({ loggedIn }) => {
       setShowCollabModal(null)
       setCollabMessage('')
       alert("Collaboration request sent successfully!")
-
-
     } catch (err) {
       alert(err.response?.data?.message || "Error sending request")
     } finally {
@@ -159,12 +245,10 @@ const ProjectGrid = ({ loggedIn }) => {
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            <p>Loading your projects...</p>
+            <p className="text-3xl">Loading ...</p>
           </div>
         </div>
       )}
-
-
 
       {!loading && error && (
         <div className="flex flex-col items-center justify-center gap-2 py-8">
@@ -175,10 +259,9 @@ const ProjectGrid = ({ loggedIn }) => {
         </div>
       )}
 
-
       {!loading && !error && projects.length === 0 && (
         <div className='py-8 text-center'>
-          <p className='text-gray-700 mb-3'>There is no projects yet.</p>
+          <p className='text-gray-700 text-4xl mb-3'>There is no projects yet.</p>
           <Link to='/upload' className='inline-block px-4 py-2 bg-indigo-600 text-white rounded-lg'>Upload the first project</Link>
         </div>
       )}
@@ -228,7 +311,7 @@ const ProjectGrid = ({ loggedIn }) => {
                 </div>
 
                 {/* Description */}
-                <p className="text-gray-700 text-sm h-18 leading-relaxed line-clamp-3 mb-4">
+                <p className="text-gray-700 text-sm h-18 leading-relaxed line-clamp-3 mb-2.5">
                   {project.description}
                 </p>
 
@@ -251,7 +334,7 @@ const ProjectGrid = ({ loggedIn }) => {
                     )}
                   </div>
                 </div>
-
+                    <hr className="opacity-15"/>
                 {/* Action Buttons */}
                 <div className="flex justify-between items-center py-0.5 border-t border-gray-100">
                   <button disabled={isSubmitting}
@@ -289,7 +372,6 @@ const ProjectGrid = ({ loggedIn }) => {
                   comments={comments}
                   handleDeleteComment={handleDeleteComment}
                 />
-
 
                 {/* Collaborate Button */}
                 <button

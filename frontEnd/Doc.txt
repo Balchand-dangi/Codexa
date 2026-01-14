@@ -1,0 +1,37 @@
+What was the original problem?
+Originally, the frontend did this for each project:
+
+Call /api/getProjects to get all projects.
+For every project, call:
+/api/project/likes/:projectId
+/api/project/comments/:projectId
+So for N projects:
+Total calls = 1 + 2N (1 to get projects + 2 per project).
+
+This causes:
+High network overhead.
+Slower initial page load.
+Extra load on the backend and database.
+
+From an interview perspective, you can say:
+“We had an N+1 request pattern from the client, which is a classic performance issue.”
+
+What did we change on the backend?
+You introduced a single optimized endpoint that returns projects with their stats (likes, comments, userLiked) in one go.
+
+Implementation technique:
+Fetch all projects in one query.
+Collect their ids, then fetch all likes and all comments for those ids in bulk (two queries).
+Group likes/comments in memory by projectId and attach aggregated stats to each project object before sending the response.
+
+The frontend now:
+Makes just one request.
+Initializes projectStats, userLikes, and comments directly from that response, removing the per-project stat calls.
+
+Bugs and problems addressed :-
+1. Fixed a runtime error Likes.find is not a function caused by importing the models incorrectly:
+The schema file exported { Like, Comment, CollaborationRequest }.
+
+2. Missing .lean() causes: Without .lean() on Mongoose queries, you get full Mongoose documents instead of plain objects, which can cause serialization issues and slower performance when enriching data.
+The .lean() method tells Mongoose to return plain JavaScript objects (POJOs) instead of full Mongoose Document instances.
+​

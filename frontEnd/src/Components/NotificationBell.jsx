@@ -23,12 +23,14 @@ const NotificationBell = () => {
         }
     }
 
-
     useEffect(() => {
+        //console.log("mounted")
         fetchNotifications()
-        // Poll for new notifications every 60 seconds
-        const interval = setInterval(fetchNotifications, 60000)
-        return () => clearInterval(interval)
+        const interval = setInterval(fetchNotifications, 60000)   // 60 seconds
+        return () => {
+            //console.log("Notification unmounted")
+            clearInterval(interval)
+        }
     }, [])
 
 
