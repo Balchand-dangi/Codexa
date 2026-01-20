@@ -36,7 +36,7 @@ function MyProjects() {
       <div className='bg-black/70 rounded-lg p-6 w-full max-w-3xl shadow-lg'>
         <div className='flex items-center justify-between mb-4'>
           <h1 className='text-2xl font-bold text-white'>Your Projects</h1>
-          <Link to='/upload' className='text-lg pr-5 text-blue-700 underline'>Upload new</Link>
+          <Link to='/upload' className='text-lg text-blue-700 underline'>Upload new</Link>
         </div>
 
         {loading && (

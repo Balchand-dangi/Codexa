@@ -8,7 +8,7 @@ const projectInteractionRouter = require('./routers/projectInteractionRouter')
 const notificationRouter = require('./routers/notificationRouter')
 const redisClient = require('./config/redis')
 const rate_limiter = require('./middleware/rate_limiter')
-const myprofileRouter = require('./routers/myprofileRouter')
+const myprofileRouter = require('./routers/myProfileRouter')
 
 const path = require('path')
 
