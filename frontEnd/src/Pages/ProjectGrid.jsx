@@ -256,6 +256,12 @@ const ProjectGrid = ({ loggedIn }) => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <p className=" text-pink-700 font-semibold text-4xl text-center">{error}</p>
+          <button 
+              onClick={() => window.location.reload()} 
+              className="mt-4 px-6 py-2 border bg-gray-300 text-indigo-600 rounded-lg font-medium hover:bg-gray-400 transition-colors"
+            >
+              Try Again
+            </button>
         </div>
       )}
 

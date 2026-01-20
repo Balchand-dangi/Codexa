@@ -8,6 +8,7 @@ const projectInteractionRouter = require('./routers/projectInteractionRouter')
 const notificationRouter = require('./routers/notificationRouter')
 const redisClient = require('./config/redis')
 const rate_limiter = require('./middleware/rate_limiter')
+const myprofileRouter = require('./routers/myprofileRouter')
 
 const path = require('path')
 
@@ -25,6 +26,8 @@ app.use('/api/uploadProject', rate_limiter, projectRouter)
 app.use('/api/getProjects', getProjects)
 app.use('/api/project', projectInteractionRouter)
 app.use('/api/notifications', notificationRouter)
+app.use('/api/getMyProfile', myprofileRouter)
+
 
 // Serve static files
 app.use(express.static(path.join(__dirname, "../frontEnd/dist")))

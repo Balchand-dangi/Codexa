@@ -11,7 +11,7 @@ router.get('/', userAuth, async (req, res) => {
         const userEmail = req.user.email
         const notifications = await Notification.find({ recipient: userEmail })
             .sort({ createdAt: -1 })
-            .limit(30) // Limit to last 50 notifications
+            .limit(30) 
 
         const unreadCount = notifications.filter(n => !n.isRead).length
 

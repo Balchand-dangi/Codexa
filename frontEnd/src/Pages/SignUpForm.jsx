@@ -54,10 +54,10 @@ const SignupForm = () => {
 
 
     return (
-        <div className="flex justify-center items-center min-h-screen  bg-gray-200">
+        <div className="flex justify-center items-center min-h-screen  bg-gray-400">
             <form
                 onSubmit={handleSubmit}
-                className="bg-white p-6 rounded-xl shadow-md w-90"
+                className="bg-white/80 p-6 rounded-xl shadow-md w-90"
             >
                 <h2 className="text-2xl font-bold mb-10 text-center">Sign Up</h2>
 

@@ -10,12 +10,13 @@ import VerifyEmail from "./Pages/VerifyEmail";
 import ComingSoon from "./Pages/ComingSoon";
 import MyProjects from "./Pages/MyProjects";
 import TeamStatus from "./Pages/TeamStatus";
+import MyProfile from "./Pages/MyProfile";
+
 
 function App() {
   const [loggedIn, setLoggedIn] = useState(
     localStorage.getItem("isLoggedIn") === "true"
   );
-
 
   return (
     <>
@@ -75,6 +76,7 @@ function App() {
         <Route path="/verify-email/:token" element={<VerifyEmail />} />
         <Route path="/ComingSoon" element={<ComingSoon />} />
         <Route path="/MyProjects" element={<MyProjects />} />
+        <Route path="/MyProfile" element={<MyProfile />} />
 
 
 
