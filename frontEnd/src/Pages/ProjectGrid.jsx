@@ -317,7 +317,7 @@ const ProjectGrid = ({ loggedIn }) => {
                 </div>
 
                 {/* Description */}
-                <p className="text-gray-700 text-sm h-18 leading-relaxed line-clamp-3 mb-2.5">
+                <p className="text-gray-700 text-sm h-18 leading-relaxed  overflow-y-auto mb-2.5">
                   {project.description}
                 </p>
 

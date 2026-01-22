@@ -56,7 +56,7 @@ function Upload() {
     <div className='w-full flex items-center justify-center min-h-screen bg-gradient-to-r from-blue-700/90 via-indigo-500 to-purple-500 '>
       <form
         onSubmit={handleSubmit}
-        className="bg-white/30 p-6 rounded-xl shadow-md w-90">
+        className="bg-white p-6 rounded-xl shadow-md w-90">
         <h2 className='text-2xl font-bold mb-10 text-center'>Share your project</h2>
 
         <input

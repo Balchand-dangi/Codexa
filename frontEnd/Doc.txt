@@ -35,3 +35,14 @@ The schema file exported { Like, Comment, CollaborationRequest }.
 2. Missing .lean() causes: Without .lean() on Mongoose queries, you get full Mongoose documents instead of plain objects, which can cause serialization issues and slower performance when enriching data.
 The .lean() method tells Mongoose to return plain JavaScript objects (POJOs) instead of full Mongoose Document instances.
 ​
+
+
+
+# Real-Time Notification
+
+1. go to the Firebase console and create a project.
+2. add Firebase to your app—integrate the SDK for your platform. 
+3. set up Firestore, and when a user logs in, save their device token there. 
+4. write a Cloud Function that triggers when Firestore changes—like on a new like or comment. 
+5. that function uses FCM to send a notification to the owner’s token. 
+6. on the owner’s app, handle the incoming notification and display it.
