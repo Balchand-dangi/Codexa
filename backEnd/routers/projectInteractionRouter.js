@@ -6,6 +6,7 @@ const User = require('../model/userSchema')
 const userAuth = require('../middleware/userAuth')
 const rate_limiter = require('../middleware/rate_limiter')
 const mongoose = require('mongoose')
+const { notifyLike, notifyComment, notifyCollaborationRequest } = require('../services/notificationService')
 
 
 
@@ -44,6 +45,9 @@ router.post('/like/:projectId', userAuth, async (req, res) => {
                 type: 'like',
                 message: `${userName} liked your project "${project.title}"`
             })
+
+            // Send real-time notification via Firebase
+            await notifyLike(project.email, userName, project.title, projectId, userEmail)
         }
 
         res.status(200).json({ message: 'Project liked successfully' })
@@ -74,13 +78,13 @@ router.get('/likes/:projectId', userAuth, async (req, res) => {
     try {
         const { projectId } = req.params
         const likes = await Like.find({ projectId }).sort({ createdAt: -1 })
-        res.status(200).json({ 
-            count: likes.length, 
-            likes: likes.map(like => ({ 
-                userName: like.userName, 
+        res.status(200).json({
+            count: likes.length,
+            likes: likes.map(like => ({
+                userName: like.userName,
                 userEmail: like.userEmail,
-                createdAt: like.createdAt 
-            })) 
+                createdAt: like.createdAt
+            }))
         })
     } catch (err) {
         res.status(500).json({ message: err.message })
@@ -88,7 +92,7 @@ router.get('/likes/:projectId', userAuth, async (req, res) => {
 })
 
 // Comment on a project
-router.post('/comment/:projectId', userAuth,rate_limiter, async (req, res) => {
+router.post('/comment/:projectId', userAuth, rate_limiter, async (req, res) => {
     try {
         const { projectId } = req.params
         const { text } = req.body
@@ -110,11 +114,11 @@ router.post('/comment/:projectId', userAuth,rate_limiter, async (req, res) => {
         }
 
         // Create comment
-        const comment = await Comment.create({ 
-            projectId, 
-            userEmail, 
-            userName, 
-            text: text.trim() 
+        const comment = await Comment.create({
+            projectId,
+            userEmail,
+            userName,
+            text: text.trim()
         })
 
         // Create notification for project owner (if not commenting on own project)
@@ -129,6 +133,9 @@ router.post('/comment/:projectId', userAuth,rate_limiter, async (req, res) => {
                 message: `${userName} commented on your project "${project.title}"`,
                 commentText: text.trim()
             })
+
+            // Send real-time notification via Firebase
+            await notifyComment(project.email, userName, project.title, projectId, text.trim(), userEmail)
         }
 
         res.status(201).json({ message: 'Comment added successfully', comment })
@@ -142,9 +149,9 @@ router.get('/comments/:projectId', userAuth, async (req, res) => {
     try {
         const { projectId } = req.params
         const comments = await Comment.find({ projectId }).sort({ createdAt: -1 })
-        res.status(200).json({ 
-            count: comments.length, 
-            comments 
+        res.status(200).json({
+            count: comments.length,
+            comments
         })
     } catch (err) {
         res.status(500).json({ message: err.message })
@@ -193,13 +200,13 @@ router.post('/collaborate/:projectId', userAuth, rate_limiter, async (req, res) 
         }
 
         // Check if already requested
-        const existingRequest = await CollaborationRequest.findOne({ 
-            projectId, 
-            requesterEmail 
+        const existingRequest = await CollaborationRequest.findOne({
+            projectId,
+            requesterEmail
         })
         if (existingRequest) {
-            return res.status(400).json({ 
-                message: `You already sent a collaboration request (Status: ${existingRequest.status})` 
+            return res.status(400).json({
+                message: `You already sent a collaboration request (Status: ${existingRequest.status})`
             })
         }
 
@@ -224,6 +231,9 @@ router.post('/collaborate/:projectId', userAuth, rate_limiter, async (req, res) 
             collaborationRequestId: collaborationRequest._id  // ADD THIS LINE
         })
 
+        // Send real-time notification via Firebase
+        await notifyCollaborationRequest(project.email, requesterName, project.title, projectId, requesterEmail)
+
         res.status(201).json({ message: 'Collaboration request sent successfully' })
     } catch (err) {
         res.status(500).json({ message: err.message })
@@ -234,35 +244,35 @@ router.post('/collaborate/:projectId', userAuth, rate_limiter, async (req, res) 
 
 // to get team status
 router.get('/collaboration-requests', userAuth, async (req, res) => {
-  try {
-    const { projectId } = req.query
-    // console.log('Received projectId:', projectId)
-    // console.log('User:', req.user) 
-    if (!req.user || !req.user.email) {
-      return res.status(401).json({ message: 'User not authenticated' })
+    try {
+        const { projectId } = req.query
+        // console.log('Received projectId:', projectId)
+        // console.log('User:', req.user) 
+        if (!req.user || !req.user.email) {
+            return res.status(401).json({ message: 'User not authenticated' })
+        }
+        // const filter = { projectOwnerEmail: req.user.email }  // I want the only owner can see the team status
+        const filter = {} // anyone can see the team status
+        if (projectId) {
+            if (mongoose.Types.ObjectId.isValid(projectId)) {
+                filter.projectId = new mongoose.Types.ObjectId(projectId)
+            } else {
+                return res.status(400).json({ message: 'Invalid project ID' })
+            }
+        }
+        // console.log('Filter:', filter)
+        const requests = await CollaborationRequest.find(filter)
+            .populate('projectId')
+            .sort({ createdAt: -1 })
+        // console.log('Found requests:', requests.length)
+        res.json({ requests })
+    } catch (error) {
+        // console.error('Error fetching collaboration requests:', error)
+        res.status(500).json({
+            message: 'Error fetching requests',
+            error: error.message
+        })
     }
-    // const filter = { projectOwnerEmail: req.user.email }  // I want the only owner can see the team status
-    const filter = {} // anyone can see the team status
-    if (projectId) {
-      if (mongoose.Types.ObjectId.isValid(projectId)) {
-        filter.projectId = new mongoose.Types.ObjectId(projectId)
-      } else {
-        return res.status(400).json({ message: 'Invalid project ID' })
-      }
-    }
-    // console.log('Filter:', filter)
-    const requests = await CollaborationRequest.find(filter)
-      .populate('projectId')
-      .sort({ createdAt: -1 })
-    // console.log('Found requests:', requests.length)
-    res.json({ requests })
-  } catch (error) {
-    // console.error('Error fetching collaboration requests:', error)
-    res.status(500).json({ 
-      message: 'Error fetching requests',
-      error: error.message 
-    })
-  }
 })
 
 
@@ -272,7 +282,7 @@ router.patch('/collaboration-request/:requestId', userAuth, async (req, res) => 
         const { requestId } = req.params
         const { status } = req.body
         const userEmail = req.user.email
-        
+
         if (!['accepted', 'rejected'].includes(status)) {
             return res.status(400).json({ message: 'Invalid status' })
         }

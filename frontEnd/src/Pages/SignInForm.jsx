@@ -20,14 +20,24 @@ function SignInForm({ setLoggedIn }) {
         try {
             const response = await axios.post('/api/auth/signIn', userData, { withCredentials: true });
             if (response.status === 200) {
+                // Save token and user info to localStorage
+                if (response.data.token) {
+                    localStorage.setItem("token", response.data.token);
+                }
                 localStorage.setItem("isLoggedIn", "true");
-                // Store user email for checking likes/comments
                 localStorage.setItem('userEmail', email);
-                setLoggedIn(true);
-                alert(response.data)
-                setEmail("")
-                setPassword("")
-                navigate("/Home")
+                if (response.data.name) {
+                    localStorage.setItem('userName', response.data.name);
+                }
+
+                // Small delay to ensure localStorage is updated before state change
+                setTimeout(() => {
+                    setLoggedIn(true);
+                    alert(response.data.message || response.data)
+                    setEmail("")
+                    setPassword("")
+                    navigate("/Home")
+                }, 100);
             }
             else {
                 alert(response.data.message || response.data)
@@ -76,8 +86,8 @@ function SignInForm({ setLoggedIn }) {
                         </span>
                     </div>
 
-                
-                    <Link to={'/ComingSoon'}  className='text-sm pl-1 underline text-gray-700'>Resent password</Link>
+
+                    <Link to={'/ComingSoon'} className='text-sm pl-1 underline text-gray-700'>Resent password</Link>
 
 
                     <button

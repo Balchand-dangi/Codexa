@@ -6,6 +6,7 @@ const authRouter = require('./routers/authRouter')
 const getProjects = require('./routers/getProjects')
 const projectInteractionRouter = require('./routers/projectInteractionRouter')
 const notificationRouter = require('./routers/notificationRouter')
+const fcmTokenRouter = require('./routers/fcmTokenRouter')
 const redisClient = require('./config/redis')
 const rate_limiter = require('./middleware/rate_limiter')
 const myprofileRouter = require('./routers/myProfileRouter')
@@ -21,11 +22,12 @@ app.use(cookieParser())
 
 
 // Routes
-app.use('/api/auth', authRouter) 
+app.use('/api/auth', authRouter)
 app.use('/api/uploadProject', rate_limiter, projectRouter)
 app.use('/api/getProjects', getProjects)
 app.use('/api/project', projectInteractionRouter)
 app.use('/api/notifications', notificationRouter)
+app.use('/api/fcm', fcmTokenRouter)
 app.use('/api/getMyProfile', myprofileRouter)
 
 

@@ -10,7 +10,7 @@ const sendEmail = require("../utils/sendEmail");
 const rate_limiter = require('../middleware/rate_limiter')
 const authRouter = express.Router()
 
-authRouter.post("/signUp",rate_limiter, async (req, res) => {
+authRouter.post("/signUp", rate_limiter, async (req, res) => {
     try {
         validUser(req.body);
         const email = req.body.email.trim().toLowerCase();
@@ -90,7 +90,7 @@ authRouter.get("/verify-email/:token", async (req, res) => {
 
 
 
-authRouter.post('/signIn',rate_limiter, async (req, res) => {
+authRouter.post('/signIn', rate_limiter, async (req, res) => {
     try {
 
         const data = await User.findOne({ email: req.body.email })
@@ -113,7 +113,12 @@ authRouter.post('/signIn',rate_limiter, async (req, res) => {
             sameSite: "strict",
             maxAge: 3 * 24 * 60 * 60 * 1000 // 3 days
         });
-        res.status(200).send('Login successfully, Welcome back')
+        res.status(200).json({
+            message: 'Login successfully, Welcome back',
+            token: token,
+            email: data.email,
+            name: data.name
+        })
     }
     catch (err) {
         res.status(401).send(err.message)
@@ -123,23 +128,47 @@ authRouter.post('/signIn',rate_limiter, async (req, res) => {
 authRouter.post("/logOut", userAuth, async (req, res) => {
     try {
         const { token } = req.cookies;
+        const userEmail = req.user.email;
+
+        console.log(`⏳ Logout initiated for user: ${userEmail}`);
+
         if (!token) return res.status(400).json({ error: "No token found login first" });
 
-        const payload = jwt.decode(token);  //to extract expiry time and also verify that token is not tempered and expired
+        const payload = jwt.decode(token);
 
-        // Blocklist  token in redis
+        // Blocklist token in redis
         await redisClient.set(`token:${token}`, "Blocked");
         await redisClient.expireAt(`token:${token}`, payload.exp);
+        console.log(`✓ Token blocklisted in Redis`);
 
-        // Clear cookie in browser
-        res.clearCookie("token", {
+
+        const cookieOptions = {
             httpOnly: true,
-            secure: true,
-            sameSite: "strict"
-        });
+            sameSite: "strict",
+            path: "/"
+        };
 
-        res.status(200).json({ message: "Logged out successfully" });
+
+        if (process.env.NODE_ENV === 'production') {
+            cookieOptions.secure = true;
+        }
+
+        res.clearCookie("token", cookieOptions);
+        res.cookie("token", "", {
+            maxAge: 0,
+            httpOnly: true,
+            sameSite: "strict",
+            path: "/"
+        });
+        console.log(`✓ Cookie also set to empty with maxAge: 0`);
+
+        res.status(200).json({
+            message: "Logged out successfully",
+            success: true,
+            cookie_cleared: true
+        });
     } catch (err) {
+        console.error('✗ Logout error:', err.message);
         res.status(500).json({ error: err.message });
     }
 });

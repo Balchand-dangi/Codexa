@@ -25,13 +25,60 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      const response = await axios.post('/api/auth/logOut', {}, { withCredentials: true });
+      
+      const fcmToken = localStorage.getItem('fcmToken');
+      const authToken = localStorage.getItem('token');
+      
+      
+      if (fcmToken && authToken) {
+        
+        try {
+          const removeResponse = await axios.post(
+            '/api/fcm/remove-token',
+            { token: fcmToken },
+            {
+              headers: { 'Authorization': `Bearer ${authToken}` },
+              withCredentials: true
+            }
+          );
+         
+        } catch (removeErr) {
+          console.error(' removeToken API error:', removeErr.message);
+          
+        }
+      }
+
+   
+      const response = await axios.post('/api/auth/logOut', { fcmToken }, { withCredentials: true });
+      
       localStorage.removeItem("isLoggedIn");
       localStorage.removeItem('userEmail');
+      localStorage.removeItem('fcmToken');
+      localStorage.removeItem('token');
+      localStorage.removeItem('userName');
+      localStorage.removeItem('name');
+      document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      
       setLoggedIn(false);
       setShowProfileMenu(false);
-      alert(response.data.message);
+
+      setTimeout(() => {
+        alert(response.data.message);
+      }, 100);
     } catch (err) {
+      console.error('❌ Logout error:', err.message);
+
+      localStorage.removeItem("isLoggedIn");
+      localStorage.removeItem('userEmail');
+      localStorage.removeItem('fcmToken');
+      localStorage.removeItem('token');
+      localStorage.removeItem('userName');
+      localStorage.removeItem('name');
+      
+      document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+     
+      setLoggedIn(false);
+      setShowProfileMenu(false);
       alert(err.response?.data?.error || err.response?.data?.message || "Something went wrong");
     }
     finally {

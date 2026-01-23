@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 import SignupForm from "./Pages/SignUpForm";
 import SignInForm from "./Pages/SignInForm";
@@ -11,15 +11,37 @@ import ComingSoon from "./Pages/ComingSoon";
 import MyProjects from "./Pages/MyProjects";
 import TeamStatus from "./Pages/TeamStatus";
 import MyProfile from "./Pages/MyProfile";
+import useFCM from './hooks/useFCM';
+import NotificationToast from './Components/NotificationToast';
 
 
 function App() {
   const [loggedIn, setLoggedIn] = useState(
     localStorage.getItem("isLoggedIn") === "true"
   );
+  const { notification, removeToken, isReady } = useFCM();
+  const [toastNotification, setToastNotification] = useState(null);
+
+  
+  useEffect(() => {
+   
+    if (!loggedIn && isReady) {
+          removeToken();
+    } 
+  }, [loggedIn, isReady, removeToken]);
+
+  useEffect(() => {
+    if (notification) {
+      setToastNotification(notification);
+    }
+  }, [notification]);
 
   return (
     <>
+      <NotificationToast
+        notification={toastNotification}
+        onClose={() => setToastNotification(null)}
+      />
 
       <ScrollToTop />
 
@@ -31,7 +53,7 @@ function App() {
             <Home loggedIn={loggedIn} setLoggedIn={setLoggedIn} />
           }
         />
-        
+
         <Route
           path="/"
           element={
@@ -45,7 +67,7 @@ function App() {
             <Home loggedIn={loggedIn} setLoggedIn={setLoggedIn} />
           }
         />
-        
+
         <Route
           path="/support"
           element={

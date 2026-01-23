@@ -46,9 +46,12 @@ const userSchema = new mongoose.Schema({
     },
 
     emailVerifyToken: String,
-    emailVerifyTokenExpiry: Date
+    emailVerifyTokenExpiry: Date,
 
-
+    fcmTokens: [{
+        type: String,
+        // Each device will have its own FCM token for push notifications
+    }]
 
 }, { timestamps: true });
 
