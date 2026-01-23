@@ -11,10 +11,24 @@ const firebaseConfig = {
     appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
+// Validate Firebase config
+console.log('🔍 [Firebase Config] projectId:', firebaseConfig.projectId ? '✅' : '❌');
+console.log('🔍 [Firebase Config] VAPID key present:', import.meta.env.VITE_FIREBASE_VAPID_KEY ? '✅' : '❌');
+
+if (!firebaseConfig.projectId) {
+    console.error('❌ Firebase projectId is missing! Check .env.local');
+}
+
+if (!import.meta.env.VITE_FIREBASE_VAPID_KEY) {
+    console.error('❌ VAPID key is missing! Check .env.local');
+}
+
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
+console.log('✓ Firebase initialized');
 
 // Initialize Cloud Messaging and get a reference to the service
 const messaging = getMessaging(app);
+console.log('✓ Cloud Messaging initialized');
 
 export { messaging, getToken, onMessage };

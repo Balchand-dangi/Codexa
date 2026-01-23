@@ -10,29 +10,33 @@ router.post('/save-token', userAuth, async (req, res) => {
         const { token } = req.body;
         const userEmail = req.user.email;
 
+        console.log('📨 [/save-token] Request received from:', userEmail);
+        console.log('📨 [/save-token] Token provided:', token ? `${token.substring(0, 30)}...` : 'MISSING');
+
         if (!token) {
+            console.log('❌ [/save-token] Token is required');
             return res.status(400).json({ message: 'FCM token is required' });
         }
 
         const user = await User.findOne({ email: userEmail });
 
         if (!user) {
-            console.log(' User not found in database');
+            console.log('❌ [/save-token] User not found in database:', userEmail);
             return res.status(404).json({ message: 'User not found' });
         }
 
         // Initialize fcmTokens array if it doesn't exist
         if (!user.fcmTokens) {
             user.fcmTokens = [];
-            console.log('✓ Initialized fcmTokens array');
+            console.log('🆕 [/save-token] Initialized fcmTokens array for user');
         }
 
         if (!user.fcmTokens.includes(token)) {
             user.fcmTokens.push(token);
             await user.save();
-            console.log(`✓ FCM token saved. Total tokens: ${user.fcmTokens.length}`);
+            console.log(`✓ [/save-token] FCM token SAVED. Total tokens: ${user.fcmTokens.length} for ${userEmail}`);
         } else {
-            console.log('⚠ Token already exists, skipping');
+            console.log('⚠️  [/save-token] Token already exists (duplicate), skipping');
         }
 
         res.status(200).json({
@@ -41,7 +45,7 @@ router.post('/save-token', userAuth, async (req, res) => {
             totalTokens: user.fcmTokens.length
         });
     } catch (err) {
-        console.error(' /save-token error:', err.message);
+        console.error('❌ [/save-token] Error:', err.message);
         res.status(500).json({ message: err.message });
     }
 });
@@ -67,7 +71,7 @@ router.post('/remove-token', userAuth, async (req, res) => {
             const initialCount = user.fcmTokens.length;
             user.fcmTokens = user.fcmTokens.filter(t => t !== token);
             await user.save();
-           
+
         } else {
             console.log('⚠ User has no fcmTokens array');
         }
@@ -84,4 +88,3 @@ router.post('/remove-token', userAuth, async (req, res) => {
 });
 
 module.exports = router;
- 
