@@ -12,15 +12,15 @@ const firebaseConfig = {
 };
 
 // Validate Firebase config
-console.log('🔍 [Firebase Config] projectId:', firebaseConfig.projectId ? '✅' : '❌');
-console.log('🔍 [Firebase Config] VAPID key present:', import.meta.env.VITE_FIREBASE_VAPID_KEY ? '✅' : '❌');
+console.log(' [Firebase Config] projectId:', firebaseConfig.projectId ? '✅' : '❌');
+console.log(' [Firebase Config] VAPID key present:', import.meta.env.VITE_FIREBASE_VAPID_KEY ? '✅' : '❌');
 
 if (!firebaseConfig.projectId) {
-    console.error('❌ Firebase projectId is missing! Check .env.local');
+    console.error(' Firebase projectId is missing! Check .env.local');
 }
 
 if (!import.meta.env.VITE_FIREBASE_VAPID_KEY) {
-    console.error('❌ VAPID key is missing! Check .env.local');
+    console.error(' VAPID key is missing! Check .env.local');
 }
 
 // Initialize Firebase

@@ -19,16 +19,19 @@ function App() {
   const [loggedIn, setLoggedIn] = useState(
     localStorage.getItem("isLoggedIn") === "true"
   );
-  const { notification, removeToken, isReady } = useFCM();
+  const { notification, removeToken, getTokenAndSave, isReady } = useFCM();
   const [toastNotification, setToastNotification] = useState(null);
 
-  
+
   useEffect(() => {
-   
+
     if (!loggedIn && isReady) {
-          removeToken();
-    } 
-  }, [loggedIn, isReady, removeToken]);
+      removeToken();
+    } else if (loggedIn && isReady) {
+      console.log('🎯 [App.jsx] Login detected - Calling getTokenAndSave');
+      getTokenAndSave();
+    }
+  }, [loggedIn, isReady, removeToken, getTokenAndSave]);
 
   useEffect(() => {
     if (notification) {

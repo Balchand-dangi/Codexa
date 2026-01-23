@@ -35,33 +35,25 @@ const useFCM = () => {
                 console.log('🔔 [initializeFCM] Current notification permission:', Notification.permission);
 
                 if (Notification.permission === 'granted') {
-                    console.log('✓ [initializeFCM] Notification permission already granted, getting token...');
-                    await getTokenAndSave();
+                    console.log('✓ [initializeFCM] Notification permission already granted');
+                    console.log('⏳ [initializeFCM] Waiting for user login to get FCM token...');
+                    setIsReady(true);
                 } else if (Notification.permission !== 'denied') {
                     console.log('❓ [initializeFCM] Requesting notification permission from user...');
                     const permission = await Notification.requestPermission();
                     console.log('📤 [initializeFCM] User response:', permission);
 
                     if (permission === 'granted') {
-                        console.log('✓ [initializeFCM] Permission granted by user, getting token...');
-                        await getTokenAndSave();
+                        console.log('✓ [initializeFCM] Permission granted by user');
+                        console.log('⏳ [initializeFCM] Waiting for user login to get FCM token...');
                     } else {
                         console.log('❌ [initializeFCM] Permission denied by user');
-                        setIsReady(true);
                     }
+                    setIsReady(true);
                 } else {
                     console.log('❌ [initializeFCM] Notifications are blocked for this site');
                     setIsReady(true);
                 }
-
-                // Set isReady immediately so removeToken can be called on logout
-                // Don't wait for permission prompt
-                setTimeout(() => {
-                    if (!localStorage.getItem('fcmToken')) {
-                        console.log('⏳ [initializeFCM] Setting isReady=true to enable logout handling');
-                        setIsReady(true);
-                    }
-                }, 100);
 
                 // Handle foreground messages
                 try {
@@ -100,7 +92,16 @@ const useFCM = () => {
 
     const getTokenAndSave = useCallback(async () => {
         try {
-            console.log('⏳ [getTokenAndSave] Requesting FCM token...');
+            // First check if user is actually logged in
+            const authToken = localStorage.getItem('token');
+            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+
+            if (!authToken || !isLoggedIn) {
+                console.warn('⚠ [getTokenAndSave] User not logged in. Skipping token save.');
+                return;
+            }
+
+            console.log('⏳ [getTokenAndSave] Requesting FCM token for logged-in user...');
             const currentToken = await getToken(messaging, {
                 vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
             });
@@ -114,23 +115,17 @@ const useFCM = () => {
 
                 // Send token to backend
                 try {
-                    const authToken = localStorage.getItem('token');
-                    console.log('🔍 [getTokenAndSave] authToken present:', !!authToken);
-                    if (authToken) {
-                        console.log('📤 [getTokenAndSave] Sending to /api/fcm/save-token...');
-                        const response = await axios.post(
-                            '/api/fcm/save-token',
-                            { token: currentToken },
-                            {
-                                headers: {
-                                    'Authorization': `Bearer ${authToken}`
-                                }
+                    console.log('📤 [getTokenAndSave] Sending to /api/fcm/save-token...');
+                    const response = await axios.post(
+                        '/api/fcm/save-token',
+                        { token: currentToken },
+                        {
+                            headers: {
+                                'Authorization': `Bearer ${authToken}`
                             }
-                        );
-                        console.log('✓ [getTokenAndSave] FCM token sent to server:', response.data);
-                    } else {
-                        console.warn('⚠ [getTokenAndSave] No auth token found. User may not be logged in.');
-                    }
+                        }
+                    );
+                    console.log('✓ [getTokenAndSave] FCM token sent to server:', response.data);
                 } catch (err) {
                     console.error('✗ [getTokenAndSave] Error sending token to server:', err.message);
                 }
@@ -194,7 +189,8 @@ const useFCM = () => {
         }
     }, []);
 
-    // Monitor login/logout state changes from localStorage
+    // Monitor LOGOUT state changes from localStorage
+    // (LOGIN is handled by App.jsx to avoid duplicate calls)
     useEffect(() => {
         const checkLoginState = setInterval(() => {
             const isLoggedInNow = localStorage.getItem('isLoggedIn') === 'true';
@@ -206,18 +202,15 @@ const useFCM = () => {
                     // User logged out - immediately call removeToken
                     console.log('🚨 [Polling] LOGOUT DETECTED - Calling removeToken');
                     removeToken();
-                } else {
-                    // User logged in - immediately call getTokenAndSave
-                    console.log('🚨 [Polling] LOGIN DETECTED - Calling getTokenAndSave');
-                    getTokenAndSave();
                 }
+                // LOGIN is handled by App.jsx useEffect, so no duplicate call here
             }
         }, 500);
 
         return () => clearInterval(checkLoginState);
-    }, [lastLoginState, removeToken, getTokenAndSave]);
+    }, [lastLoginState, removeToken]);
 
-    return { token, notification, removeToken, isReady };
+    return { token, notification, removeToken, getTokenAndSave, isReady };
 };
 
 export default useFCM;
