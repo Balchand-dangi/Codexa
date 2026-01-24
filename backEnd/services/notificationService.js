@@ -80,9 +80,9 @@ const sendRealTimeNotification = async (recipientEmail, notificationData) => {
     }
 };
 
-// Helper: Send notification for likes
+// ✅ FIXED CODE
 const notifyLike = async (recipientEmail, senderName, projectTitle, projectId, senderEmail) => {
-    await sendRealTimeNotification(recipientEmail, {
+    return await sendRealTimeNotification(recipientEmail, {
         title: 'New Like!',
         body: `${senderName} liked your project "${projectTitle}"`,
         type: 'like',
@@ -94,10 +94,9 @@ const notifyLike = async (recipientEmail, senderName, projectTitle, projectId, s
     });
 };
 
-// Helper: Send notification for comments
 const notifyComment = async (recipientEmail, senderName, projectTitle, projectId, commentText, senderEmail) => {
     const truncatedComment = commentText.substring(0, 50) + (commentText.length > 50 ? '...' : '');
-    await sendRealTimeNotification(recipientEmail, {
+    return await sendRealTimeNotification(recipientEmail, {
         title: 'New Comment!',
         body: `${senderName} commented: "${truncatedComment}"`,
         type: 'comment',
@@ -109,9 +108,8 @@ const notifyComment = async (recipientEmail, senderName, projectTitle, projectId
     });
 };
 
-// Helper: Send notification for collaboration requests
 const notifyCollaborationRequest = async (recipientEmail, senderName, projectTitle, projectId, senderEmail) => {
-    await sendRealTimeNotification(recipientEmail, {
+    return await sendRealTimeNotification(recipientEmail, {
         title: 'Collaboration Request!',
         body: `${senderName} wants to collaborate on "${projectTitle}"`,
         type: 'collaboration_request',
@@ -122,6 +120,7 @@ const notifyCollaborationRequest = async (recipientEmail, senderName, projectTit
         clickAction: `/project/${projectId}`
     });
 };
+
 
 module.exports = {
     sendRealTimeNotification,
