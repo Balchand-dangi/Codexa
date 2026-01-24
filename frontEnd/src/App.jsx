@@ -28,7 +28,7 @@ function App() {
     if (!loggedIn && isReady) {
       removeToken();
     } else if (loggedIn && isReady) {
-      console.log('🎯 [App.jsx] Login detected - Calling getTokenAndSave');
+      console.log(' [App.jsx] Login detected - Calling getTokenAndSave');
       getTokenAndSave();
     }
   }, [loggedIn, isReady, removeToken, getTokenAndSave]);

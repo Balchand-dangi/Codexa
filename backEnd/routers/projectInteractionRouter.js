@@ -19,11 +19,15 @@ router.post('/like/:projectId', userAuth, async (req, res) => {
         const userEmail = req.user.email
         const userName = req.user.name
 
+        console.log(`\n [Like] User ${userEmail} liked project ${projectId}`);
+
         // Check if project exists
         const project = await Project.findById(projectId)
         if (!project) {
             return res.status(404).json({ message: 'Project not found' })
         }
+
+        console.log(`    Project: "${project.title}" by ${project.email}`);
 
         // Check if user already liked
         const existingLike = await Like.findOne({ projectId, userEmail })
@@ -36,6 +40,8 @@ router.post('/like/:projectId', userAuth, async (req, res) => {
 
         // Create notification for project owner (if not liking own project)
         if (project.email !== userEmail) {
+            console.log(`    Creating notification for project owner: ${project.email}`);
+
             await Notification.create({
                 recipient: project.email,
                 sender: userEmail,
@@ -47,11 +53,16 @@ router.post('/like/:projectId', userAuth, async (req, res) => {
             })
 
             // Send real-time notification via Firebase
-            await notifyLike(project.email, userName, project.title, projectId, userEmail)
+            console.log(`    Sending Firebase notification...`);
+            const notificationSent = await notifyLike(project.email, userName, project.title, projectId, userEmail)
+            console.log(`   ✓ Notification sent: ${notificationSent}`);
+        } else {
+            console.log(`   ⚠ User liked own project - no notification sent`);
         }
 
         res.status(200).json({ message: 'Project liked successfully' })
     } catch (err) {
+        console.error(' [Like] Error:', err.message);
         res.status(500).json({ message: err.message })
     }
 })

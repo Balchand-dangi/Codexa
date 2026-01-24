@@ -4,13 +4,25 @@ const User = require('../model/userSchema');
 // Send real-time notification via FCM
 const sendRealTimeNotification = async (recipientEmail, notificationData) => {
     try {
+        console.log(`\n📬 [sendRealTimeNotification] Attempting to send notification to: ${recipientEmail}`);
+
         // Get user with FCM tokens
         const user = await User.findOne({ email: recipientEmail });
 
-        if (!user || !user.fcmTokens || user.fcmTokens.length === 0) {
-            console.log(`No FCM tokens found for user: ${recipientEmail}`);
+        if (!user) {
+            console.log(`❌ [sendRealTimeNotification] User not found: ${recipientEmail}`);
             return false;
         }
+
+        if (!user.fcmTokens || user.fcmTokens.length === 0) {
+            console.log(`❌ [sendRealTimeNotification] No FCM tokens found for user: ${recipientEmail}`);
+            console.log(`   User exists but fcmTokens array is empty or missing`);
+            console.log(`   → User needs to login and grant notification permission`);
+            return false;
+        }
+
+        console.log(`✓ [sendRealTimeNotification] Found ${user.fcmTokens.length} FCM token(s) for ${recipientEmail}`);
+        console.log(`   Tokens: ${user.fcmTokens.map(t => t.substring(0, 30) + '...').join(', ')}`);
 
         // Prepare notification payload
         const payload = {
@@ -34,28 +46,36 @@ const sendRealTimeNotification = async (recipientEmail, notificationData) => {
             }
         };
 
+        console.log(`📤 [sendRealTimeNotification] Sending to ${user.fcmTokens.length} device(s)...`);
+
         // Send to all devices
-        const promises = user.fcmTokens.map(token =>
+        const promises = user.fcmTokens.map((token, index) =>
             messaging.send({
                 ...payload,
                 token: token
-            }).catch(err => {
-                console.error(`Error sending to token ${token}:`, err);
-                // Remove invalid tokens
-                if (err.code === 'messaging/invalid-registration-token' ||
-                    err.code === 'messaging/registration-token-not-registered') {
-                    return User.updateOne(
-                        { email: recipientEmail },
-                        { $pull: { fcmTokens: token } }
-                    );
-                }
             })
+                .then(() => {
+                    console.log(`   ✓ Device ${index + 1}/${user.fcmTokens.length}: Notification sent`);
+                })
+                .catch(err => {
+                    console.error(`   ❌ Device ${index + 1}/${user.fcmTokens.length}: Error - ${err.code}`);
+                    // Remove invalid tokens
+                    if (err.code === 'messaging/invalid-registration-token' ||
+                        err.code === 'messaging/registration-token-not-registered') {
+                        console.log(`      → Removing invalid token from database`);
+                        return User.updateOne(
+                            { email: recipientEmail },
+                            { $pull: { fcmTokens: token } }
+                        );
+                    }
+                })
         );
 
         await Promise.all(promises);
+        console.log(`✓ [sendRealTimeNotification] Notification delivery completed\n`);
         return true;
     } catch (err) {
-        console.error('Error sending real-time notification:', err);
+        console.error('❌ [sendRealTimeNotification] Error sending real-time notification:', err);
         return false;
     }
 };
