@@ -40,7 +40,7 @@ const ProjectGrid = ({ loggedIn }) => {
       const stats = {}
       const likes = {}
       const commentData = {}
-      
+
       response.data.forEach(project => {
         stats[project._id] = {
           likes: project.likesCount,
@@ -49,7 +49,7 @@ const ProjectGrid = ({ loggedIn }) => {
         likes[project._id] = project.userLiked
         commentData[project._id] = project.comments
       })
-      
+
       setProjectStats(stats)
       setUserLikes(likes)
       setComments(commentData)
@@ -62,55 +62,70 @@ const ProjectGrid = ({ loggedIn }) => {
   }
 
   const handleLike = async (projectId) => {
-    if (isSubmitting) return
-    setIsSubmitting(true)
-    
+    if (isSubmitting) return;
+    if (!loggedIn) {
+      alert("You must be logged in to like a project.");
+      return;
+    }
+    if (!userLikes || typeof userLikes[projectId] === 'undefined' || !projectStats[projectId]) {
+      alert("Project not initialized. Please try again later.");
+      return;
+    }
+    setIsSubmitting(true);
     // Store previous state for rollback
-    const previousLiked = userLikes[projectId]
-    const previousCount = projectStats[projectId]?.likes || 0
-    
+    const previousLiked = userLikes[projectId];
+    const previousCount = projectStats[projectId]?.likes || 0;
     // Optimistic update
-    setUserLikes(prev => ({ ...prev, [projectId]: !previousLiked }))
+    setUserLikes(prev => ({ ...prev, [projectId]: !previousLiked }));
     setProjectStats(prev => ({
       ...prev,
       [projectId]: {
         ...prev[projectId],
         likes: previousLiked ? previousCount - 1 : previousCount + 1
       }
-    }))
-    
+    }));
     try {
       if (previousLiked) {
-        await axios.delete(`/api/project/unlike/${projectId}`, { withCredentials: true })
+        await axios.delete(`/api/project/unlike/${projectId}`, { withCredentials: true });
       } else {
-        await axios.post(`/api/project/like/${projectId}`, {}, { withCredentials: true })
+        await axios.post(`/api/project/like/${projectId}`, {}, { withCredentials: true });
       }
     } catch (err) {
       // Rollback on error
-      setUserLikes(prev => ({ ...prev, [projectId]: previousLiked }))
+      setUserLikes(prev => ({ ...prev, [projectId]: previousLiked }));
       setProjectStats(prev => ({
         ...prev,
         [projectId]: {
           ...prev[projectId],
           likes: previousCount
         }
-      }))
-      alert(err.response?.data?.message || "Error processing like")
+      }));
+      alert(err?.response?.data?.message || err?.message || "Error processing like");
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
   }
 
   const handleComment = async (projectId) => {
-    const text = commentText[projectId]
-    if (!text || !text.trim()) {
-      alert("Please enter a comment")
-      return
+    if (!loggedIn) {
+      alert("You must be logged in to comment.");
+      return;
     }
-
-    const userEmail = localStorage.getItem('userEmail')
-    const userName = localStorage.getItem('userName') || userEmail.split('@')[0]
-    
+    const text = commentText[projectId];
+    if (!text || !text.trim()) {
+      alert("Please enter a comment");
+      return;
+    }
+    const userEmail = localStorage.getItem('userEmail');
+    if (!userEmail) {
+      alert("User email not found. Please log in again.");
+      return;
+    }
+    let userName = localStorage.getItem('userName');
+    if (!userName) {
+      const splitEmail = userEmail.split('@');
+      userName = splitEmail.length > 0 ? splitEmail[0] : "User";
+    }
     // Optimistic update
     const newComment = {
       _id: Date.now().toString(), // Temporary ID
@@ -119,52 +134,47 @@ const ProjectGrid = ({ loggedIn }) => {
       userName,
       text,
       createdAt: new Date().toISOString()
-    }
-    
+    };
     setComments(prev => ({
       ...prev,
       [projectId]: [...(prev[projectId] || []), newComment]
-    }))
-    
+    }));
     setProjectStats(prev => ({
       ...prev,
       [projectId]: {
         ...prev[projectId],
         comments: (prev[projectId]?.comments || 0) + 1
       }
-    }))
-    
-    setCommentText(prev => ({ ...prev, [projectId]: '' }))
-
+    }));
+    setCommentText(prev => ({ ...prev, [projectId]: '' }));
     try {
       const response = await axios.post(
         `/api/project/comment/${projectId}`,
         { text },
         { withCredentials: true }
-      )
-      
+      );
       // Replace temporary comment with real one from server
       setComments(prev => ({
         ...prev,
-        [projectId]: prev[projectId].map(c => 
+        [projectId]: prev[projectId].map(c =>
           c._id === newComment._id ? response.data.comment : c
         )
-      }))
+      }));
     } catch (err) {
       // Rollback on error
       setComments(prev => ({
         ...prev,
         [projectId]: prev[projectId].filter(c => c._id !== newComment._id)
-      }))
+      }));
       setProjectStats(prev => ({
         ...prev,
         [projectId]: {
           ...prev[projectId],
           comments: (prev[projectId]?.comments || 1) - 1
         }
-      }))
-      setCommentText(prev => ({ ...prev, [projectId]: text }))
-      alert(err.response?.data?.message || "Error adding comment")
+      }));
+      setCommentText(prev => ({ ...prev, [projectId]: text }));
+      alert(err?.response?.data?.message || err?.message || "Error adding comment");
     }
   }
 
@@ -174,13 +184,13 @@ const ProjectGrid = ({ loggedIn }) => {
     // Store previous state for rollback
     const previousComments = comments[projectId] || []
     const previousCount = projectStats[projectId]?.comments || 0
-    
+
     // Optimistic update
     setComments(prev => ({
       ...prev,
       [projectId]: prev[projectId].filter(c => c._id !== commentId)
     }))
-    
+
     setProjectStats(prev => ({
       ...prev,
       [projectId]: {
@@ -256,12 +266,12 @@ const ProjectGrid = ({ loggedIn }) => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <p className=" text-pink-700 font-semibold text-4xl text-center">{error}</p>
-          <button 
-              onClick={() => window.location.reload()} 
-              className="mt-4 px-6 py-2 border bg-gray-300 text-indigo-600 rounded-lg font-medium hover:bg-gray-400 transition-colors"
-            >
-              Try Again
-            </button>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-6 py-2 border bg-gray-300 text-indigo-600 rounded-lg font-medium hover:bg-gray-400 transition-colors"
+          >
+            Try Again
+          </button>
         </div>
       )}
 
@@ -340,7 +350,7 @@ const ProjectGrid = ({ loggedIn }) => {
                     )}
                   </div>
                 </div>
-                    <hr className="opacity-15"/>
+                <hr className="opacity-15" />
                 {/* Action Buttons */}
                 <div className="flex justify-between items-center py-0.5 border-t border-gray-100">
                   <button disabled={isSubmitting}
