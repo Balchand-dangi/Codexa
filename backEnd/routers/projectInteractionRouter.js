@@ -19,28 +19,32 @@ router.post('/like/:projectId', userAuth, async (req, res) => {
         const userEmail = req.user.email
         const userName = req.user.name
 
-        console.log(`\n [Like] User ${userEmail} liked project ${projectId}`);
+        console.log(`\n👤 [Like] User ${userEmail} liked project ${projectId}`);
+        console.log(`   📋 Project: "${project?.title || 'Loading...'}" by ${project?.email || 'Loading...'}`);
 
         // Check if project exists
         const project = await Project.findById(projectId)
         if (!project) {
+            console.log(`   ❌ Project not found: ${projectId}`);
             return res.status(404).json({ message: 'Project not found' })
         }
 
-        console.log(`    Project: "${project.title}" by ${project.email}`);
+        console.log(`   📋 Project: "${project.title}" by ${project.email}`);
 
         // Check if user already liked
         const existingLike = await Like.findOne({ projectId, userEmail })
         if (existingLike) {
+            console.log(`   ⚠️  Already liked by this user`);
             return res.status(400).json({ message: 'You already liked this project' })
         }
 
         // Create like
         await Like.create({ projectId, userEmail, userName })
+        console.log(`   ✅ Like saved to database`);
 
         // Create notification for project owner (if not liking own project)
         if (project.email !== userEmail) {
-            console.log(`    Creating notification for project owner: ${project.email}`);
+            console.log(`   🔔 Creating notification for project owner: ${project.email}`);
 
             await Notification.create({
                 recipient: project.email,
@@ -51,21 +55,23 @@ router.post('/like/:projectId', userAuth, async (req, res) => {
                 type: 'like',
                 message: `${userName} liked your project "${project.title}"`
             })
+            console.log(`   ✅ Notification record saved to database`);
 
             // Send real-time notification via Firebase
-            console.log(`    Sending Firebase notification...`);
+            console.log(`   📤 Sending Firebase notification...`);
             const notificationSent = await notifyLike(project.email, userName, project.title, projectId, userEmail)
-            console.log(`   ✓ Notification sent: ${notificationSent}`);
+            console.log(`   ${notificationSent ? '✅' : '❌'} Firebase notification sent: ${notificationSent}\n`);
         } else {
-            console.log(`   ⚠ User liked own project - no notification sent`);
+            console.log(`   ⚠️  User liked own project - no notification sent\n`);
         }
 
         res.status(200).json({ message: 'Project liked successfully' })
     } catch (err) {
-        console.error(' [Like] Error:', err.message);
+        console.error(`❌ [Like] Error: ${err.message}\n`);
         res.status(500).json({ message: err.message })
     }
 })
+        
 
 // Unlike a project
 router.delete('/unlike/:projectId', userAuth, async (req, res) => {
@@ -110,19 +116,26 @@ router.post('/comment/:projectId', userAuth, rate_limiter, async (req, res) => {
         const userEmail = req.user.email
         const userName = req.user.name
 
+        console.log(`\n💬 [Comment] User ${userEmail} commented on project ${projectId}`);
+
         if (!text || text.trim().length === 0) {
+            console.log(`   ❌ Comment text is empty`);
             return res.status(400).json({ message: 'Comment text is required' })
         }
 
         if (text.length > 500) {
+            console.log(`   ❌ Comment too long: ${text.length} chars`);
             return res.status(400).json({ message: 'Comment must be less than 500 characters' })
         }
 
         // Check if project exists
         const project = await Project.findById(projectId)
         if (!project) {
+            console.log(`   ❌ Project not found: ${projectId}`);
             return res.status(404).json({ message: 'Project not found' })
         }
+
+        console.log(`   📋 Project: "${project.title}" by ${project.email}`);
 
         // Create comment
         const comment = await Comment.create({
@@ -131,9 +144,12 @@ router.post('/comment/:projectId', userAuth, rate_limiter, async (req, res) => {
             userName,
             text: text.trim()
         })
+        console.log(`   ✅ Comment saved to database`);
 
         // Create notification for project owner (if not commenting on own project)
         if (project.email !== userEmail) {
+            console.log(`   🔔 Creating notification for project owner: ${project.email}`);
+
             await Notification.create({
                 recipient: project.email,
                 sender: userEmail,
@@ -144,13 +160,19 @@ router.post('/comment/:projectId', userAuth, rate_limiter, async (req, res) => {
                 message: `${userName} commented on your project "${project.title}"`,
                 commentText: text.trim()
             })
+            console.log(`   ✅ Notification record saved to database`);
 
             // Send real-time notification via Firebase
-            await notifyComment(project.email, userName, project.title, projectId, text.trim(), userEmail)
+            console.log(`   📤 Sending Firebase notification...`);
+            const notificationSent = await notifyComment(project.email, userName, project.title, projectId, text.trim(), userEmail)
+            console.log(`   ${notificationSent ? '✅' : '❌'} Firebase notification sent: ${notificationSent}\n`);
+        } else {
+            console.log(`   ⚠️  User commented on own project - no notification sent\n`);
         }
 
         res.status(201).json({ message: 'Comment added successfully', comment })
     } catch (err) {
+        console.error(`❌ [Comment] Error: ${err.message}\n`);
         res.status(500).json({ message: err.message })
     }
 })
@@ -199,14 +221,20 @@ router.post('/collaborate/:projectId', userAuth, rate_limiter, async (req, res) 
         const requesterEmail = req.user.email
         const requesterName = req.user.name
 
+        console.log(`\n🤝 [Collaborate] User ${requesterEmail} sent collab request for project ${projectId}`);
+
         // Check if project exists
         const project = await Project.findById(projectId)
         if (!project) {
+            console.log(`   ❌ Project not found: ${projectId}`);
             return res.status(404).json({ message: 'Project not found' })
         }
 
+        console.log(`   📋 Project: "${project.title}" by ${project.email}`);
+
         // Check if requesting collaboration on own project
         if (project.email === requesterEmail) {
+            console.log(`   ⚠️  Cannot send collab request on own project`);
             return res.status(400).json({ message: 'You cannot send collaboration request on your own project' })
         }
 
@@ -216,6 +244,7 @@ router.post('/collaborate/:projectId', userAuth, rate_limiter, async (req, res) 
             requesterEmail
         })
         if (existingRequest) {
+            console.log(`   ⚠️  Already sent (Status: ${existingRequest.status})`);
             return res.status(400).json({
                 message: `You already sent a collaboration request (Status: ${existingRequest.status})`
             })
@@ -229,6 +258,7 @@ router.post('/collaborate/:projectId', userAuth, rate_limiter, async (req, res) 
             requesterName,
             message: message || ''
         })
+        console.log(`   ✅ Collab request saved to database`);
 
         // Create notification for project owner WITH collaborationRequestId
         await Notification.create({
@@ -239,14 +269,18 @@ router.post('/collaborate/:projectId', userAuth, rate_limiter, async (req, res) 
             projectTitle: project.title,
             type: 'collaboration_request',
             message: `${requesterName} sent a collaboration request for "${project.title}"`,
-            collaborationRequestId: collaborationRequest._id  // ADD THIS LINE
+            collaborationRequestId: collaborationRequest._id
         })
+        console.log(`   ✅ Notification record saved to database`);
 
         // Send real-time notification via Firebase
-        await notifyCollaborationRequest(project.email, requesterName, project.title, projectId, requesterEmail)
+        console.log(`   📤 Sending Firebase notification...`);
+        const notificationSent = await notifyCollaborationRequest(project.email, requesterName, project.title, projectId, requesterEmail)
+        console.log(`   ${notificationSent ? '✅' : '❌'} Firebase notification sent: ${notificationSent}\n`);
 
         res.status(201).json({ message: 'Collaboration request sent successfully' })
     } catch (err) {
+        console.error(`❌ [Collaborate] Error: ${err.message}\n`);
         res.status(500).json({ message: err.message })
     }
 })
