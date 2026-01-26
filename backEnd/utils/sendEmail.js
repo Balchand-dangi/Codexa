@@ -1,7 +1,6 @@
 // free for 2 months only I have to switch resend.com after 2 months
 const sgMail = require('@sendgrid/mail');
 
-// Initialize with API key
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 const sendEmail = async (to, subject, html) => {
@@ -14,7 +13,7 @@ const sendEmail = async (to, subject, html) => {
     };
     
     await sgMail.send(msg);
-    //console.log('Email sent successfully via SendGrid to:', to);
+    //console.log('Email sent successfully via SendGrid);
     return { success: true };
     
   } catch (error) {    

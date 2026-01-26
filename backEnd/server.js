@@ -29,6 +29,8 @@ app.use('/api/project', projectInteractionRouter)
 app.use('/api/notifications', notificationRouter)
 app.use('/api/getMyProfile', myprofileRouter)
 app.use("/api/my-projects", MyProjects)
+app.use('/api/auth', authRouter);
+app.use('/api/auth', authRouter);
 
 
 // Serve static files

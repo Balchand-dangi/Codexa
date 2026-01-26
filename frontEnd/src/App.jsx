@@ -11,7 +11,8 @@ import ComingSoon from "./Pages/ComingSoon";
 import MyProjects from "./Pages/MyProjects";
 import TeamStatus from "./Pages/TeamStatus";
 import MyProfile from "./Pages/MyProfile";
-
+import ForgotPassword from "./Pages/ForgotPassword";
+import ResetPassword from "./Pages/ResetPassword";
 
 function App() {
   const [loggedIn, setLoggedIn] = useState(
@@ -77,6 +78,9 @@ function App() {
         <Route path="/ComingSoon" element={<ComingSoon />} />
         <Route path="/MyProjects" element={<MyProjects />} />
         <Route path="/MyProfile" element={<MyProfile />} />
+
+        <Route path="/ForgotPassword" element={<ForgotPassword/>} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
 
 
 

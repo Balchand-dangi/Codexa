@@ -46,9 +46,10 @@ const userSchema = new mongoose.Schema({
     },
 
     emailVerifyToken: String,
-    emailVerifyTokenExpiry: Date
+    emailVerifyTokenExpiry: Date,
 
-
+    passwordResetToken: String,
+    passwordResetTokenExpiry: Date
 
 }, { timestamps: true });
 

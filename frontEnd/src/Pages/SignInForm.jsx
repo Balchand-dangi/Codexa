@@ -76,14 +76,17 @@ function SignInForm({ setLoggedIn }) {
                         </span>
                     </div>
 
-                
-                    <Link to={'/ComingSoon'}  className='text-sm pl-1 underline text-gray-700'>Resent password</Link>
 
+                    <Link to={'/ForgotPassword'} className='text-sm pl-1 pt-2 underline text-gray-700'>Forgot password</Link>
 
                     <button
                         type='Submit' disabled={isSubmitting} className="w-full bg-blue-500 text-white cursor-pointer py-2 rounded-md hover:bg-blue-600 mb-4 mt-5 transition">
                         {isSubmitting ? "Signning in..." : "Sign in"}
                     </button>
+
+                    <div className='flex justify-center'>Back to -
+                        <Link to="/signUpForm" style={{ color: "green", fontWeight: "bold", textDecoration: "underline" }}>Sign up</Link>
+                    </div>
                 </form>
             </div>
         </>

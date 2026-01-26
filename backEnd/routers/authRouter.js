@@ -10,7 +10,7 @@ const sendEmail = require("../utils/sendEmail");
 const rate_limiter = require('../middleware/rate_limiter')
 const authRouter = express.Router()
 
-authRouter.post("/signUp",rate_limiter, async (req, res) => {
+authRouter.post("/signUp", rate_limiter, async (req, res) => {
     try {
         validUser(req.body);
         const email = req.body.email.trim().toLowerCase();
@@ -26,14 +26,14 @@ authRouter.post("/signUp",rate_limiter, async (req, res) => {
         try {
             await sendEmail(
                 email,
-                "Verify your email to access Codexa platform",
+                "Verify your email to access Codexa-web platform",
                 `
                 <h2>Email Verification</h2>
                 <p>Click the link below to verify your email:</p>
                 <a href="${verifyLink}">Verify Email</a>
                 <p>This link is valid for 24 hours.</p>
                 <h4>Regards,<h4>
-                <h4>Codexa team.<h4>
+                <h4>Codexa-web team.<h4>
                 `
             );
         } catch (emailError) {
@@ -53,7 +53,7 @@ authRouter.post("/signUp",rate_limiter, async (req, res) => {
         });
 
         return res.status(201).json({
-            message: "Check SPAM ! Verification email sent. Please check your inbox/Spam."
+            message: "Check spam/inbox! Verification link sent to your email."
         });
 
     } catch (err) {
@@ -87,10 +87,7 @@ authRouter.get("/verify-email/:token", async (req, res) => {
 });
 
 
-
-
-
-authRouter.post('/signIn',rate_limiter, async (req, res) => {
+authRouter.post('/signIn', rate_limiter, async (req, res) => {
     try {
 
         const data = await User.findOne({ email: req.body.email })
@@ -144,5 +141,127 @@ authRouter.post("/logOut", userAuth, async (req, res) => {
     }
 });
 
+
+
+authRouter.post("/forgot-password", rate_limiter, async (req, res) => {
+    try {
+        const email = req.body.email.trim().toLowerCase();
+        
+        const user = await User.findOne({ email });
+        
+        // Always return same message to prevent email enumeration
+        if (!user) {
+            return res.status(200).json({ 
+                message: "If your email exists, you will receive a password reset link." 
+            });
+        }
+        
+        // Only send reset to verified users
+        if (!user.isVerified) {
+            return res.status(400).json({ 
+                message: "Please verify your email first before resetting password." 
+            });
+        }
+        
+        // Generate reset token (similar to email verification)
+        const resetToken = crypto.randomBytes(32).toString("hex");
+        const resetLink = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+        
+        try {
+            await sendEmail(
+                email,
+                "Reset your Codexa-web password",
+                `
+                <h2>Password Reset Request</h2>
+                <p>You requested to reset your password. Click the link below:</p>
+                <a href="${resetLink}">Reset Password</a>
+                <p>This link is valid for 1 hour.</p>
+                <p>If you didn't request this, please ignore this email.</p>
+                <h4>Regards,</h4>
+                <h4>Codexa-web team.</h4>
+                `
+            );
+        } catch (emailError) {
+            return res.status(500).json({
+                message: "Failed to send reset email. Please try again later."
+            });
+        }
+        
+        // Store hashed token (more secure than plain text)
+        const hashedToken = crypto
+            .createHash('sha256')
+            .update(resetToken)
+            .digest('hex');
+        
+        user.passwordResetToken = hashedToken;
+        user.passwordResetTokenExpiry = Date.now() + 60 * 60 * 1000; // 1 hour
+        await user.save();
+        
+        return res.status(200).json({
+            message: "Check spam/inbox! Password reset link sent to your email."
+        });
+        
+    } catch (err) {
+        return res.status(400).json({
+            message: err.message || "Password reset request failed"
+        });
+    }
+});
+
+
+
+
+authRouter.post("/reset-password/:token", rate_limiter, async (req, res) => {
+    try {
+        const { token } = req.params;
+        const { newPassword } = req.body;
+        
+        // Validate new password
+        if (!newPassword || newPassword.length < 8) {
+            return res.status(400).json({
+                message: "Password must be at least 8 characters long"
+            });
+        }
+        
+        // Hash the token from URL to compare with stored hash
+        const hashedToken = crypto
+            .createHash('sha256')
+            .update(token)
+            .digest('hex');
+        
+        const user = await User.findOne({
+            passwordResetToken: hashedToken,
+            passwordResetTokenExpiry: { $gt: Date.now() }
+        });
+        
+        if (!user) {
+            return res.status(400).json({
+                message: "Invalid or expired reset token"
+            });
+        }
+        
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        
+        // Update password and clear reset token
+        user.password = hashedPassword;
+        user.passwordResetToken = undefined;
+        user.passwordResetTokenExpiry = undefined;
+        await user.save();
+        
+        // Optional: Invalidate all active sessions for this user
+        // If you're using Redis sessions with user-specific keys:
+        // await invalidateUserSessions(user._id);
+        
+        return res.status(200).json({
+            message: "Password reset successful. You can now login with your new password."
+        });
+        
+    } catch (err) {
+        return res.status(400).json({
+            message: err.message || "Password reset failed"
+        });
+    }
+});
 
 module.exports = authRouter

@@ -15,28 +15,29 @@ const SignupForm = () => {
     const [age, setAge] = useState("")
     const [isSubmitting, setIsSubmitting] = useState(false)
     const navigate = useNavigate()
+    const [msg, setMsg] = useState("")
     { /* for backend */ }
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (isSubmitting) return
         setIsSubmitting(true)
+        setMsg("")
 
         const userData = { name, email, password, age, skills, college }
 
         try {
             const response = await axios.post("/api/auth/signUp", userData);
-             // success message
-            alert(response.data.message || response.data);
-            setName("")
-            setEmail("")
-            setPassword("")
-            setAge("")
-            setSkills("")
-            setCollege("")
-            // console.log("navigating to signIn")
-            // verify user first
-           //navigate("/signIn")
+            // success message
+            if (response.data.message || response.data); {
+                setMsg(response.data.message || response.data);
+                setName("")
+                setEmail("")
+                setPassword("")
+                setAge("")
+                setSkills("")
+                setCollege("")
+            }
 
         } catch (error) {
             console.log(error);
@@ -123,8 +124,9 @@ const SignupForm = () => {
 
 
                 <span>If already have an account - </span>
-                <Link to="/signInForm" style={{ color: "green", text: "bold", textDecoration: "underline" }}>Sign in</Link>
+                <Link to="/signInForm" style={{ color: "green", fontWeight: "bold", textDecoration: "underline" }}>Sign in</Link>
 
+                {msg && <p className="text-red-600 mt-2">{msg}</p>}
 
                 <button
                     type="submit"
