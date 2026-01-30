@@ -17,6 +17,7 @@ const userAuth = async (req, res, next) => {
 
         //  Check if user exists in DB
         const result = await User.findById(payload._id);
+        //console.log(result);
         if (!result) {
             return res.status(401).json({ error: "User not found!" });
         }
@@ -32,7 +33,8 @@ const userAuth = async (req, res, next) => {
         next();
 
     } catch (err) {
-        res.status(401).json({ error: err.message });
+        return res.status(401).json({ error: "Authentication failed" });
+
     }
 };
 

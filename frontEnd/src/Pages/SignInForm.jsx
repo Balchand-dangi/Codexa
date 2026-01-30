@@ -20,9 +20,6 @@ function SignInForm({ setLoggedIn }) {
         try {
             const response = await axios.post('/api/auth/signIn', userData, { withCredentials: true });
             if (response.status === 200) {
-                localStorage.setItem("isLoggedIn", "true");
-                // Store user email for checking likes/comments
-                localStorage.setItem('userEmail', email);
                 setLoggedIn(true);
                 alert(response.data)
                 setEmail("")

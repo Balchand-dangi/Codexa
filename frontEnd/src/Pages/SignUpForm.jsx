@@ -50,9 +50,7 @@ const SignupForm = () => {
         finally {
             setIsSubmitting(false)
         }
-
     };
-
 
     return (
         <div className="flex justify-center items-center min-h-screen  bg-gray-400">
@@ -68,7 +66,6 @@ const SignupForm = () => {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="w-full mb-3 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-
 
                 />
                 <input

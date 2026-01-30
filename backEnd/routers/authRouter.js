@@ -10,6 +10,16 @@ const sendEmail = require("../utils/sendEmail");
 const rate_limiter = require('../middleware/rate_limiter')
 const authRouter = express.Router()
 
+authRouter.get("/verify", userAuth, (req, res) => {
+    res.status(200).json({
+        authenticated: true,
+        user: {
+            email: req.user.email,
+            name: req.user.name
+        }
+    });
+});
+
 authRouter.post("/signUp", rate_limiter, async (req, res) => {
     try {
         validUser(req.body);
@@ -103,12 +113,12 @@ authRouter.post('/signIn', rate_limiter, async (req, res) => {
             return res.status(401).json('Invalid credential')
         }
         // jwt
-        const token = jwt.sign({ _id: data._id, email: data.email }, process.env.SECRET_KEY, { expiresIn: "3d" })
+        const token = jwt.sign({ _id: data._id, email: data.email }, process.env.SECRET_KEY, { expiresIn: "7d" })
         res.cookie("token", token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
             sameSite: "strict",
-            maxAge: 3 * 24 * 60 * 60 * 1000 // 3 days
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
         });
         res.status(200).send('Login successfully, Welcome back')
     }
@@ -146,27 +156,26 @@ authRouter.post("/logOut", userAuth, async (req, res) => {
 authRouter.post("/forgot-password", rate_limiter, async (req, res) => {
     try {
         const email = req.body.email.trim().toLowerCase();
-        
+
         const user = await User.findOne({ email });
-        
+
         // Always return same message to prevent email enumeration
         if (!user) {
-            return res.status(200).json({ 
-                message: "If your email exists, you will receive a password reset link." 
+            return res.status(200).json({
+                message: "If your email exists, you will receive a password reset link."
             });
         }
-        
+
         // Only send reset to verified users
         if (!user.isVerified) {
-            return res.status(400).json({ 
-                message: "Please verify your email first before resetting password." 
+            return res.status(400).json({
+                message: "Please verify your email first before resetting password."
             });
         }
-        
-        // Generate reset token (similar to email verification)
+
         const resetToken = crypto.randomBytes(32).toString("hex");
         const resetLink = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
-        
+
         try {
             await sendEmail(
                 email,
@@ -186,21 +195,21 @@ authRouter.post("/forgot-password", rate_limiter, async (req, res) => {
                 message: "Failed to send reset email. Please try again later."
             });
         }
-        
+
         // Store hashed token (more secure than plain text)
         const hashedToken = crypto
             .createHash('sha256')
             .update(resetToken)
             .digest('hex');
-        
+
         user.passwordResetToken = hashedToken;
         user.passwordResetTokenExpiry = Date.now() + 60 * 60 * 1000; // 1 hour
         await user.save();
-        
+
         return res.status(200).json({
             message: "Check spam/inbox! Password reset link sent to your email."
         });
-        
+
     } catch (err) {
         return res.status(400).json({
             message: err.message || "Password reset request failed"
@@ -215,48 +224,48 @@ authRouter.post("/reset-password/:token", rate_limiter, async (req, res) => {
     try {
         const { token } = req.params;
         const { newPassword } = req.body;
-        
+
         // Validate new password
         if (!newPassword || newPassword.length < 8) {
             return res.status(400).json({
                 message: "Password must be at least 8 characters long"
             });
         }
-        
+
         // Hash the token from URL to compare with stored hash
         const hashedToken = crypto
             .createHash('sha256')
             .update(token)
             .digest('hex');
-        
+
         const user = await User.findOne({
             passwordResetToken: hashedToken,
             passwordResetTokenExpiry: { $gt: Date.now() }
         });
-        
+
         if (!user) {
             return res.status(400).json({
                 message: "Invalid or expired reset token"
             });
         }
-        
+
         // Hash new password
         const hashedPassword = await bcrypt.hash(newPassword, 10);
-        
+
         // Update password and clear reset token
         user.password = hashedPassword;
         user.passwordResetToken = undefined;
         user.passwordResetTokenExpiry = undefined;
         await user.save();
-        
+
         // Optional: Invalidate all active sessions for this user
         // If you're using Redis sessions with user-specific keys:
         // await invalidateUserSessions(user._id);
-        
+
         return res.status(200).json({
             message: "Password reset successful. You can now login with your new password."
         });
-        
+
     } catch (err) {
         return res.status(400).json({
             message: err.message || "Password reset failed"

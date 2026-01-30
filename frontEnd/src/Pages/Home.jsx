@@ -9,7 +9,7 @@ import { useLocation } from 'react-router-dom';
 
 
 
-function Home({ loggedIn, setLoggedIn }) {
+function Home({ loggedIn, setLoggedIn,user }) {
   const aboutRef = useRef(null);
   const contactRef = useRef(null);
   const location = useLocation();
@@ -29,7 +29,7 @@ function Home({ loggedIn, setLoggedIn }) {
 
   return (
     <>
-      <Navbar loggedIn={loggedIn} setLoggedIn={setLoggedIn} />
+      <Navbar loggedIn={loggedIn} setLoggedIn={setLoggedIn} user={user} />
       {loggedIn ? <ProjectGrid loggedIn={loggedIn} /> : <Welcome />}
       <div ref={aboutRef}>
         <About />

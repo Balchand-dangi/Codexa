@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+
+import axios from "axios";
+import { useEffect, useState } from "react";
 
 import SignupForm from "./Pages/SignUpForm";
 import SignInForm from "./Pages/SignInForm";
@@ -15,9 +17,38 @@ import ForgotPassword from "./Pages/ForgotPassword";
 import ResetPassword from "./Pages/ResetPassword";
 
 function App() {
-  const [loggedIn, setLoggedIn] = useState(
-    localStorage.getItem("isLoggedIn") === "true"
-  );
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [user, setUser] = useState(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+
+  useEffect(() => {
+    const verifyUser = async () => {
+      try {
+        const res = await axios.get("/api/auth/verify", { withCredentials: true });
+
+        if (res.data.authenticated) {
+          setLoggedIn(true);
+          setUser(res.data.user);
+          //console.log("Verified user:", res.data.user);
+        }
+
+      } catch (err) {
+        setLoggedIn(false);
+        setUser(null);
+
+      } finally {
+        setCheckingAuth(false);
+      }
+    };
+
+    verifyUser();
+  }, []);
+
+
+  if (checkingAuth) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <>
@@ -29,28 +60,28 @@ function App() {
         <Route
           path="/Home"
           element={
-            <Home loggedIn={loggedIn} setLoggedIn={setLoggedIn} />
+            <Home loggedIn={loggedIn} setLoggedIn={setLoggedIn} user={user} />
           }
         />
-        
+
         <Route
           path="/"
           element={
-            <Home loggedIn={loggedIn} setLoggedIn={setLoggedIn} />
+            <Home loggedIn={loggedIn} setLoggedIn={setLoggedIn} user={user} />
           }
         />
 
         <Route
           path="/about"
           element={
-            <Home loggedIn={loggedIn} setLoggedIn={setLoggedIn} />
+            <Home loggedIn={loggedIn} setLoggedIn={setLoggedIn} user={user} />
           }
         />
-        
+
         <Route
           path="/support"
           element={
-            <Home loggedIn={loggedIn} setLoggedIn={setLoggedIn} />
+            <Home loggedIn={loggedIn} setLoggedIn={setLoggedIn} user={user} />
           }
         />
 
@@ -66,8 +97,9 @@ function App() {
 
         <Route
           path="/teamStatus"
-          element={<TeamStatus />}
+          element={loggedIn ? <TeamStatus /> : <SignInForm setLoggedIn={setLoggedIn} />}
         />
+
 
         <Route
           path="/upload"
@@ -79,7 +111,7 @@ function App() {
         <Route path="/MyProjects" element={<MyProjects />} />
         <Route path="/MyProfile" element={<MyProfile />} />
 
-        <Route path="/ForgotPassword" element={<ForgotPassword/>} />
+        <Route path="/ForgotPassword" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
 
 

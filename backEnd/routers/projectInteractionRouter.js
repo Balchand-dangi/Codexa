@@ -88,7 +88,7 @@ router.get('/likes/:projectId', userAuth, async (req, res) => {
 })
 
 // Comment on a project
-router.post('/comment/:projectId', userAuth,rate_limiter, async (req, res) => {
+router.post('/comment/:projectId', userAuth, rate_limiter, async (req, res) => {
     try {
         const { projectId } = req.params
         const { text } = req.body

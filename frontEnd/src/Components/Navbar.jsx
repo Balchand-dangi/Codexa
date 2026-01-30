@@ -4,21 +4,16 @@ import { NavLink, Link } from "react-router-dom";
 import NotificationBell from "./NotificationBell";
 import codexa from '../assets/codexaa.png'
 
-const Navbar = ({ loggedIn, setLoggedIn }) => {
+const Navbar = ({ loggedIn, setLoggedIn,user }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [userName, setUserName] = useState("");
 
-  useEffect(() => {
-    if (loggedIn) {
-      const email = localStorage.getItem('userEmail');
-      if (email) {
-        const name = email.split('@')[0];
-        setUserName(name);
-      }
-    }
-  }, [loggedIn]);
+  const displayName =
+  user?.name ||
+  user?.email?.split("@")[0] ||
+  "";
+
 
   const handleLogOut = async (e) => {
     e.preventDefault();
@@ -26,8 +21,6 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
     setIsSubmitting(true);
     try {
       const response = await axios.post('/api/auth/logOut', {}, { withCredentials: true });
-      localStorage.removeItem("isLoggedIn");
-      localStorage.removeItem('userEmail');
       setLoggedIn(false);
       setShowProfileMenu(false);
       alert(response.data.message);
@@ -120,10 +113,10 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
                   >
                     {/* Avatar Icon */}
                     <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center font-bold text-indigo-700">
-                      {userName.charAt(0).toUpperCase()}
+                      {displayName.charAt(0).toUpperCase()}
                     </div>
                     <span className="text-white font-semibold hidden lg:block">
-                      {userName}
+                      {displayName}
                     </span>
                     <svg
                       className={`w-4 h-4 text-white transition-transform ${showProfileMenu ? 'rotate-180' : ''}`}
@@ -153,7 +146,7 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
                         <div className="px-4 py-2 border-b border-gray-200">
                           <p className="text-sm text-gray-600">Signed in as</p>
                           <p className="text-sm font-semibold text-indigo-600 truncate">
-                            {localStorage.getItem('userEmail')}
+                            {user?.email}
                           </p>
                         </div>
 
@@ -203,12 +196,12 @@ const Navbar = ({ loggedIn, setLoggedIn }) => {
             {loggedIn && (
               <div className="flex items-center space-x-3 pb-3 border-b border-indigo-500">
                 <div className="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center font-bold text-indigo-700">
-                  {userName.charAt(0).toUpperCase()}
+                  {displayName.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <p className="text-white font-semibold">{userName}</p>
+                  <p className="text-white font-semibold">{displayName}</p>
                   <p className="text-white/70 text-xs truncate">
-                    {localStorage.getItem('userEmail')}
+                    {user?.email}
                   </p>
                 </div>
               </div>

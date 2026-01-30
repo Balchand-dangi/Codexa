@@ -71,10 +71,12 @@ function MyProjects() {
 
         {!loading && !error && projects.length > 0 && (
           <ul className='space-y-3'>
-            {projects.map(proj => (
+
+            {projects.map((proj, index) => (
               <li key={proj._id} className='bg-black/90 rounded-lg p-4 shadow-sm flex items-center justify-between'>
                 <div>
-                  <p className='font-semibold text-white/95'>{proj.title}</p>
+                   
+                  <p className='font-semibold text-white/95'>{index+1}. {proj.title}</p>
                   <p className='text-xs text-white/80 pt-1'>{proj.techStack?.slice(0, 8).join(', ')}</p>
                 </div>
                 <div className='text-sm text-white/80'>

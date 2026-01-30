@@ -12,14 +12,11 @@ const myprofileRouter = require('./routers/myProfileRouter')
 const MyProjects = require('./routers/myProjectsRouter')
 const path = require('path')
 
-
 const app = express()
 
 // middleware
 app.use(express.json())
 app.use(cookieParser())
-
-
 
 // Routes
 app.use('/api/auth', authRouter) 
@@ -29,8 +26,7 @@ app.use('/api/project', projectInteractionRouter)
 app.use('/api/notifications', notificationRouter)
 app.use('/api/getMyProfile', myprofileRouter)
 app.use("/api/my-projects", MyProjects)
-app.use('/api/auth', authRouter);
-app.use('/api/auth', authRouter);
+
 
 
 // Serve static files

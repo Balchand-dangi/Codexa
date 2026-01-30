@@ -17,7 +17,6 @@ const ProjectGrid = ({ loggedIn }) => {
   const [showCollabModal, setShowCollabModal] = useState(null)
   const [collabMessage, setCollabMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
@@ -108,8 +107,8 @@ const ProjectGrid = ({ loggedIn }) => {
       return
     }
 
-    const userEmail = localStorage.getItem('userEmail')
-    const userName = localStorage.getItem('userName') || userEmail.split('@')[0]
+    const userEmail = localStorage.getItem('userEmail') || userEmail.split('@')[0]
+    const userName = localStorage.getItem('userName') 
     
     // Optimistic update
     const newComment = {
