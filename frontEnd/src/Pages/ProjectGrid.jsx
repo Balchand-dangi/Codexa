@@ -7,7 +7,7 @@ import CollabModel from "../Components/CollabModel";
 import CommentSection from "../Components/CommentSection";
 
 
-const ProjectGrid = ({ loggedIn }) => {
+const ProjectGrid = ({ user }) => {
   const [projects, setProjects] = useState([])
   const [projectStats, setProjectStats] = useState({})
   const [userLikes, setUserLikes] = useState({})
@@ -21,12 +21,12 @@ const ProjectGrid = ({ loggedIn }) => {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    if (!loggedIn) {
+    if (!user) {
       setProjects([])
       return
     }
     fetchProjects()
-  }, [loggedIn])
+  }, [user])
 
   const fetchProjects = async () => {
     setLoading(true)
@@ -107,15 +107,13 @@ const ProjectGrid = ({ loggedIn }) => {
       return
     }
 
-    const userEmail = localStorage.getItem('userEmail') || userEmail.split('@')[0]
-    const userName = localStorage.getItem('userName') 
     
     // Optimistic update
     const newComment = {
       _id: Date.now().toString(), // Temporary ID
       projectId,
-      userEmail,
-      userName,
+      userEmail: user.email,
+      userName: user.name,
       text,
       createdAt: new Date().toISOString()
     }

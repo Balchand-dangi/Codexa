@@ -4,7 +4,7 @@ import { NavLink, Link } from "react-router-dom";
 import NotificationBell from "./NotificationBell";
 import codexa from '../assets/codexaa.png'
 
-const Navbar = ({ loggedIn, setLoggedIn,user }) => {
+const Navbar = ({ user,setUser }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -16,14 +16,16 @@ const Navbar = ({ loggedIn, setLoggedIn,user }) => {
 
 
   const handleLogOut = async (e) => {
+    //console.log("Logging out user");
     e.preventDefault();
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
       const response = await axios.post('/api/auth/logOut', {}, { withCredentials: true });
-      setLoggedIn(false);
+      setUser(null);
       setShowProfileMenu(false);
       alert(response.data.message);
+      //console.log("Logout successful");
     } catch (err) {
       alert(err.response?.data?.error || err.response?.data?.message || "Something went wrong");
     }
@@ -77,7 +79,7 @@ const Navbar = ({ loggedIn, setLoggedIn,user }) => {
 
           {/* Desktop Buttons */}
           <div className="hidden md:flex space-x-4 items-center">
-            {!loggedIn && (
+            {!user && (
               <>
                 <Link to="/signInForm">
                   <button className="px-4 py-2 bg-white text-indigo-600 font-semibold rounded-lg hover:bg-yellow-300 hover:text-indigo-700 transition">
@@ -93,7 +95,7 @@ const Navbar = ({ loggedIn, setLoggedIn,user }) => {
               </>
             )}
 
-            {loggedIn && (
+            {user && (
               <>
                 {/* Notification Bell - Desktop Only */}
                 <NotificationBell />
@@ -193,7 +195,7 @@ const Navbar = ({ loggedIn, setLoggedIn,user }) => {
         >
           <div className="bg-indigo-700 px-4 py-3 space-y-3">
             {/* User info on mobile when logged in */}
-            {loggedIn && (
+            {user && (
               <div className="flex items-center space-x-3 pb-3 border-b border-indigo-500">
                 <div className="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center font-bold text-indigo-700">
                   {displayName.charAt(0).toUpperCase()}
@@ -232,13 +234,13 @@ const Navbar = ({ loggedIn, setLoggedIn,user }) => {
             </NavLink>
 
             {/* Mobile Notification Bell - Only when menu is open */}
-            {loggedIn && menuOpen && (
+            {user && menuOpen && (
               <div className="py-1 border-t border-indigo-500">
                 <NotificationBell />
               </div>
             )}
 
-            {!loggedIn && (
+            {!user && (
               <div className="space-y-3 pt-3">
                 <Link to="/signInForm" onClick={() => setMenuOpen(false)}>
                   <button className="w-full px-4 py-2 bg-white text-indigo-600 font-semibold rounded-lg hover:bg-yellow-300 transition">
@@ -254,7 +256,7 @@ const Navbar = ({ loggedIn, setLoggedIn,user }) => {
               </div>
             )}
 
-            {loggedIn && (
+            {user && (
               <div className="space-y-3 pt-3 border-t border-indigo-500">
                 <Link to="/MyProfile" onClick={() => setMenuOpen(false)}>
                   <button className="w-full px-4 py-2 text-left text-white hover:bg-indigo-600 rounded-lg transition">

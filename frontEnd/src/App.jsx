@@ -17,24 +17,20 @@ import ForgotPassword from "./Pages/ForgotPassword";
 import ResetPassword from "./Pages/ResetPassword";
 
 function App() {
-  const [loggedIn, setLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
 
-
+//console.log("App component rendered. LoggedIn:", loggedIn);
   useEffect(() => {
     const verifyUser = async () => {
       try {
         const res = await axios.get("/api/auth/verify", { withCredentials: true });
-
         if (res.data.authenticated) {
-          setLoggedIn(true);
           setUser(res.data.user);
           //console.log("Verified user:", res.data.user);
         }
 
       } catch (err) {
-        setLoggedIn(false);
         setUser(null);
 
       } finally {
@@ -50,6 +46,8 @@ function App() {
     return <div>Loading...</div>;
   }
 
+  //console.log("Rendering Routes. LoggedIn:", loggedIn, "User:", user);
+
   return (
     <>
 
@@ -60,50 +58,50 @@ function App() {
         <Route
           path="/Home"
           element={
-            <Home loggedIn={loggedIn} setLoggedIn={setLoggedIn} user={user} />
+            <Home user={user} setUser={setUser} />
           }
         />
 
         <Route
           path="/"
           element={
-            <Home loggedIn={loggedIn} setLoggedIn={setLoggedIn} user={user} />
+            <Home user={user} setUser={setUser} />
           }
         />
 
         <Route
           path="/about"
           element={
-            <Home loggedIn={loggedIn} setLoggedIn={setLoggedIn} user={user} />
+            <Home  user={user} setUser={setUser}  />
           }
         />
 
         <Route
           path="/support"
           element={
-            <Home loggedIn={loggedIn} setLoggedIn={setLoggedIn} user={user} />
+            <Home user={user} setUser={setUser}  />
           }
         />
 
         <Route
           path="/signUpForm"
-          element={<SignupForm setLoggedIn={setLoggedIn} />}
+          element={<SignupForm  />}
 
         />
         <Route
           path="/signInForm"
-          element={<SignInForm setLoggedIn={setLoggedIn} />}
+          element={<SignInForm setUser={setUser} />}
         />
 
         <Route
           path="/teamStatus"
-          element={loggedIn ? <TeamStatus /> : <SignInForm setLoggedIn={setLoggedIn} />}
+          element={user ? <TeamStatus /> : <SignInForm setUser={setUser} />}
         />
 
 
         <Route
           path="/upload"
-          element={loggedIn ? <Upload /> : <SignInForm setLoggedIn={setLoggedIn} />}
+          element={user ? <Upload /> : <SignInForm setUser={setUser} />}
         />
 
         <Route path="/verify-email/:token" element={<VerifyEmail />} />

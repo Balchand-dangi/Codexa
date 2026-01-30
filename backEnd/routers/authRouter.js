@@ -120,7 +120,13 @@ authRouter.post('/signIn', rate_limiter, async (req, res) => {
             sameSite: "strict",
             maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
         });
-        res.status(200).send('Login successfully, Welcome back')
+        res.status(200).json({
+            message: "Successfully signed in. Welcome back!",
+            user: {
+                email: data.email,
+                name: data.name
+            }
+        });
     }
     catch (err) {
         res.status(401).send(err.message)
@@ -257,10 +263,6 @@ authRouter.post("/reset-password/:token", rate_limiter, async (req, res) => {
         user.passwordResetToken = undefined;
         user.passwordResetTokenExpiry = undefined;
         await user.save();
-
-        // Optional: Invalidate all active sessions for this user
-        // If you're using Redis sessions with user-specific keys:
-        // await invalidateUserSessions(user._id);
 
         return res.status(200).json({
             message: "Password reset successful. You can now login with your new password."

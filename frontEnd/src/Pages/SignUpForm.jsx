@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import axios from "axios";
 
 
@@ -14,7 +14,6 @@ const SignupForm = () => {
     const [name, setName] = useState("")
     const [age, setAge] = useState("")
     const [isSubmitting, setIsSubmitting] = useState(false)
-    const navigate = useNavigate()
     const [msg, setMsg] = useState("")
     { /* for backend */ }
 

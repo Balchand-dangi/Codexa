@@ -3,25 +3,29 @@ import React, { useState } from 'react'
 import { AiOutlineEyeInvisible, AiOutlineEye } from 'react-icons/ai'
 import { Link, useNavigate } from 'react-router-dom'
 
-function SignInForm({ setLoggedIn }) {
+function SignInForm({setUser }) {
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     const [showPassword, setShowPassword] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const navigate = useNavigate()
 
+    //console.log("Rendering SignInForm")
     const handleSubmit = async (e) => {
+        //console.log("Submitting sign in form")
         e.preventDefault();
         if (isSubmitting) return;
         setIsSubmitting(true);
 
         const userData = { email, password }
-
+        //console.log("Entered data ", userData) 
         try {
             const response = await axios.post('/api/auth/signIn', userData, { withCredentials: true });
             if (response.status === 200) {
-                setLoggedIn(true);
-                alert(response.data)
+                //console.log("Sign in successful:", response.data);
+                setUser(response.data.user);
+                console.log("User data set in SignInForm:", response.data.user);
+                alert(response.data.message || response.data || "Sign in successful");
                 setEmail("")
                 setPassword("")
                 navigate("/Home")
@@ -77,7 +81,7 @@ function SignInForm({ setLoggedIn }) {
                     <Link to={'/ForgotPassword'} className='text-sm pl-1 pt-2 underline text-gray-700'>Forgot password</Link>
 
                     <button
-                        type='Submit' disabled={isSubmitting} className="w-full bg-blue-500 text-white cursor-pointer py-2 rounded-md hover:bg-blue-600 mb-4 mt-5 transition">
+                        type='submit' disabled={isSubmitting} className="w-full bg-blue-500 text-white cursor-pointer py-2 rounded-md hover:bg-blue-600 mb-4 mt-5 transition">
                         {isSubmitting ? "Signning in..." : "Sign in"}
                     </button>
 
