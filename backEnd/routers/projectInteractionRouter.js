@@ -3,7 +3,6 @@ const { Like, Comment, CollaborationRequest } = require('../model/projectInterac
 const Notification = require('../model/notificationSchema')
 const Project = require('../model/projectSchema')
 const User = require('../model/userSchema')
-const userAuth = require('../middleware/userAuth')
 const rate_limiter = require('../middleware/rate_limiter')
 const mongoose = require('mongoose')
 
@@ -12,7 +11,7 @@ const mongoose = require('mongoose')
 const router = express.Router()
 
 // Like a project
-router.post('/like/:projectId', userAuth, async (req, res) => {
+router.post('/like/:projectId', async (req, res) => {
     try {
         const { projectId } = req.params
         const userEmail = req.user.email
@@ -53,7 +52,7 @@ router.post('/like/:projectId', userAuth, async (req, res) => {
 })
 
 // Unlike a project
-router.delete('/unlike/:projectId', userAuth, async (req, res) => {
+router.delete('/unlike/:projectId', async (req, res) => {
     try {
         const { projectId } = req.params
         const userEmail = req.user.email
@@ -70,7 +69,7 @@ router.delete('/unlike/:projectId', userAuth, async (req, res) => {
 })
 
 // Get likes for a project
-router.get('/likes/:projectId', userAuth, async (req, res) => {
+router.get('/likes/:projectId', async (req, res) => {
     try {
         const { projectId } = req.params
         const likes = await Like.find({ projectId }).sort({ createdAt: -1 })
@@ -88,7 +87,7 @@ router.get('/likes/:projectId', userAuth, async (req, res) => {
 })
 
 // Comment on a project
-router.post('/comment/:projectId', userAuth, rate_limiter, async (req, res) => {
+router.post('/comment/:projectId', rate_limiter, async (req, res) => {
     try {
         const { projectId } = req.params
         const { text } = req.body
@@ -138,7 +137,7 @@ router.post('/comment/:projectId', userAuth, rate_limiter, async (req, res) => {
 })
 
 // Get comments for a project
-router.get('/comments/:projectId', userAuth, async (req, res) => {
+router.get('/comments/:projectId', async (req, res) => {
     try {
         const { projectId } = req.params
         const comments = await Comment.find({ projectId }).sort({ createdAt: -1 })
@@ -152,7 +151,7 @@ router.get('/comments/:projectId', userAuth, async (req, res) => {
 })
 
 // Delete a comment (only by comment owner)
-router.delete('/comment/:commentId', userAuth, async (req, res) => {
+router.delete('/comment/:commentId', async (req, res) => {
     try {
         const { commentId } = req.params
         const userEmail = req.user.email
@@ -174,7 +173,7 @@ router.delete('/comment/:commentId', userAuth, async (req, res) => {
 })
 
 // Send collaboration request
-router.post('/collaborate/:projectId', userAuth, rate_limiter, async (req, res) => {
+router.post('/collaborate/:projectId', rate_limiter, async (req, res) => {
     try {
         const { projectId } = req.params
         const { message } = req.body
@@ -233,7 +232,7 @@ router.post('/collaborate/:projectId', userAuth, rate_limiter, async (req, res) 
 
 
 // to get team status
-router.get('/collaboration-requests', userAuth, async (req, res) => {
+router.get('/collaboration-requests', async (req, res) => {
   try {
     const { projectId } = req.query
     // console.log('Received projectId:', projectId)
@@ -267,7 +266,7 @@ router.get('/collaboration-requests', userAuth, async (req, res) => {
 
 
 // Update collaboration request status
-router.patch('/collaboration-request/:requestId', userAuth, async (req, res) => {
+router.patch('/collaboration-request/:requestId', async (req, res) => {
     try {
         const { requestId } = req.params
         const { status } = req.body

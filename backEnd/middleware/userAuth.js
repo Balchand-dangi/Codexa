@@ -29,6 +29,7 @@ const userAuth = async (req, res, next) => {
         }
 
         //  Attach user info to request
+        //console.log("User authenticated by userAuth middleware:", result.email);
         req.user = result;  
         next();
 

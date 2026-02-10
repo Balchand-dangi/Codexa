@@ -6,7 +6,7 @@ import SignupForm from "./Pages/SignUpForm";
 import SignInForm from "./Pages/SignInForm";
 import Home from "./Pages/Home";
 import Upload from "./Pages/Upload";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, useNavigate } from "react-router-dom";
 import ScrollToTop from "./Components/ScrollTop";
 import VerifyEmail from "./Pages/VerifyEmail";
 import ComingSoon from "./Pages/ComingSoon";
@@ -16,15 +16,20 @@ import MyProfile from "./Pages/MyProfile";
 import ForgotPassword from "./Pages/ForgotPassword";
 import ResetPassword from "./Pages/ResetPassword";
 
+
+
 function App() {
   const [user, setUser] = useState(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
 
-//console.log("App component rendered. LoggedIn:", loggedIn);
+  const navigate = useNavigate();
+  //console.log("App component rendered. LoggedIn:");
   useEffect(() => {
     const verifyUser = async () => {
       try {
         const res = await axios.get("/api/auth/verify", { withCredentials: true });
+        //console.log("Auth verification response:", res.data);
+
         if (res.data.authenticated) {
           setUser(res.data.user);
           //console.log("Verified user:", res.data.user);
@@ -43,10 +48,11 @@ function App() {
 
 
   if (checkingAuth) {
-    return <div>Loading...</div>;
+    return navigate("/Home")
+
   }
 
-  //console.log("Rendering Routes. LoggedIn:", loggedIn, "User:", user);
+  //console.log("Rendering Routes. LoggedIn:");
 
   return (
     <>
@@ -72,20 +78,20 @@ function App() {
         <Route
           path="/about"
           element={
-            <Home  user={user} setUser={setUser}  />
+            <Home user={user} setUser={setUser} />
           }
         />
 
         <Route
           path="/support"
           element={
-            <Home user={user} setUser={setUser}  />
+            <Home user={user} setUser={setUser} />
           }
         />
 
         <Route
           path="/signUpForm"
-          element={<SignupForm  />}
+          element={<SignupForm />}
 
         />
         <Route

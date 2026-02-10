@@ -20,6 +20,7 @@ authRouter.get("/verify", userAuth, (req, res) => {
     });
 });
 
+
 authRouter.post("/signUp", rate_limiter, async (req, res) => {
     try {
         validUser(req.body);
@@ -73,6 +74,7 @@ authRouter.post("/signUp", rate_limiter, async (req, res) => {
         });
     }
 });
+
 
 authRouter.get("/verify-email/:token", async (req, res) => {
     try {
@@ -133,6 +135,7 @@ authRouter.post('/signIn', rate_limiter, async (req, res) => {
     }
 })
 
+
 authRouter.post("/logOut", userAuth, async (req, res) => {
     try {
         const { token } = req.cookies;
@@ -156,7 +159,6 @@ authRouter.post("/logOut", userAuth, async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
-
 
 
 authRouter.post("/forgot-password", rate_limiter, async (req, res) => {
@@ -222,8 +224,6 @@ authRouter.post("/forgot-password", rate_limiter, async (req, res) => {
         });
     }
 });
-
-
 
 
 authRouter.post("/reset-password/:token", rate_limiter, async (req, res) => {

@@ -146,7 +146,7 @@ const Navbar = ({ user,setUser }) => {
                       {/* Dropdown Menu */}
                       <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-2 z-50">
                         <div className="px-4 py-2 border-b border-gray-200">
-                          <p className="text-sm text-gray-600">Signed in as</p>
+                          <p className="text-sm text-gray-600">Signed in as {user.isAdmin ? "-Admin" : "-User"}</p>
                           <p className="text-sm font-semibold text-indigo-600 truncate">
                             {user?.email}
                           </p>

@@ -20,8 +20,8 @@ function validUser(data) {
         throw new Error("Password must contain: 8+ characters, uppercase, lowercase, number, and special character");
     }
 
-    if (data.age < 14 || data.age > 60) {
-        throw new Error('Age must be between 14-60 years');
+    if (data.age < 10 || data.age > 70) {
+        throw new Error('Age must be between 10-70 years');
     }
 }
 
