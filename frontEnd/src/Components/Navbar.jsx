@@ -8,6 +8,7 @@ const Navbar = ({ user, setUser }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const navigate = useNavigate();
 
   const displayName =
     user?.name ||
@@ -25,6 +26,7 @@ const Navbar = ({ user, setUser }) => {
       setUser(null);
       setShowProfileMenu(false);
       alert(response.data.message);
+      navigate("/Home");
       //console.log("Logout successful");
     } catch (err) {
       alert(err.response?.data?.error || err.response?.data?.message || "Something went wrong");
