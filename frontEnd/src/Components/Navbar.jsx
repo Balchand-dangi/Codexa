@@ -1,6 +1,6 @@
 import axios from "axios";
 import { useState, useEffect } from "react";
-import { NavLink, Link } from "react-router-dom";
+import { NavLink, Link, useNavigate } from "react-router-dom";
 import NotificationBell from "./NotificationBell";
 import codexa from '../assets/codexaa.png'
 
@@ -26,7 +26,7 @@ const Navbar = ({ user, setUser }) => {
       setUser(null);
       setShowProfileMenu(false);
       alert(response.data.message);
-      navigate("/Home");
+      navigate("/");
       //console.log("Logout successful");
     } catch (err) {
       alert(err.response?.data?.error || err.response?.data?.message || "Something went wrong");
