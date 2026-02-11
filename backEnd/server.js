@@ -12,6 +12,8 @@ const myprofileRouter = require('./routers/myProfileRouter')
 const MyProjects = require('./routers/myProjectsRouter')
 const path = require('path')
 const userAuth = require('./middleware/userAuth')
+const adminRouter = require('./routers/adminRouter')
+
 
 const app = express()
 
@@ -27,6 +29,7 @@ app.use('/api/project',userAuth, projectInteractionRouter)
 app.use('/api/notifications', notificationRouter)
 app.use('/api/getMyProfile', myprofileRouter)
 app.use("/api/my-projects", MyProjects)
+app.use("/api/admin", adminRouter)
 
 // Serve static files
 app.use(express.static(path.join(__dirname, "../frontEnd/dist")))

@@ -4,15 +4,15 @@ import { NavLink, Link } from "react-router-dom";
 import NotificationBell from "./NotificationBell";
 import codexa from '../assets/codexaa.png'
 
-const Navbar = ({ user,setUser }) => {
+const Navbar = ({ user, setUser }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   const displayName =
-  user?.name ||
-  user?.email?.split("@")[0] ||
-  "";
+    user?.name ||
+    user?.email?.split("@")[0] ||
+    "";
 
 
   const handleLogOut = async (e) => {
@@ -75,6 +75,17 @@ const Navbar = ({ user,setUser }) => {
               }
             >Support
             </NavLink>
+            {user && user.role === 'admin' && (
+              <NavLink
+                to="/admin"
+                className={({ isActive }) =>
+                  `hover:text-yellow-300 px-3 py-2 rounded transition-colors ${isActive ? "bg-white/20 text-yellow-300" : ""}`
+                }
+              >
+                ⚙️ Admin Panel
+              </NavLink>
+            )}
+
           </ul>
 
           {/* Desktop Buttons */}
@@ -146,7 +157,10 @@ const Navbar = ({ user,setUser }) => {
                       {/* Dropdown Menu */}
                       <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-2 z-50">
                         <div className="px-4 py-2 border-b border-gray-200">
-                          <p className="text-sm text-gray-600">Signed in as {user.isAdmin ? "-Admin" : "-User"}</p>
+                          <p className="text-sm text-gray-600">Signed in as
+                            <span className="font-bold text-blue-600"> {user.role === 'admin' ? ' Admin' : ' User'}</span>
+                          </p>
+
                           <p className="text-sm font-semibold text-indigo-600 truncate">
                             {user?.email}
                           </p>
@@ -202,6 +216,10 @@ const Navbar = ({ user,setUser }) => {
                 </div>
                 <div>
                   <p className="text-white font-semibold">{displayName}</p>
+                  <p className="text-sm text-gray-600">Signed in as
+                    <span className="font-bold"> {user.role === 'admin' ? ' Admin' : ' User'}</span>
+                  </p>
+
                   <p className="text-white/70 text-xs truncate">
                     {user?.email}
                   </p>
@@ -232,6 +250,17 @@ const Navbar = ({ user,setUser }) => {
             >
               Support
             </NavLink>
+
+            {user && user.role === 'admin' && (
+              <NavLink
+                to="/admin"
+                onClick={() => setMenuOpen(false)}
+                className="block font-semibold py-2 text-white hover:text-yellow-300 transition"
+              >
+                ⚙️ Admin Panel
+              </NavLink>
+            )}
+
 
             {/* Mobile Notification Bell - Only when menu is open */}
             {user && menuOpen && (

@@ -15,7 +15,8 @@ authRouter.get("/verify", userAuth, (req, res) => {
         authenticated: true,
         user: {
             email: req.user.email,
-            name: req.user.name
+            name: req.user.name,
+            role: req.user.role
         }
     });
 });
@@ -126,7 +127,8 @@ authRouter.post('/signIn', rate_limiter, async (req, res) => {
             message: "Successfully signed in. Welcome back!",
             user: {
                 email: data.email,
-                name: data.name
+                name: data.name,
+                role: data.role
             }
         });
     }

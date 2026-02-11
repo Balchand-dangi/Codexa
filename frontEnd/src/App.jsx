@@ -15,8 +15,8 @@ import TeamStatus from "./Pages/TeamStatus";
 import MyProfile from "./Pages/MyProfile";
 import ForgotPassword from "./Pages/ForgotPassword";
 import ResetPassword from "./Pages/ResetPassword";
-
-
+import AdminPanel from "./Pages/AdminPanel";
+import Navbar from "./Components/Navbar";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -56,7 +56,7 @@ function App() {
 
   return (
     <>
-
+      <Navbar user={user} setUser={setUser} />
       <ScrollToTop />
 
       <Routes>
@@ -117,6 +117,8 @@ function App() {
 
         <Route path="/ForgotPassword" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
+
+        <Route path="/admin" element={<AdminPanel user={user} />} />
 
 
 

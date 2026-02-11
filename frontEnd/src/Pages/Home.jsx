@@ -29,7 +29,7 @@ function Home({user,setUser }) {
 
   return (
     <>
-      <Navbar user={user} setUser={setUser} />
+    
       {user ? <ProjectGrid user={user} /> : <Welcome />}
       <div ref={aboutRef}>
         <About />
