@@ -1,106 +1,13 @@
 const express = require('express');
 const adminRouter = express.Router();
 const adminMiddleware = require('../middleware/adminMiddleware');
-const User = require('../model/userSchema');
-const Projects = require('../model/projectSchema');
-const { Like, Comment } = require('../model/projectInteractionSchema');
+const adminController = require('../controllers/adminController');
 
-// Get all users (Admin only)
-adminRouter.get('/users', adminMiddleware, async (req, res) => {
-    try {
-        const users = await User.find()
-            .select('-password -emailVerifyToken -passwordResetToken') // Don't send sensitive data
-            .sort({ createdAt: -1 });
-        
-        res.status(200).json(users);
-    } catch (err) {
-        res.status(500).json({ message: "Failed to fetch users", error: err.message });
-    }
-});
-
-// Delete user (Admin only)
-adminRouter.delete('/users/:userId', adminMiddleware, async (req, res) => {
-    try {
-        const { userId } = req.params;
-
-        // Prevent admin from deleting themselves
-        if (userId === req.user._id.toString()) {
-            return res.status(400).json({ message: "You cannot delete your own account" });
-        }
-
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
-        }
-
-        // Delete user's projects
-        await Projects.deleteMany({ email: user.email });
-        
-        // Delete user's likes and comments
-        await Like.deleteMany({ userEmail: user.email });
-        await Comment.deleteMany({ userEmail: user.email });
-
-        // Delete user
-        await User.findByIdAndDelete(userId);
-
-        res.status(200).json({ message: "User and their data deleted successfully" });
-    } catch (err) {
-        res.status(500).json({ message: "Failed to delete user", error: err.message });
-    }
-});
-
-// Get all projects (Admin only)
-adminRouter.get('/projects', adminMiddleware, async (req, res) => {
-    try {
-        const projects = await Projects.find().sort({ createdAt: -1 });
-        res.status(200).json(projects);
-    } catch (err) {
-        res.status(500).json({ message: "Failed to fetch projects", error: err.message });
-    }
-});
-
-// Delete project (Admin only)
-adminRouter.delete('/projects/:projectId', adminMiddleware, async (req, res) => {
-    try {
-        const { projectId } = req.params;
-
-        const project = await Projects.findById(projectId);
-        if (!project) {
-            return res.status(404).json({ message: "Project not found" });
-        }
-
-        // Delete associated likes and comments
-        await Like.deleteMany({ projectId });
-        await Comment.deleteMany({ projectId });
-
-        // Delete project
-        await Projects.findByIdAndDelete(projectId);
-
-        res.status(200).json({ message: "Project deleted successfully" });
-    } catch (err) {
-        res.status(500).json({ message: "Failed to delete project", error: err.message });
-    }
-});
-
-// Get dashboard stats (Admin only)
-adminRouter.get('/stats', adminMiddleware, async (req, res) => {
-    try {
-        const [totalUsers, totalProjects, totalComments, totalLikes] = await Promise.all([
-            User.countDocuments(),
-            Projects.countDocuments(),
-            Comment.countDocuments(),
-            Like.countDocuments()
-        ]);
-
-        res.status(200).json({
-            totalUsers,
-            totalProjects,
-            totalComments,
-            totalLikes
-        });
-    } catch (err) {
-        res.status(500).json({ message: "Failed to fetch stats", error: err.message });
-    }
-});
+// Routes - mapping URLs to controller methods
+adminRouter.get('/users', adminMiddleware, adminController.getAllUsers);
+adminRouter.delete('/users/:userId', adminMiddleware, adminController.deleteUser);
+adminRouter.get('/projects', adminMiddleware, adminController.getAllProjects);
+adminRouter.delete('/projects/:projectId', adminMiddleware, adminController.deleteProject);
+adminRouter.get('/stats', adminMiddleware, adminController.getStats);
 
 module.exports = adminRouter;

@@ -1,5 +1,5 @@
 const express = require('express')
-const connectDB = require('./database')
+const connectDB = require('./config/database')
 const cookieParser = require('cookie-parser')
 const projectRouter = require('./routers/uploadProjectRouter')
 const authRouter = require('./routers/authRouter')
