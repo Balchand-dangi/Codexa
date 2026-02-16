@@ -218,8 +218,8 @@ const Navbar = ({ user, setUser }) => {
                 </div>
                 <div>
                   <p className="text-white font-semibold">{displayName}</p>
-                  <p className="text-sm text-gray-600">Signed in as
-                    <span className="font-bold"> {user.role === 'admin' ? ' Admin' : ' User'}</span>
+                  <p className="text-sm text-white/70">Signed in as
+                    <span className="font-bold text-yellow-400"> {user.role === 'admin' ? ' Admin' : ' User'}</span>
                   </p>
 
                   <p className="text-white/70 text-xs truncate">

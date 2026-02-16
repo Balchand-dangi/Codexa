@@ -34,7 +34,7 @@ function ForgotPassword() {
 
   return (
     <>
-      <div className='flex justify-center items-center min-h-screen bg-gray-400'>
+      <div className='flex justify-center items-center min-h-screen bg-gradient-to-br from-blue-400 via-indigo-500 to-purple-500'>
         <form onSubmit={handleSubmit} className="bg-white/80 p-6 rounded-xl shadow-md w-90">
           <h2 className='text-2xl font-bold mb-4 text-center'>Forgot Password?</h2>
           <p className='text-sm text-gray-600 text-center mb-6'>

@@ -49,7 +49,7 @@ function SignInForm({setUser }) {
 
     return (
         <>
-            <div className='flex justify-center items-center min-h-screen bg-gray-400'>
+            <div className='flex justify-center items-center min-h-screen bg-gradient-to-br from-blue-400 via-indigo-500 to-purple-500'>
                 <form onSubmit={handleSubmit} className="bg-white/80 p-6 rounded-xl shadow-md w-90">
                     <h2 className='text-2xl font-bold mb-10 text-center'>Sign in</h2>
 

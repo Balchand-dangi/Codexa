@@ -3,16 +3,28 @@ const User = require('../model/userSchema')
 const { Like, Comment } = require('../model/projectInteractionSchema')
 const validProject = require('../utils/validateProject')
 
-// Get all projects with stats
+// Get all projects with stats (CURSOR-BASED PAGINATION for feed)
 exports.getAllProjects = async (req, res) => {
     try {
-        const userEmail = req.user.email // Get from your auth middleware
+        const userEmail = req.user.email
+        const limit = parseInt(req.query.limit) || 21 // 21 projects per page
+        const cursor = req.query.cursor // Last project ID from previous page
         
-        // Fetch all projects
-        const projects = await Project.find().lean()
+        // Build query
+        const query = cursor ? { _id: { $lt: cursor } } : {}
+        
+        // Fetch projects (fetch one extra to check if more exist)
+        const projects = await Project.find(query)
+            .sort({ _id: -1 }) // Newest first
+            .limit(limit + 1)
+            .lean()
+        
+        // Check if more projects exist
+        const hasMore = projects.length > limit
+        const results = hasMore ? projects.slice(0, limit) : projects
         
         // Get all project IDs
-        const projectIds = projects.map(p => p._id)
+        const projectIds = results.map(p => p._id)
         
         // Fetch likes and comments for all projects in parallel
         const [allLikes, allComments] = await Promise.all([
@@ -37,7 +49,7 @@ exports.getAllProjects = async (req, res) => {
         })
         
         // Add stats to each project
-        const projectsWithStats = projects.map(project => {
+        const projectsWithStats = results.map(project => {
             const projectId = project._id.toString()
             const projectLikes = likesMap[projectId] || []
             const projectComments = commentsMap[projectId] || []
@@ -51,11 +63,50 @@ exports.getAllProjects = async (req, res) => {
             }
         })
         
-        res.json(projectsWithStats)
+        res.json({
+            data: projectsWithStats,
+            pagination: {
+                hasMore: hasMore,
+                nextCursor: hasMore ? results[results.length - 1]._id : null
+            }
+        })
     }
     catch(err) {
         console.error("Error fetching projects:", err)
         res.status(500).json({ message: "Unable to fetch data from DB" })
+    }
+}
+
+// Get user's own projects (OFFSET-BASED PAGINATION)
+exports.getMyProjects = async (req, res) => {
+    try {
+        const userEmail = req.user.email
+        const page = parseInt(req.query.page) || 1
+        const limit = parseInt(req.query.limit) || 10
+        const skip = (page - 1) * limit
+        
+        // Fetch projects with pagination
+        const [myProjects, totalCount] = await Promise.all([
+            Project.find({ email: userEmail })
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit)
+                .lean(),
+            Project.countDocuments({ email: userEmail })
+        ])
+        
+        res.json({
+            data: myProjects,
+            pagination: {
+                currentPage: page,
+                totalPages: Math.ceil(totalCount / limit),
+                totalCount: totalCount,
+                hasMore: page < Math.ceil(totalCount / limit)
+            }
+        })
+    } catch (error) {
+        console.error('Error fetching user projects:', error)
+        res.status(500).json({ message: 'Failed to fetch projects' })
     }
 }
 
@@ -82,20 +133,6 @@ exports.uploadProject = async (req, res) => {
     }
 }
 
-// Get user's own projects
-exports.getMyProjects = async (req, res) => {
-    try {
-        const userEmail = req.user.email; // From JWT payload
-        
-        const myProjects = await Project.find({ email: userEmail })
-            .sort({ createdAt: -1 })
-            .lean();
 
-        res.json(myProjects);
-    } catch (error) {
-        console.error('Error fetching user projects:', error);
-        res.status(500).json({ message: 'Failed to fetch projects' });
-    }
-}
 
 

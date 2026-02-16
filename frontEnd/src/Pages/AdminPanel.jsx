@@ -9,14 +9,32 @@ const AdminPanel = ({ user }) => {
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(false);
 
+  // Pagination states
+  // Users tab - 20 users per page with pagination
+  // Projects tab - 20 projects per page with pagination
+  // Mobile responsive (cards on mobile, table on desktop)
+  // Maintains pagination state when deleting items
+  // Shows item numbers correctly across pages
+
+  const [usersPagination, setUsersPagination] = useState({
+    currentPage: 1,
+    totalPages: 0,
+    totalCount: 0
+  });
+  const [projectsPagination, setProjectsPagination] = useState({
+    currentPage: 1,
+    totalPages: 0,
+    totalCount: 0
+  });
+
   // Redirect if not admin
   if (!user || user.role !== 'admin') {
     return <Navigate to="/Home" />;
   }
 
   useEffect(() => {
-    if (activeTab === 'users') fetchUsers();
-    if (activeTab === 'projects') fetchProjects();
+    if (activeTab === 'users') fetchUsers(1);
+    if (activeTab === 'projects') fetchProjects(1);
     if (activeTab === 'stats') fetchStats();
   }, [activeTab]);
 
@@ -32,11 +50,18 @@ const AdminPanel = ({ user }) => {
     }
   };
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (page) => {
     setLoading(true);
     try {
-      const res = await axios.get('/api/admin/users', { withCredentials: true });
-      setUsers(res.data);
+      const res = await axios.get(`/api/admin/users?page=${page}&limit=20`, {
+        withCredentials: true
+      });
+      setUsers(res.data.data);
+      setUsersPagination({
+        currentPage: res.data.pagination.currentPage,
+        totalPages: res.data.pagination.totalPages,
+        totalCount: res.data.pagination.totalCount
+      });
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to fetch users');
     } finally {
@@ -44,11 +69,18 @@ const AdminPanel = ({ user }) => {
     }
   };
 
-  const fetchProjects = async () => {
+  const fetchProjects = async (page) => {
     setLoading(true);
     try {
-      const res = await axios.get('/api/admin/projects', { withCredentials: true });
-      setProjects(res.data);
+      const res = await axios.get(`/api/admin/projects?page=${page}&limit=20`, {
+        withCredentials: true
+      });
+      setProjects(res.data.data);
+      setProjectsPagination({
+        currentPage: res.data.pagination.currentPage,
+        totalPages: res.data.pagination.totalPages,
+        totalCount: res.data.pagination.totalCount
+      });
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to fetch projects');
     } finally {
@@ -56,13 +88,25 @@ const AdminPanel = ({ user }) => {
     }
   };
 
+  const handleUsersPageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= usersPagination.totalPages) {
+      fetchUsers(newPage);
+    }
+  };
+
+  const handleProjectsPageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= projectsPagination.totalPages) {
+      fetchProjects(newPage);
+    }
+  };
+
   const deleteUser = async (userId) => {
     if (!window.confirm('Are you sure you want to delete this user? This will also delete all their projects.')) return;
-    
+
     try {
       await axios.delete(`/api/admin/users/${userId}`, { withCredentials: true });
       alert('User deleted successfully');
-      fetchUsers();
+      fetchUsers(usersPagination.currentPage);
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to delete user');
     }
@@ -70,14 +114,98 @@ const AdminPanel = ({ user }) => {
 
   const deleteProject = async (projectId) => {
     if (!window.confirm('Are you sure you want to delete this project?')) return;
-    
+
     try {
       await axios.delete(`/api/admin/projects/${projectId}`, { withCredentials: true });
       alert('Project deleted successfully');
-      fetchProjects();
+      fetchProjects(projectsPagination.currentPage);
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to delete project');
     }
+  };
+
+  // Generate page numbers with ellipsis
+  const getPageNumbers = (currentPage, totalPages) => {
+    const pages = [];
+    const maxVisible = 5;
+
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) pages.push(i);
+        pages.push('...');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push('...');
+        for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push('...');
+        pages.push(currentPage - 1);
+        pages.push(currentPage);
+        pages.push(currentPage + 1);
+        pages.push('...');
+        pages.push(totalPages);
+      }
+    }
+
+    return pages;
+  };
+
+  // Pagination Component
+  const PaginationControls = ({ currentPage, totalPages, totalCount, onPageChange, itemName }) => {
+    if (totalPages <= 1) return null;
+
+    return (
+      <div className="mt-6 space-y-3">
+        <div className='flex items-center justify-center gap-2 flex-wrap'>
+          {/* Previous Button */}
+          <button
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className='px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-sm'
+          >
+            ← Previous
+          </button>
+
+          {/* Page Numbers */}
+          {getPageNumbers(currentPage, totalPages).map((page, index) => (
+            page === '...' ? (
+              <span key={`ellipsis-${index}`} className='px-3 py-2 text-gray-600'>...</span>
+            ) : (
+              <button
+                key={page}
+                onClick={() => onPageChange(page)}
+                className={`px-4 py-2 rounded-lg font-semibold transition-colors text-sm ${currentPage === page
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+              >
+                {page}
+              </button>
+            )
+          ))}
+
+          {/* Next Button */}
+          <button
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className='px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-sm'
+          >
+            Next →
+          </button>
+        </div>
+
+        {/* Page Info */}
+        <div className='text-center text-gray-600 text-sm'>
+          Page {currentPage} of {totalPages} • {totalCount} total {itemName}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -93,33 +221,30 @@ const AdminPanel = ({ user }) => {
           <div className="flex flex-col sm:flex-row gap-2">
             <button
               onClick={() => setActiveTab('stats')}
-              className={`flex-1 py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg font-semibold transition text-sm sm:text-base ${
-                activeTab === 'stats'
+              className={`flex-1 py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg font-semibold transition text-sm sm:text-base ${activeTab === 'stats'
                   ? 'bg-indigo-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+                }`}
             >
               📊 Statistics
             </button>
             <button
               onClick={() => setActiveTab('users')}
-              className={`flex-1 py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg font-semibold transition text-sm sm:text-base ${
-                activeTab === 'users'
+              className={`flex-1 py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg font-semibold transition text-sm sm:text-base ${activeTab === 'users'
                   ? 'bg-indigo-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+                }`}
             >
-              👥 Users ({users.length})
+              👥 Users {usersPagination.totalCount > 0 && `(${usersPagination.totalCount})`}
             </button>
             <button
               onClick={() => setActiveTab('projects')}
-              className={`flex-1 py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg font-semibold transition text-sm sm:text-base ${
-                activeTab === 'projects'
+              className={`flex-1 py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg font-semibold transition text-sm sm:text-base ${activeTab === 'projects'
                   ? 'bg-indigo-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+                }`}
             >
-              📁 Projects ({projects.length})
+              📁 Projects {projectsPagination.totalCount > 0 && `(${projectsPagination.totalCount})`}
             </button>
           </div>
         </div>
@@ -163,6 +288,7 @@ const AdminPanel = ({ user }) => {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b-2 border-gray-200">
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700">#</th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700">Name</th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700">Email</th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700">Role</th>
@@ -172,14 +298,16 @@ const AdminPanel = ({ user }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {users.map((u) => (
+                    {users.map((u, index) => (
                       <tr key={u._id} className="border-b border-gray-100 hover:bg-gray-50 transition">
+                        <td className="py-3 px-4 text-gray-600 font-semibold">
+                          {(usersPagination.currentPage - 1) * 20 + index + 1}
+                        </td>
                         <td className="py-3 px-4 font-semibold text-gray-800">{u.name}</td>
                         <td className="py-3 px-4 text-gray-600">{u.email}</td>
                         <td className="py-3 px-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                            u.role === 'admin' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
-                          }`}>
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${u.role === 'admin' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
+                            }`}>
                             {u.role}
                           </span>
                         </td>
@@ -211,20 +339,24 @@ const AdminPanel = ({ user }) => {
 
               {/* Mobile Card View - Visible only on mobile/tablet */}
               <div className="lg:hidden space-y-4">
-                {users.map((u) => (
+                {users.map((u, index) => (
                   <div key={u._id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition bg-gray-50">
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex-1">
-                        <h3 className="font-bold text-gray-800 text-lg">{u.name}</h3>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="bg-indigo-600 text-white text-xs font-bold px-2 py-1 rounded">
+                            #{(usersPagination.currentPage - 1) * 20 + index + 1}
+                          </span>
+                          <h3 className="font-bold text-gray-800 text-lg">{u.name}</h3>
+                        </div>
                         <p className="text-sm text-gray-600 break-all">{u.email}</p>
                       </div>
-                      <span className={`ml-2 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
-                        u.role === 'admin' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
-                      }`}>
+                      <span className={`ml-2 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${u.role === 'admin' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
+                        }`}>
                         {u.role}
                       </span>
                     </div>
-                    
+
                     <div className="flex flex-wrap gap-3 text-sm mb-3">
                       <span className={u.isVerified ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
                         {u.isVerified ? '✓ Verified' : '✗ Not Verified'}
@@ -245,46 +377,71 @@ const AdminPanel = ({ user }) => {
                   </div>
                 ))}
               </div>
+
+              {/* Pagination for Users */}
+              <PaginationControls
+                currentPage={usersPagination.currentPage}
+                totalPages={usersPagination.totalPages}
+                totalCount={usersPagination.totalCount}
+                onPageChange={handleUsersPageChange}
+                itemName="users"
+              />
             </>
           )}
 
           {/* Projects Tab - Responsive Cards */}
           {!loading && activeTab === 'projects' && (
-            <div className="grid gap-4">
-              {projects.map((project) => (
-                <div key={project._id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition bg-gray-50">
-                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
-                    <div className="flex-1">
-                      <h3 className="font-bold text-base sm:text-lg text-gray-800 mb-2">{project.title}</h3>
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">{project.description}</p>
-                      
-                      {/* Project Details - Stack on mobile, inline on desktop */}
-                      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <span>👤</span>
-                          <span className="truncate">{project.name}</span>
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <span>📧</span>
-                          <span className="truncate">{project.email}</span>
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <span>📅</span>
-                          <span>{new Date(project.createdAt).toLocaleDateString()}</span>
-                        </span>
+            <>
+              <div className="grid gap-4">
+                {projects.map((project, index) => (
+                  <div key={project._id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition bg-gray-50">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="bg-indigo-600 text-white text-xs font-bold px-2 py-1 rounded">
+                            #{(projectsPagination.currentPage - 1) * 20 + index + 1}
+                          </span>
+                          <h3 className="font-bold text-base sm:text-lg text-gray-800">{project.title}</h3>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{project.description}</p>
+
+                        {/* Project Details - Stack on mobile, inline on desktop */}
+                        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm text-gray-500">
+                          <span className="flex items-center gap-1">
+                            <span>👤</span>
+                            <span className="truncate">{project.name}</span>
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <span>📧</span>
+                            <span className="truncate">{project.email}</span>
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <span>📅</span>
+                            <span>{new Date(project.createdAt).toLocaleDateString()}</span>
+                          </span>
+                        </div>
                       </div>
+
+                      <button
+                        onClick={() => deleteProject(project._id)}
+                        className="w-full sm:w-auto sm:ml-4 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition text-sm font-semibold whitespace-nowrap"
+                      >
+                        Delete Project
+                      </button>
                     </div>
-                    
-                    <button
-                      onClick={() => deleteProject(project._id)}
-                      className="w-full sm:w-auto sm:ml-4 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition text-sm font-semibold whitespace-nowrap"
-                    >
-                      Delete Project
-                    </button>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+
+              {/* Pagination for Projects */}
+              <PaginationControls
+                currentPage={projectsPagination.currentPage}
+                totalPages={projectsPagination.totalPages}
+                totalCount={projectsPagination.totalCount}
+                onPageChange={handleProjectsPageChange}
+                itemName="projects"
+              />
+            </>
           )}
 
           {/* Empty State */}

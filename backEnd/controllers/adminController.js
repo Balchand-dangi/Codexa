@@ -2,18 +2,65 @@ const User = require('../model/userSchema');
 const Projects = require('../model/projectSchema');
 const { Like, Comment } = require('../model/projectInteractionSchema');
 
-// Get all users (Admin only)
+// Get all users (Admin only) - WITH PAGINATION
 exports.getAllUsers = async (req, res) => {
     try {
-        const users = await User.find()
-            .select('-password -emailVerifyToken -passwordResetToken') // Don't send sensitive data
-            .sort({ createdAt: -1 });
+        const page = parseInt(req.query.page) || 1
+        const limit = parseInt(req.query.limit) || 20
+        const skip = (page - 1) * limit
         
-        res.status(200).json(users);
+        const [users, totalCount] = await Promise.all([
+            User.find()
+                .select('-password -emailVerifyToken -passwordResetToken')
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit),
+            User.countDocuments()
+        ])
+        
+        res.status(200).json({
+            data: users,
+            pagination: {
+                currentPage: page,
+                totalPages: Math.ceil(totalCount / limit),
+                totalCount: totalCount,
+                hasMore: page < Math.ceil(totalCount / limit)
+            }
+        })
     } catch (err) {
-        res.status(500).json({ message: "Failed to fetch users", error: err.message });
+        res.status(500).json({ message: "Failed to fetch users", error: err.message })
     }
-};
+}
+
+// Get all projects (Admin only) - WITH PAGINATION
+exports.getAllProjects = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1
+        const limit = parseInt(req.query.limit) || 20
+        const skip = (page - 1) * limit
+        
+        const [projects, totalCount] = await Promise.all([
+            Projects.find()
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit),
+            Projects.countDocuments()
+        ])
+        
+        res.status(200).json({
+            data: projects,
+            pagination: {
+                currentPage: page,
+                totalPages: Math.ceil(totalCount / limit),
+                totalCount: totalCount,
+                hasMore: page < Math.ceil(totalCount / limit)
+            }
+        })
+    } catch (err) {
+        res.status(500).json({ message: "Failed to fetch projects", error: err.message })
+    }
+}
+
 
 // Delete user (Admin only)
 exports.deleteUser = async (req, res) => {
@@ -46,15 +93,6 @@ exports.deleteUser = async (req, res) => {
     }
 };
 
-// Get all projects (Admin only)
-exports.getAllProjects = async (req, res) => {
-    try {
-        const projects = await Projects.find().sort({ createdAt: -1 });
-        res.status(200).json(projects);
-    } catch (err) {
-        res.status(500).json({ message: "Failed to fetch projects", error: err.message });
-    }
-};
 
 // Delete project (Admin only)
 exports.deleteProject = async (req, res) => {
