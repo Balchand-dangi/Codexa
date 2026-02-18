@@ -5,7 +5,7 @@ import NotificationBell from "./NotificationBell";
 import codexa from '../assets/codexaa.png'
 import toast from 'react-hot-toast'
 
-const Navbar = ({ user, setUser }) => {
+const Navbar = ({ user, setUser, socket }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -109,7 +109,7 @@ const Navbar = ({ user, setUser }) => {
             {user && (
               <>
                 {/* Notification Bell - Desktop Only */}
-                <NotificationBell />
+                <NotificationBell socket={socket} />
 
                 {/* Upload Project Button */}
                 <Link to="/upload">
@@ -264,7 +264,7 @@ const Navbar = ({ user, setUser }) => {
             {/* Mobile Notification Bell - Only when menu is open */}
             {user && menuOpen && (
               <div className="py-1 border-t border-slate-700">
-                <NotificationBell />
+                <NotificationBell socket={socket} />
               </div>
             )}
 

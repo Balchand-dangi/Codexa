@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { MdNotifications } from 'react-icons/md'
 import axios from 'axios'
 
-const NotificationBell = () => {
+const NotificationBell = ({ socket }) => {
     const [notifications, setNotifications] = useState([])
     const [unreadCount, setUnreadCount] = useState(0)
     const [showDropdown, setShowDropdown] = useState(false)
@@ -21,44 +21,74 @@ const NotificationBell = () => {
         }
     }
 
+    // Initial fetch on mount — no polling interval anymore
     useEffect(() => {
         fetchNotifications()
-        const interval = setInterval(fetchNotifications, 60000)
-        return () => clearInterval(interval)
     }, [])
+
+    // ── Socket.IO: listen for real-time notifications ─────────────────────
+    useEffect(() => {
+        if (!socket) return
+
+        const handleNewNotification = (notification) => {
+            setNotifications(prev => [notification, ...prev].slice(0, 30))
+            setUnreadCount(prev => prev + 1)
+        }
+
+        socket.on('new-notification', handleNewNotification)
+
+        return () => {
+            socket.off('new-notification', handleNewNotification)
+        }
+    }, [socket])
+
+    // Re-fetch when panel is opened (ensures accuracy after tab was hidden)
+    const handleToggleDropdown = () => {
+        const next = !showDropdown
+        setShowDropdown(next)
+        if (next) fetchNotifications()
+    }
 
     const markAsRead = async (notificationId) => {
         try {
             await axios.patch(`/api/notifications/${notificationId}/read`, {}, { withCredentials: true })
-            fetchNotifications()
+            setNotifications(prev => prev.map(n => n._id === notificationId ? { ...n, isRead: true } : n))
+            setUnreadCount(prev => Math.max(0, prev - 1))
         } catch (err) { console.error('Error marking as read:', err) }
     }
 
     const markAllAsRead = async () => {
         try {
             await axios.patch('/api/notifications/mark-all-read', {}, { withCredentials: true })
-            fetchNotifications()
+            setNotifications(prev => prev.map(n => ({ ...n, isRead: true })))
+            setUnreadCount(0)
         } catch (err) { console.error('Error marking all as read:', err) }
     }
 
     const deleteNotification = async (notificationId) => {
         try {
             await axios.delete(`/api/notifications/${notificationId}`, { withCredentials: true })
-            fetchNotifications()
+            setNotifications(prev => prev.filter(n => n._id !== notificationId))
+            setUnreadCount(prev => {
+                const deleted = notifications.find(n => n._id === notificationId)
+                return deleted && !deleted.isRead ? Math.max(0, prev - 1) : prev
+            })
         } catch (err) { console.error('Error deleting notification:', err) }
     }
 
     const acceptCollaborationRequest = async (notificationId) => {
         try {
             await axios.patch(`/api/notifications/${notificationId}/accept`, {}, { withCredentials: true })
-            fetchNotifications()
+            setNotifications(prev => prev.map(n => n._id === notificationId ? { ...n, status: 'accepted', isRead: true } : n))
+            setUnreadCount(prev => Math.max(0, prev - 1))
         } catch (err) { console.error('Error accepting request:', err) }
     }
 
     const rejectCollaborationRequest = async (notificationId) => {
         try {
             await axios.patch(`/api/notifications/${notificationId}/reject`, {}, { withCredentials: true })
-            fetchNotifications()
+            setNotifications(prev => prev.map(n => n._id === notificationId ? { ...n, status: 'rejected', isRead: true } : n))
+            setUnreadCount(prev => Math.max(0, prev - 1))
         } catch (err) { console.error('Error rejecting request:', err) }
     }
 
@@ -84,7 +114,7 @@ const NotificationBell = () => {
         <div className="relative">
             {/* Bell Button */}
             <button
-                onClick={() => setShowDropdown(!showDropdown)}
+                onClick={handleToggleDropdown}
                 className="relative p-2 rounded-xl hover:bg-slate-700/60 transition"
             >
                 <MdNotifications className="w-6 h-6 text-slate-300" />
@@ -97,7 +127,7 @@ const NotificationBell = () => {
 
             {showDropdown && (
                 <>
-                    {/* Backdrop */}
+                    {/* Backdrop — closes panel on outside click */}
                     <div
                         className="fixed inset-0 z-10"
                         onClick={() => setShowDropdown(false)}

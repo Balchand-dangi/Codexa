@@ -6,16 +6,16 @@ import { BiLike, BiSolidLike } from "react-icons/bi";
 import { BiSearch } from "react-icons/bi";
 import { HiX } from "react-icons/hi";
 import CollabModel from "../Components/CollabModel";
-import CommentSection from "../Components/CommentSection";
+import CommentPage from "../Components/CommentPage";
 import toast from "react-hot-toast";
 
-const ProjectGrid = ({ user }) => {
+const ProjectGrid = ({ user, socket }) => {
   const [projects, setProjects] = useState([])
   const [projectStats, setProjectStats] = useState({})
   const [userLikes, setUserLikes] = useState({})
-  const [showComments, setShowComments] = useState({})
   const [commentText, setCommentText] = useState({})
   const [comments, setComments] = useState({})
+  const [selectedCommentProject, setSelectedCommentProject] = useState(null) // replaces showComments
   const [showCollabModal, setShowCollabModal] = useState(null)
   const [collabMessage, setCollabMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -70,6 +70,55 @@ const ProjectGrid = ({ user }) => {
   useEffect(() => {
     return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current) }
   }, [])
+
+  // ── Socket.IO: join project rooms when projects load ──────────────────────
+  useEffect(() => {
+    if (!socket || projects.length === 0) return
+    projects.forEach(p => socket.emit('join-project', p._id))
+    return () => {
+      projects.forEach(p => socket.emit('leave-project', p._id))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [socket, projects.length])
+
+  // ── Socket.IO: listen for real-time comment events ───────────────────────
+  useEffect(() => {
+    if (!socket) return
+
+    const handleNewComment = (comment) => {
+      const pid = String(comment.projectId)
+      setComments(prev => {
+        const existing = prev[pid] || []
+        // Avoid duplicates — our own optimistic comment may already be in state
+        if (existing.some(c => c._id === comment._id)) return prev
+        return { ...prev, [pid]: [...existing, comment] }
+      })
+      setProjectStats(prev => ({
+        ...prev,
+        [pid]: { ...prev[pid], comments: (prev[pid]?.comments || 0) + 1 }
+      }))
+    }
+
+    const handleDeleteComment = ({ commentId, projectId }) => {
+      const pid = String(projectId)
+      setComments(prev => ({
+        ...prev,
+        [pid]: (prev[pid] || []).filter(c => c._id !== commentId)
+      }))
+      setProjectStats(prev => ({
+        ...prev,
+        [pid]: { ...prev[pid], comments: Math.max(0, (prev[pid]?.comments || 1) - 1) }
+      }))
+    }
+
+    socket.on('new-comment', handleNewComment)
+    socket.on('delete-comment', handleDeleteComment)
+
+    return () => {
+      socket.off('new-comment', handleNewComment)
+      socket.off('delete-comment', handleDeleteComment)
+    }
+  }, [socket])
 
   const fetchProjects = async (cursor = null, search = null) => {
     const isInitialLoad = !cursor
@@ -238,8 +287,8 @@ const ProjectGrid = ({ user }) => {
     }
   }
 
-  const toggleComments = (projectId) => {
-    setShowComments(prev => ({ ...prev, [projectId]: !prev[projectId] }))
+  const openCommentPage = (project) => {
+    setSelectedCommentProject(project)
   }
 
   return (
@@ -426,7 +475,7 @@ const ProjectGrid = ({ user }) => {
                     </button>
 
                     <button
-                      onClick={() => toggleComments(project._id)}
+                      onClick={() => openCommentPage(project)}
                       className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-emerald-500/10 transition-colors group"
                     >
                       <MdOutlineInsertComment className="w-5 h-5 text-slate-400 group-hover:text-emerald-400 group-hover:scale-125 transition-all" />
@@ -436,15 +485,6 @@ const ProjectGrid = ({ user }) => {
                     </button>
                   </div>
 
-                  <CommentSection
-                    projectId={project._id}
-                    showComments={showComments}
-                    commentText={commentText}
-                    setCommentText={setCommentText}
-                    handleComment={handleComment}
-                    comments={comments}
-                    handleDeleteComment={handleDeleteComment}
-                  />
 
                   <button
                     onClick={() => setShowCollabModal(project._id)}
@@ -495,6 +535,19 @@ const ProjectGrid = ({ user }) => {
             </div>
           )}
         </>
+      )}
+      {/* Comment Page Modal */}
+      {selectedCommentProject && (
+        <CommentPage
+          project={selectedCommentProject}
+          comments={comments}
+          commentText={commentText}
+          setCommentText={setCommentText}
+          handleComment={handleComment}
+          handleDeleteComment={handleDeleteComment}
+          onClose={() => setSelectedCommentProject(null)}
+          user={user}
+        />
       )}
     </div>
   )

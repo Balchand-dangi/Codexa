@@ -1,4 +1,6 @@
 const express = require('express')
+const http = require('http')
+const { Server } = require('socket.io')
 const connectDB = require('./config/database')
 const cookieParser = require('cookie-parser')
 const projectRouter = require('./routers/uploadProjectRouter')
@@ -14,12 +16,28 @@ const path = require('path')
 const userAuth = require('./middleware/userAuth')
 const adminRouter = require('./routers/adminRouter')
 const cors = require('cors')
+const { initSocket } = require('./socket')
 
 require('dotenv').config()
 
 const app = express()
+const httpServer = http.createServer(app)
 
-// middleware
+// Socket.IO — attach to HTTP server with same CORS config
+const io = new Server(httpServer, {
+    cors: {
+        origin: process.env.FRONTEND_URL,
+        credentials: true
+    }
+})
+
+// Make io accessible in controllers via app.locals
+app.locals.io = io
+
+// Initialize socket event handlers
+initSocket(io)
+
+// Middleware
 app.use(express.json())
 app.use(cors({
     origin: process.env.FRONTEND_URL,
@@ -28,31 +46,31 @@ app.use(cors({
 app.use(cookieParser())
 
 // Routes
-app.use('/api/auth', authRouter) 
+app.use('/api/auth', authRouter)
 app.use('/api/uploadProject', rate_limiter, projectRouter)
 app.use('/api/getProjects', getProjects)
-app.use('/api/project',userAuth, projectInteractionRouter)
+app.use('/api/project', userAuth, projectInteractionRouter)
 app.use('/api/notifications', notificationRouter)
 app.use('/api/getMyProfile', myprofileRouter)
-app.use("/api/my-projects", MyProjects)
-app.use("/api/admin", adminRouter)
+app.use('/api/my-projects', MyProjects)
+app.use('/api/admin', adminRouter)
 
 // Serve static files
-app.use(express.static(path.join(__dirname, "../frontEnd/dist")))
+app.use(express.static(path.join(__dirname, '../frontEnd/dist')))
 app.get(/.*/, (req, res) => {
-    res.sendFile(path.join(__dirname, "../frontEnd/dist/index.html"))
+    res.sendFile(path.join(__dirname, '../frontEnd/dist/index.html'))
 })
 
 const PORT = process.env.PORT || 5000
 const initialize_connection = async () => {
     try {
         await Promise.all([redisClient.connect(), connectDB()])
-        console.log("Connected to DB")
-        app.listen(PORT, () => {
+        console.log('Connected to DB')
+        httpServer.listen(PORT, () => {
             console.log(`Server is running at ${PORT}`)
         })
     } catch (err) {
-        console.log("Error:" + err.message)
+        console.log('Error:' + err.message)
     }
 }
 initialize_connection()

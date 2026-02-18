@@ -2,6 +2,7 @@ const { Like, Comment, CollaborationRequest } = require('../model/projectInterac
 const Notification = require('../model/notificationSchema')
 const Project = require('../model/projectSchema')
 const mongoose = require('mongoose')
+const { getIO } = require('../socket')
 
 // Like a project
 exports.likeProject = async (req, res) => {
@@ -27,7 +28,7 @@ exports.likeProject = async (req, res) => {
 
         // Create notification for project owner (if not liking own project)
         if (project.email !== userEmail) {
-            await Notification.create({
+            const notification = await Notification.create({
                 recipient: project.email,
                 sender: userEmail,
                 senderName: userName,
@@ -36,6 +37,11 @@ exports.likeProject = async (req, res) => {
                 type: 'like',
                 message: `${userName} liked your project "${project.title}"`
             })
+            // Push notification in real time
+            const io = getIO()
+            if (io) {
+                io.to(`user:${project.email}`).emit('new-notification', notification)
+            }
         }
 
         res.status(200).json({ message: 'Project liked successfully' })
@@ -57,7 +63,9 @@ exports.unlikeProject = async (req, res) => {
 
         res.status(200).json({ message: 'Project unliked successfully' })
     } catch (err) {
-        res.status(500).json({ message: err.message })
+        res.status(500).json({ message: err.message }
+
+        )
     }
 }
 
@@ -66,13 +74,13 @@ exports.getLikes = async (req, res) => {
     try {
         const { projectId } = req.params
         const likes = await Like.find({ projectId }).sort({ createdAt: -1 })
-        res.status(200).json({ 
-            count: likes.length, 
-            likes: likes.map(like => ({ 
-                userName: like.userName, 
+        res.status(200).json({
+            count: likes.length,
+            likes: likes.map(like => ({
+                userName: like.userName,
                 userEmail: like.userEmail,
-                createdAt: like.createdAt 
-            })) 
+                createdAt: like.createdAt
+            }))
         })
     } catch (err) {
         res.status(500).json({ message: err.message })
@@ -102,16 +110,22 @@ exports.addComment = async (req, res) => {
         }
 
         // Create comment
-        const comment = await Comment.create({ 
-            projectId, 
-            userEmail, 
-            userName, 
-            text: text.trim() 
+        const comment = await Comment.create({
+            projectId,
+            userEmail,
+            userName,
+            text: text.trim()
         })
+
+        // Emit real-time comment to all clients in this project's room
+        const io = getIO()
+        if (io) {
+            io.to(`project:${projectId}`).emit('new-comment', comment)
+        }
 
         // Create notification for project owner (if not commenting on own project)
         if (project.email !== userEmail) {
-            await Notification.create({
+            const notification = await Notification.create({
                 recipient: project.email,
                 sender: userEmail,
                 senderName: userName,
@@ -121,6 +135,10 @@ exports.addComment = async (req, res) => {
                 message: `${userName} commented on your project "${project.title}"`,
                 commentText: text.trim()
             })
+            // Push notification to project owner in real time
+            if (io) {
+                io.to(`user:${project.email}`).emit('new-notification', notification)
+            }
         }
 
         res.status(201).json({ message: 'Comment added successfully', comment })
@@ -134,9 +152,9 @@ exports.getComments = async (req, res) => {
     try {
         const { projectId } = req.params
         const comments = await Comment.find({ projectId }).sort({ createdAt: -1 })
-        res.status(200).json({ 
-            count: comments.length, 
-            comments 
+        res.status(200).json({
+            count: comments.length,
+            comments
         })
     } catch (err) {
         res.status(500).json({ message: err.message })
@@ -159,6 +177,16 @@ exports.deleteComment = async (req, res) => {
         }
 
         await Comment.findByIdAndDelete(commentId)
+
+        // Emit real-time delete to all clients in this project's room
+        const io = getIO()
+        if (io) {
+            io.to(`project:${comment.projectId}`).emit('delete-comment', {
+                commentId,
+                projectId: comment.projectId
+            })
+        }
+
         res.status(200).json({ message: 'Comment deleted successfully' })
     } catch (err) {
         res.status(500).json({ message: err.message })
@@ -185,13 +213,13 @@ exports.sendCollaborationRequest = async (req, res) => {
         }
 
         // Check if already requested
-        const existingRequest = await CollaborationRequest.findOne({ 
-            projectId, 
-            requesterEmail 
+        const existingRequest = await CollaborationRequest.findOne({
+            projectId,
+            requesterEmail
         })
         if (existingRequest) {
-            return res.status(400).json({ 
-                message: `You already sent a collaboration request (Status: ${existingRequest.status})` 
+            return res.status(400).json({
+                message: `You already sent a collaboration request (Status: ${existingRequest.status})`
             })
         }
 
@@ -205,7 +233,7 @@ exports.sendCollaborationRequest = async (req, res) => {
         })
 
         // Create notification for project owner WITH collaborationRequestId
-        await Notification.create({
+        const notification = await Notification.create({
             recipient: project.email,
             sender: requesterEmail,
             senderName: requesterName,
@@ -215,6 +243,12 @@ exports.sendCollaborationRequest = async (req, res) => {
             message: `${requesterName} sent a collaboration request for "${project.title}"`,
             collaborationRequestId: collaborationRequest._id
         })
+
+        // Push notification to project owner in real time
+        const io = getIO()
+        if (io) {
+            io.to(`user:${project.email}`).emit('new-notification', notification)
+        }
 
         res.status(201).json({ message: 'Collaboration request sent successfully' })
     } catch (err) {
@@ -242,9 +276,9 @@ exports.getCollaborationRequests = async (req, res) => {
             .sort({ createdAt: -1 })
         res.json({ requests })
     } catch (error) {
-        res.status(500).json({ 
+        res.status(500).json({
             message: 'Error fetching requests',
-            error: error.message 
+            error: error.message
         })
     }
 }
@@ -255,7 +289,7 @@ exports.updateCollaborationRequestStatus = async (req, res) => {
         const { requestId } = req.params
         const { status } = req.body
         const userEmail = req.user.email
-        
+
         if (!['accepted', 'rejected'].includes(status)) {
             return res.status(400).json({ message: 'Invalid status' })
         }

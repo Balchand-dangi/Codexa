@@ -464,7 +464,7 @@ const AdminPanel = ({ user }) => {
                         </div>
                         <p className="text-sm text-slate-400 mb-3 line-clamp-2">{project.description}</p>
                         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
-                          <span>👤 {project.name}</span>
+                          {/* <span>👤 {project.name}</span> */}
                           <span>📧 {project.email}</span>
                           <span>📅 {new Date(project.createdAt).toLocaleDateString()}</span>
                           {project.category && (
