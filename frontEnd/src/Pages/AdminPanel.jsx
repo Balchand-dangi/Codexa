@@ -1,6 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import { Navigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { BiSearch } from 'react-icons/bi';
+import { HiX } from 'react-icons/hi';
 
 const AdminPanel = ({ user }) => {
   const [activeTab, setActiveTab] = useState('stats');
@@ -9,34 +12,54 @@ const AdminPanel = ({ user }) => {
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(false);
 
-  // Pagination states
-  // Users tab - 20 users per page with pagination
-  // Projects tab - 20 projects per page with pagination
-  // Mobile responsive (cards on mobile, table on desktop)
-  // Maintains pagination state when deleting items
-  // Shows item numbers correctly across pages
+  // Search states
+  const [userSearch, setUserSearch] = useState('');
+  const [projectSearch, setProjectSearch] = useState('');
+  const userSearchRef = useRef(null);
+  const projectSearchRef = useRef(null);
 
-  const [usersPagination, setUsersPagination] = useState({
-    currentPage: 1,
-    totalPages: 0,
-    totalCount: 0
-  });
-  const [projectsPagination, setProjectsPagination] = useState({
-    currentPage: 1,
-    totalPages: 0,
-    totalCount: 0
-  });
+  // Pagination states
+  const [usersPagination, setUsersPagination] = useState({ currentPage: 1, totalPages: 0, totalCount: 0 });
+  const [projectsPagination, setProjectsPagination] = useState({ currentPage: 1, totalPages: 0, totalCount: 0 });
 
   // Redirect if not admin
-  if (!user || user.role !== 'admin') {
-    return <Navigate to="/Home" />;
-  }
+  if (!user || user.role !== 'admin') return <Navigate to="/Home" />;
 
   useEffect(() => {
-    if (activeTab === 'users') fetchUsers(1);
-    if (activeTab === 'projects') fetchProjects(1);
+    if (activeTab === 'users') fetchUsers(1, userSearch);
+    if (activeTab === 'projects') fetchProjects(1, projectSearch);
     if (activeTab === 'stats') fetchStats();
   }, [activeTab]);
+
+  // Debounced user search — fires only when ≥2 chars, 500ms pause
+  const handleUserSearch = useCallback((term) => {
+    setUserSearch(term);
+    if (userSearchRef.current) clearTimeout(userSearchRef.current);
+    if (!term.trim()) {
+      // Immediately reset to full list when cleared
+      fetchUsers(1, '');
+      return;
+    }
+    if (term.trim().length < 2) return; // skip single-char searches
+    userSearchRef.current = setTimeout(() => {
+      fetchUsers(1, term.trim());
+    }, 700);
+  }, []);
+
+  // Debounced project search — fires only when ≥2 chars, 700ms pause
+  const handleProjectSearch = useCallback((term) => {
+    setProjectSearch(term);
+    if (projectSearchRef.current) clearTimeout(projectSearchRef.current);
+    if (!term.trim()) {
+      // Immediately reset to full list when cleared
+      fetchProjects(1, '');
+      return;
+    }
+    if (term.trim().length < 2) return; // skip single-char searches
+    projectSearchRef.current = setTimeout(() => {
+      fetchProjects(1, term.trim());
+    }, 700);
+  }, []);
 
   const fetchStats = async () => {
     setLoading(true);
@@ -44,18 +67,18 @@ const AdminPanel = ({ user }) => {
       const res = await axios.get('/api/admin/stats', { withCredentials: true });
       setStats(res.data);
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to fetch stats');
+      toast.error(err.response?.data?.message || 'Failed to fetch stats');
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchUsers = async (page) => {
+  const fetchUsers = async (page, search = '') => {
     setLoading(true);
     try {
-      const res = await axios.get(`/api/admin/users?page=${page}&limit=20`, {
-        withCredentials: true
-      });
+      let url = `/api/admin/users?page=${page}&limit=20`;
+      if (search && search.trim()) url += `&search=${encodeURIComponent(search.trim())}`;
+      const res = await axios.get(url, { withCredentials: true });
       setUsers(res.data.data);
       setUsersPagination({
         currentPage: res.data.pagination.currentPage,
@@ -63,18 +86,18 @@ const AdminPanel = ({ user }) => {
         totalCount: res.data.pagination.totalCount
       });
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to fetch users');
+      toast.error(err.response?.data?.message || 'Failed to fetch users');
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchProjects = async (page) => {
+  const fetchProjects = async (page, search = '') => {
     setLoading(true);
     try {
-      const res = await axios.get(`/api/admin/projects?page=${page}&limit=20`, {
-        withCredentials: true
-      });
+      let url = `/api/admin/projects?page=${page}&limit=20`;
+      if (search && search.trim()) url += `&search=${encodeURIComponent(search.trim())}`;
+      const res = await axios.get(url, { withCredentials: true });
       setProjects(res.data.data);
       setProjectsPagination({
         currentPage: res.data.pagination.currentPage,
@@ -82,251 +105,263 @@ const AdminPanel = ({ user }) => {
         totalCount: res.data.pagination.totalCount
       });
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to fetch projects');
+      toast.error(err.response?.data?.message || 'Failed to fetch projects');
     } finally {
       setLoading(false);
     }
   };
 
   const handleUsersPageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= usersPagination.totalPages) {
-      fetchUsers(newPage);
-    }
+    if (newPage >= 1 && newPage <= usersPagination.totalPages) fetchUsers(newPage, userSearch);
   };
 
   const handleProjectsPageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= projectsPagination.totalPages) {
-      fetchProjects(newPage);
-    }
+    if (newPage >= 1 && newPage <= projectsPagination.totalPages) fetchProjects(newPage, projectSearch);
   };
 
   const deleteUser = async (userId) => {
-    if (!window.confirm('Are you sure you want to delete this user? This will also delete all their projects.')) return;
+    const confirmed = await new Promise(resolve => {
+      toast((t) => (
+        <div className="flex flex-col gap-2">
+          <p className="font-semibold text-slate-800">Delete this user and all their data?</p>
+          <div className="flex gap-2">
+            <button onClick={() => { toast.dismiss(t.id); resolve(true); }}
+              className="px-3 py-1 bg-red-500 text-white rounded-lg text-sm font-semibold hover:bg-red-600">
+              Delete
+            </button>
+            <button onClick={() => { toast.dismiss(t.id); resolve(false); }}
+              className="px-3 py-1 bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-300">
+              Cancel
+            </button>
+          </div>
+        </div>
+      ), { duration: 10000 });
+    });
+    if (!confirmed) return;
 
     try {
       await axios.delete(`/api/admin/users/${userId}`, { withCredentials: true });
-      alert('User deleted successfully');
-      fetchUsers(usersPagination.currentPage);
+      toast.success('User deleted successfully');
+      fetchUsers(usersPagination.currentPage, userSearch);
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete user');
+      toast.error(err.response?.data?.message || 'Failed to delete user');
     }
   };
 
   const deleteProject = async (projectId) => {
-    if (!window.confirm('Are you sure you want to delete this project?')) return;
+    const confirmed = await new Promise(resolve => {
+      toast((t) => (
+        <div className="flex flex-col gap-2">
+          <p className="font-semibold text-slate-800">Delete this project permanently?</p>
+          <div className="flex gap-2">
+            <button onClick={() => { toast.dismiss(t.id); resolve(true); }}
+              className="px-3 py-1 bg-red-500 text-white rounded-lg text-sm font-semibold hover:bg-red-600">
+              Delete
+            </button>
+            <button onClick={() => { toast.dismiss(t.id); resolve(false); }}
+              className="px-3 py-1 bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-300">
+              Cancel
+            </button>
+          </div>
+        </div>
+      ), { duration: 10000 });
+    });
+    if (!confirmed) return;
 
     try {
       await axios.delete(`/api/admin/projects/${projectId}`, { withCredentials: true });
-      alert('Project deleted successfully');
-      fetchProjects(projectsPagination.currentPage);
+      toast.success('Project deleted successfully');
+      fetchProjects(projectsPagination.currentPage, projectSearch);
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete project');
+      toast.error(err.response?.data?.message || 'Failed to delete project');
     }
   };
 
-  // Generate page numbers with ellipsis
   const getPageNumbers = (currentPage, totalPages) => {
     const pages = [];
     const maxVisible = 5;
-
     if (totalPages <= maxVisible) {
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
     } else {
       if (currentPage <= 3) {
         for (let i = 1; i <= 4; i++) pages.push(i);
-        pages.push('...');
-        pages.push(totalPages);
+        pages.push('...'); pages.push(totalPages);
       } else if (currentPage >= totalPages - 2) {
-        pages.push(1);
-        pages.push('...');
+        pages.push(1); pages.push('...');
         for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
       } else {
-        pages.push(1);
-        pages.push('...');
-        pages.push(currentPage - 1);
-        pages.push(currentPage);
-        pages.push(currentPage + 1);
-        pages.push('...');
-        pages.push(totalPages);
+        pages.push(1); pages.push('...');
+        pages.push(currentPage - 1); pages.push(currentPage); pages.push(currentPage + 1);
+        pages.push('...'); pages.push(totalPages);
       }
     }
-
     return pages;
   };
 
-  // Pagination Component
   const PaginationControls = ({ currentPage, totalPages, totalCount, onPageChange, itemName }) => {
     if (totalPages <= 1) return null;
-
     return (
       <div className="mt-6 space-y-3">
-        <div className='flex items-center justify-center gap-2 flex-wrap'>
-          {/* Previous Button */}
-          <button
-            onClick={() => onPageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-            className='px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-sm'
-          >
-            ← Previous
+        <div className="flex items-center justify-center gap-2 flex-wrap">
+          <button onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1}
+            className="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition disabled:opacity-40 disabled:cursor-not-allowed font-semibold text-sm">
+            ← Prev
           </button>
-
-          {/* Page Numbers */}
-          {getPageNumbers(currentPage, totalPages).map((page, index) => (
+          {getPageNumbers(currentPage, totalPages).map((page, index) =>
             page === '...' ? (
-              <span key={`ellipsis-${index}`} className='px-3 py-2 text-gray-600'>...</span>
+              <span key={`e-${index}`} className="px-3 py-2 text-slate-500">...</span>
             ) : (
-              <button
-                key={page}
-                onClick={() => onPageChange(page)}
-                className={`px-4 py-2 rounded-lg font-semibold transition-colors text-sm ${currentPage === page
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-              >
+              <button key={page} onClick={() => onPageChange(page)}
+                className={`px-4 py-2 rounded-lg font-semibold transition text-sm ${currentPage === page ? 'bg-violet-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>
                 {page}
               </button>
             )
-          ))}
-
-          {/* Next Button */}
-          <button
-            onClick={() => onPageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            className='px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-sm'
-          >
+          )}
+          <button onClick={() => onPageChange(currentPage + 1)} disabled={currentPage === totalPages}
+            className="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition disabled:opacity-40 disabled:cursor-not-allowed font-semibold text-sm">
             Next →
           </button>
         </div>
-
-        {/* Page Info */}
-        <div className='text-center text-gray-600 text-sm'>
-          Page {currentPage} of {totalPages} • {totalCount} total {itemName}
+        <div className="text-center text-slate-500 text-sm">
+          Page {currentPage} of {totalPages} · {totalCount} total {itemName}
         </div>
       </div>
     );
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-400 via-indigo-500 to-purple-500 pt-20 px-3 sm:px-4 md:px-6 pb-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header - Responsive text size */}
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-6 md:mb-8 text-center">
-          Admin Panel
-        </h1>
+  const statCards = [
+    { label: 'Total Users', value: stats.totalUsers || 0, icon: '👥' },
+    { label: 'Total Projects', value: stats.totalProjects || 0, icon: '📁' },
+    { label: 'Total Comments', value: stats.totalComments || 0, icon: '💬' },
+    { label: 'Total Likes', value: stats.totalLikes || 0, icon: '❤️' },
+  ];
 
-        {/* Tabs - Mobile: Stacked, Desktop: Horizontal */}
-        <div className="bg-white rounded-lg shadow-lg mb-6 p-2">
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-20 px-3 sm:px-4 md:px-6 pb-10">
+      <div className="max-w-7xl mx-auto">
+
+        {/* Header */}
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">Admin Panel</h1>
+          <p className="text-slate-400 text-sm mt-1">Manage users, projects, and platform statistics</p>
+        </div>
+
+        {/* Tabs */}
+        <div className="bg-slate-800/60 backdrop-blur border border-slate-700/50 rounded-2xl shadow-xl mb-6 p-2">
           <div className="flex flex-col sm:flex-row gap-2">
-            <button
-              onClick={() => setActiveTab('stats')}
-              className={`flex-1 py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg font-semibold transition text-sm sm:text-base ${activeTab === 'stats'
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-            >
-              📊 Statistics
-            </button>
-            <button
-              onClick={() => setActiveTab('users')}
-              className={`flex-1 py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg font-semibold transition text-sm sm:text-base ${activeTab === 'users'
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-            >
-              👥 Users {usersPagination.totalCount > 0 && `(${usersPagination.totalCount})`}
-            </button>
-            <button
-              onClick={() => setActiveTab('projects')}
-              className={`flex-1 py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg font-semibold transition text-sm sm:text-base ${activeTab === 'projects'
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-            >
-              📁 Projects {projectsPagination.totalCount > 0 && `(${projectsPagination.totalCount})`}
-            </button>
+            {[
+              { id: 'stats', label: '📊 Statistics' },
+              { id: 'users', label: `👥 Users${usersPagination.totalCount > 0 ? ` (${usersPagination.totalCount})` : ''}` },
+              { id: 'projects', label: `📁 Projects${projectsPagination.totalCount > 0 ? ` (${projectsPagination.totalCount})` : ''}` },
+            ].map(tab => (
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                className={`flex-1 py-2.5 px-4 rounded-xl font-semibold transition text-sm ${activeTab === tab.id
+                  ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/20'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-700/50'}`}>
+                {tab.label}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Content Container */}
-        <div className="bg-white rounded-lg shadow-lg p-3 sm:p-4 md:p-6">
+        {/* Content */}
+        <div className="bg-slate-800/60 backdrop-blur border border-slate-700/50 rounded-2xl shadow-xl p-4 sm:p-6">
+
+          {/* Loading */}
           {loading && (
-            <div className="text-center py-12">
-              <div className="inline-block animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-indigo-600 mb-3"></div>
-              <p className="text-gray-600 font-semibold">Loading...</p>
+            <div className="flex flex-col items-center justify-center py-16 gap-4">
+              <div className="relative w-12 h-12">
+                <div className="absolute inset-0 rounded-full border-4 border-slate-700" />
+                <div className="absolute inset-0 rounded-full border-4 border-violet-500 border-t-transparent animate-spin" />
+              </div>
+              <p className="text-slate-400 font-medium">Loading...</p>
             </div>
           )}
 
-          {/* Stats Tab - Responsive Grid */}
+          {/* Stats Tab */}
           {!loading && activeTab === 'stats' && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-5 sm:p-6 text-white shadow-lg">
-                <p className="text-xs sm:text-sm opacity-90 mb-2">Total Users</p>
-                <p className="text-3xl sm:text-4xl font-bold">{stats.totalUsers || 0}</p>
-              </div>
-              <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-5 sm:p-6 text-white shadow-lg">
-                <p className="text-xs sm:text-sm opacity-90 mb-2">Total Projects</p>
-                <p className="text-3xl sm:text-4xl font-bold">{stats.totalProjects || 0}</p>
-              </div>
-              <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-5 sm:p-6 text-white shadow-lg">
-                <p className="text-xs sm:text-sm opacity-90 mb-2">Total Comments</p>
-                <p className="text-3xl sm:text-4xl font-bold">{stats.totalComments || 0}</p>
-              </div>
-              <div className="bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl p-5 sm:p-6 text-white shadow-lg">
-                <p className="text-xs sm:text-sm opacity-90 mb-2">Total Likes</p>
-                <p className="text-3xl sm:text-4xl font-bold">{stats.totalLikes || 0}</p>
-              </div>
+              {statCards.map((card) => (
+                <div key={card.label} className="bg-slate-700/50 border border-slate-600/50 rounded-2xl p-6 hover:bg-slate-700/70 transition">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-2xl">{card.icon}</span>
+                    <div className="w-8 h-8 bg-violet-500/20 rounded-lg flex items-center justify-center">
+                      <div className="w-2 h-2 bg-violet-400 rounded-full" />
+                    </div>
+                  </div>
+                  <p className="text-3xl font-bold text-white mb-1">{card.value.toLocaleString()}</p>
+                  <p className="text-sm text-slate-400 font-medium">{card.label}</p>
+                </div>
+              ))}
             </div>
           )}
 
-          {/* Users Tab - Mobile: Cards, Desktop: Table */}
+          {/* Users Tab */}
           {!loading && activeTab === 'users' && (
             <>
-              {/* Desktop Table View - Hidden on mobile */}
-              <div className="hidden lg:block overflow-x-auto">
+              {/* User Search Bar */}
+              <div className="mb-5">
+                <div className="relative max-w-md">
+                  <BiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+                  <input
+                    type="text"
+                    placeholder="Search users by name or email..."
+                    value={userSearch}
+                    onChange={(e) => handleUserSearch(e.target.value)}
+                    className="w-full pl-11 pr-10 py-2.5 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition text-sm"
+                  />
+                  {userSearch && (
+                    <button onClick={() => { setUserSearch(''); fetchUsers(1, ''); }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition">
+                      <HiX className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                {userSearch && (
+                  <p className="text-slate-500 text-xs mt-2">
+                    Showing results for <span className="text-violet-400">"{userSearch}"</span>
+                    {' '}· {usersPagination.totalCount} found
+                  </p>
+                )}
+              </div>
+
+              {/* Desktop Table */}
+              <div className="hidden lg:block overflow-x-auto rounded-xl border border-slate-700">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b-2 border-gray-200">
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">#</th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Name</th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Email</th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Role</th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Verified</th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Joined</th>
-                      <th className="text-center py-3 px-4 font-semibold text-gray-700">Actions</th>
+                    <tr className="bg-slate-700/50">
+                      <th className="text-left py-3 px-4 font-semibold text-slate-300 text-sm">#</th>
+                      <th className="text-left py-3 px-4 font-semibold text-slate-300 text-sm">Name</th>
+                      <th className="text-left py-3 px-4 font-semibold text-slate-300 text-sm">Email</th>
+                      <th className="text-left py-3 px-4 font-semibold text-slate-300 text-sm">Role</th>
+                      <th className="text-left py-3 px-4 font-semibold text-slate-300 text-sm">Verified</th>
+                      <th className="text-left py-3 px-4 font-semibold text-slate-300 text-sm">Joined</th>
+                      <th className="text-center py-3 px-4 font-semibold text-slate-300 text-sm">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {users.map((u, index) => (
-                      <tr key={u._id} className="border-b border-gray-100 hover:bg-gray-50 transition">
-                        <td className="py-3 px-4 text-gray-600 font-semibold">
+                      <tr key={u._id} className="border-t border-slate-700/50 hover:bg-slate-700/20 transition">
+                        <td className="py-3 px-4 text-slate-400 font-semibold text-sm">
                           {(usersPagination.currentPage - 1) * 20 + index + 1}
                         </td>
-                        <td className="py-3 px-4 font-semibold text-gray-800">{u.name}</td>
-                        <td className="py-3 px-4 text-gray-600">{u.email}</td>
+                        <td className="py-3 px-4 font-semibold text-white">{u.name}</td>
+                        <td className="py-3 px-4 text-slate-400 text-sm">{u.email}</td>
                         <td className="py-3 px-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${u.role === 'admin' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
-                            }`}>
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${u.role === 'admin' ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30' : 'bg-slate-600/50 text-slate-300 border border-slate-600'}`}>
                             {u.role}
                           </span>
                         </td>
                         <td className="py-3 px-4">
-                          {u.isVerified ? (
-                            <span className="text-green-600 font-semibold">✓ Yes</span>
-                          ) : (
-                            <span className="text-red-600 font-semibold">✗ No</span>
-                          )}
+                          {u.isVerified
+                            ? <span className="text-emerald-400 font-semibold text-sm">✓ Yes</span>
+                            : <span className="text-red-400 font-semibold text-sm">✗ No</span>}
                         </td>
-                        <td className="py-3 px-4 text-gray-600 text-sm">
-                          {new Date(u.createdAt).toLocaleDateString()}
-                        </td>
+                        <td className="py-3 px-4 text-slate-400 text-sm">{new Date(u.createdAt).toLocaleDateString()}</td>
                         <td className="py-3 px-4 text-center">
                           {u.role !== 'admin' && (
-                            <button
-                              onClick={() => deleteUser(u._id)}
-                              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition text-sm font-semibold"
-                            >
+                            <button onClick={() => deleteUser(u._id)}
+                              className="px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500 hover:text-white transition text-sm font-semibold">
                               Delete
                             </button>
                           )}
@@ -337,40 +372,31 @@ const AdminPanel = ({ user }) => {
                 </table>
               </div>
 
-              {/* Mobile Card View - Visible only on mobile/tablet */}
-              <div className="lg:hidden space-y-4">
+              {/* Mobile Cards */}
+              <div className="lg:hidden space-y-3">
                 {users.map((u, index) => (
-                  <div key={u._id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition bg-gray-50">
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="bg-indigo-600 text-white text-xs font-bold px-2 py-1 rounded">
-                            #{(usersPagination.currentPage - 1) * 20 + index + 1}
-                          </span>
-                          <h3 className="font-bold text-gray-800 text-lg">{u.name}</h3>
-                        </div>
-                        <p className="text-sm text-gray-600 break-all">{u.email}</p>
+                  <div key={u._id} className="border border-slate-700 rounded-xl p-4 bg-slate-700/20 hover:bg-slate-700/30 transition">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="bg-violet-600 text-white text-xs font-bold px-2 py-0.5 rounded">
+                          #{(usersPagination.currentPage - 1) * 20 + index + 1}
+                        </span>
+                        <h3 className="font-bold text-white">{u.name}</h3>
                       </div>
-                      <span className={`ml-2 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${u.role === 'admin' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
-                        }`}>
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${u.role === 'admin' ? 'bg-violet-500/20 text-violet-300' : 'bg-slate-600/50 text-slate-300'}`}>
                         {u.role}
                       </span>
                     </div>
-
+                    <p className="text-sm text-slate-400 break-all mb-2">{u.email}</p>
                     <div className="flex flex-wrap gap-3 text-sm mb-3">
-                      <span className={u.isVerified ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
+                      <span className={u.isVerified ? 'text-emerald-400 font-semibold' : 'text-red-400 font-semibold'}>
                         {u.isVerified ? '✓ Verified' : '✗ Not Verified'}
                       </span>
-                      <span className="text-gray-600">
-                        📅 {new Date(u.createdAt).toLocaleDateString()}
-                      </span>
+                      <span className="text-slate-500">📅 {new Date(u.createdAt).toLocaleDateString()}</span>
                     </div>
-
                     {u.role !== 'admin' && (
-                      <button
-                        onClick={() => deleteUser(u._id)}
-                        className="w-full px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition font-semibold"
-                      >
+                      <button onClick={() => deleteUser(u._id)}
+                        className="w-full px-4 py-2 bg-red-500/10 text-red-400 border border-red-500/30 rounded-xl hover:bg-red-500 hover:text-white transition font-semibold text-sm">
                         Delete User
                       </button>
                     )}
@@ -378,7 +404,14 @@ const AdminPanel = ({ user }) => {
                 ))}
               </div>
 
-              {/* Pagination for Users */}
+              {users.length === 0 && !loading && (
+                <div className="text-center py-12">
+                  <p className="text-slate-500 text-lg">
+                    {userSearch ? `No users found for "${userSearch}"` : 'No users found'}
+                  </p>
+                </div>
+              )}
+
               <PaginationControls
                 currentPage={usersPagination.currentPage}
                 totalPages={usersPagination.totalPages}
@@ -389,51 +422,75 @@ const AdminPanel = ({ user }) => {
             </>
           )}
 
-          {/* Projects Tab - Responsive Cards */}
+          {/* Projects Tab */}
           {!loading && activeTab === 'projects' && (
             <>
+              {/* Project Search Bar */}
+              <div className="mb-5">
+                <div className="relative max-w-md">
+                  <BiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+                  <input
+                    type="text"
+                    placeholder="Search projects by title, email, category..."
+                    value={projectSearch}
+                    onChange={(e) => handleProjectSearch(e.target.value)}
+                    className="w-full pl-11 pr-10 py-2.5 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition text-sm"
+                  />
+                  {projectSearch && (
+                    <button onClick={() => { setProjectSearch(''); fetchProjects(1, ''); }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition">
+                      <HiX className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                {projectSearch && (
+                  <p className="text-slate-500 text-xs mt-2">
+                    Showing results for <span className="text-violet-400">"{projectSearch}"</span>
+                    {' '}· {projectsPagination.totalCount} found
+                  </p>
+                )}
+              </div>
+
               <div className="grid gap-4">
                 {projects.map((project, index) => (
-                  <div key={project._id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition bg-gray-50">
+                  <div key={project._id} className="border border-slate-700 rounded-xl p-4 bg-slate-700/20 hover:bg-slate-700/30 transition">
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="bg-indigo-600 text-white text-xs font-bold px-2 py-1 rounded">
+                          <span className="bg-violet-600 text-white text-xs font-bold px-2 py-0.5 rounded flex-shrink-0">
                             #{(projectsPagination.currentPage - 1) * 20 + index + 1}
                           </span>
-                          <h3 className="font-bold text-base sm:text-lg text-gray-800">{project.title}</h3>
+                          <h3 className="font-bold text-white truncate">{project.title}</h3>
                         </div>
-                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{project.description}</p>
-
-                        {/* Project Details - Stack on mobile, inline on desktop */}
-                        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm text-gray-500">
-                          <span className="flex items-center gap-1">
-                            <span>👤</span>
-                            <span className="truncate">{project.name}</span>
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <span>📧</span>
-                            <span className="truncate">{project.email}</span>
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <span>📅</span>
-                            <span>{new Date(project.createdAt).toLocaleDateString()}</span>
-                          </span>
+                        <p className="text-sm text-slate-400 mb-3 line-clamp-2">{project.description}</p>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+                          <span>👤 {project.name}</span>
+                          <span>📧 {project.email}</span>
+                          <span>📅 {new Date(project.createdAt).toLocaleDateString()}</span>
+                          {project.category && (
+                            <span className="bg-violet-500/10 text-violet-300 px-2 py-0.5 rounded-full border border-violet-500/20">
+                              {Array.isArray(project.category) ? project.category[0] : project.category}
+                            </span>
+                          )}
                         </div>
                       </div>
-
-                      <button
-                        onClick={() => deleteProject(project._id)}
-                        className="w-full sm:w-auto sm:ml-4 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition text-sm font-semibold whitespace-nowrap"
-                      >
-                        Delete Project
+                      <button onClick={() => deleteProject(project._id)}
+                        className="w-full sm:w-auto flex-shrink-0 px-4 py-2 bg-red-500/10 text-red-400 border border-red-500/30 rounded-xl hover:bg-red-500 hover:text-white transition text-sm font-semibold">
+                        Delete
                       </button>
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* Pagination for Projects */}
+              {projects.length === 0 && !loading && (
+                <div className="text-center py-12">
+                  <p className="text-slate-500 text-lg">
+                    {projectSearch ? `No projects found for "${projectSearch}"` : 'No projects found'}
+                  </p>
+                </div>
+              )}
+
               <PaginationControls
                 currentPage={projectsPagination.currentPage}
                 totalPages={projectsPagination.totalPages}
@@ -442,19 +499,6 @@ const AdminPanel = ({ user }) => {
                 itemName="projects"
               />
             </>
-          )}
-
-          {/* Empty State */}
-          {!loading && activeTab === 'users' && users.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-500 text-lg">No users found</p>
-            </div>
-          )}
-
-          {!loading && activeTab === 'projects' && projects.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-500 text-lg">No projects found</p>
-            </div>
           )}
         </div>
       </div>

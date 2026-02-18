@@ -1,6 +1,7 @@
 
 import axios from "axios";
 import { useEffect, useState } from "react";
+import { Toaster } from "react-hot-toast";
 
 import SignupForm from "./Pages/SignUpForm";
 import SignInForm from "./Pages/SignInForm";
@@ -56,6 +57,26 @@ function App() {
 
   return (
     <>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 3500,
+          style: {
+            background: '#1e293b',
+            color: '#f1f5f9',
+            border: '1px solid #334155',
+            borderRadius: '12px',
+            fontSize: '14px',
+            fontWeight: '500',
+          },
+          success: {
+            iconTheme: { primary: '#10b981', secondary: '#1e293b' },
+          },
+          error: {
+            iconTheme: { primary: '#ef4444', secondary: '#1e293b' },
+          },
+        }}
+      />
       <Navbar user={user} setUser={setUser} />
       <ScrollToTop />
 

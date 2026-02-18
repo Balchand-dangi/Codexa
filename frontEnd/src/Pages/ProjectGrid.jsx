@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
 import axios from 'axios'
 import { MdOutlineInsertComment } from "react-icons/md";
 import { BiLike, BiSolidLike } from "react-icons/bi";
+import { BiSearch } from "react-icons/bi";
+import { HiX } from "react-icons/hi";
 import CollabModel from "../Components/CollabModel";
 import CommentSection from "../Components/CommentSection";
+import toast from "react-hot-toast";
 
 const ProjectGrid = ({ user }) => {
   const [projects, setProjects] = useState([])
@@ -19,85 +22,84 @@ const ProjectGrid = ({ user }) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
+  // Search state
+  const [searchTerm, setSearchTerm] = useState('')
+  const [isSearching, setIsSearching] = useState(false)
+  const searchTimeoutRef = useRef(null)
+
   // Pagination states
-  //    Cursor-based pagination - Loads 10 projects at a time
-  //  "Load More" button - Smooth infinite scroll experience
-  //  No duplicates when data changes
-  //  Shows "You've reached the end!" message
-
-  //   Why Cursor-Based is Perfect Here:
-  // 1. Real-time Data Changes
-  // New projects are constantly being uploaded by users
-  // With offset-based: If someone uploads a project while you're browsing, you might see duplicates or skip projects
-  // Cursor-based: Uses the last project's ID as a marker, so new uploads don't affect your current browsing
-
-  //   2. Infinite Scroll / "Load More" Pattern
-  // Users typically scroll down continuously (like Instagram/Twitter)
-  // They don't need to jump to "page 47"
-  // Cursor-based is ideal for sequential loading
-
-  // 3. Better Performance with Large Datasets
-  // Your database uses _id which is indexed by default in MongoDB
-  // Query: find({ _id: { $lt: cursor } }).limit(10) is super fast even with 10,000+ projects
-  // Offset query: skip(5000).limit(10) has to scan through 5000 documents first = slow!
-
-  // 4. No Need for Page Numbers
-  // Users don't care about "I'm on page 5 of 200"
-  // They just want to keep scrolling and discovering
-
-
   const [hasMore, setHasMore] = useState(true)
   const [nextCursor, setNextCursor] = useState(null)
   const [loadingMore, setLoadingMore] = useState(false)
 
-  useEffect(() => {
-    if (!user) {
+  // Debounced search — 250ms, sends `search=` param to backend
+  const handleSearch = useCallback((term) => {
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
+    setSearchTerm(term)
+
+    if (user && term.trim()) {
+      setIsSearching(true)
       setProjects([])
-      return
+      setNextCursor(null)
+      setHasMore(true)
+      searchTimeoutRef.current = setTimeout(() => {
+        fetchProjects(null, term.trim())
+      }, 250)
+    } else if (user && !term.trim()) {
+      setProjects([])
+      setNextCursor(null)
+      setHasMore(true)
+      fetchProjects()
     }
+  }, [user])
+
+  const clearSearch = useCallback(() => {
+    setSearchTerm('')
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
+    setProjects([])
+    setNextCursor(null)
+    setHasMore(true)
+    if (user) fetchProjects()
+  }, [user])
+
+  useEffect(() => {
+    if (!user) { setProjects([]); return }
     fetchProjects()
   }, [user])
 
-  const fetchProjects = async (cursor = null) => {
+  useEffect(() => {
+    return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current) }
+  }, [])
+
+  const fetchProjects = async (cursor = null, search = null) => {
     const isInitialLoad = !cursor
-
-    if (isInitialLoad) {
-      setLoading(true)
-    } else {
-      setLoadingMore(true)
-    }
-
+    if (isInitialLoad) setLoading(true)
+    else setLoadingMore(true)
     setError(null)
 
     try {
-      const url = cursor
+      let url = cursor
         ? `/api/getProjects?cursor=${cursor}&limit=21`
         : `/api/getProjects?limit=21`
 
-      const response = await axios.get(url, { withCredentials: true })
+      if (search) url += `&search=${encodeURIComponent(search)}`
 
+      const response = await axios.get(url, { withCredentials: true })
       const newProjects = response.data.data
       const pagination = response.data.pagination
 
-      // Append new projects or replace
       setProjects(prev => cursor ? [...prev, ...newProjects] : newProjects)
       setHasMore(pagination.hasMore)
       setNextCursor(pagination.nextCursor)
 
-      // Extract stats
       const stats = {}
       const likes = {}
       const commentData = {}
-
       newProjects.forEach(project => {
-        stats[project._id] = {
-          likes: project.likesCount,
-          comments: project.commentsCount
-        }
+        stats[project._id] = { likes: project.likesCount, comments: project.commentsCount }
         likes[project._id] = project.userLiked
         commentData[project._id] = project.comments
       })
-
       setProjectStats(prev => ({ ...prev, ...stats }))
       setUserLikes(prev => ({ ...prev, ...likes }))
       setComments(prev => ({ ...prev, ...commentData }))
@@ -107,29 +109,24 @@ const ProjectGrid = ({ user }) => {
     } finally {
       setLoading(false)
       setLoadingMore(false)
+      setIsSearching(false)
     }
   }
 
   const loadMoreProjects = () => {
-    if (nextCursor && !loadingMore) {
-      fetchProjects(nextCursor)
-    }
+    if (nextCursor && !loadingMore) fetchProjects(nextCursor, searchTerm || null)
   }
 
   const handleLike = async (projectId) => {
     if (isSubmitting) return
     setIsSubmitting(true)
-
     const previousLiked = userLikes[projectId]
     const previousCount = projectStats[projectId]?.likes || 0
 
     setUserLikes(prev => ({ ...prev, [projectId]: !previousLiked }))
     setProjectStats(prev => ({
       ...prev,
-      [projectId]: {
-        ...prev[projectId],
-        likes: previousLiked ? previousCount - 1 : previousCount + 1
-      }
+      [projectId]: { ...prev[projectId], likes: previousLiked ? previousCount - 1 : previousCount + 1 }
     }))
 
     try {
@@ -140,14 +137,8 @@ const ProjectGrid = ({ user }) => {
       }
     } catch (err) {
       setUserLikes(prev => ({ ...prev, [projectId]: previousLiked }))
-      setProjectStats(prev => ({
-        ...prev,
-        [projectId]: {
-          ...prev[projectId],
-          likes: previousCount
-        }
-      }))
-      alert(err.response?.data?.message || "Error processing like")
+      setProjectStats(prev => ({ ...prev, [projectId]: { ...prev[projectId], likes: previousCount } }))
+      toast.error(err.response?.data?.message || "Error processing like")
     } finally {
       setIsSubmitting(false)
     }
@@ -156,7 +147,7 @@ const ProjectGrid = ({ user }) => {
   const handleComment = async (projectId) => {
     const text = commentText[projectId]
     if (!text || !text.trim()) {
-      alert("Please enter a comment")
+      toast.error("Please enter a comment")
       return
     }
 
@@ -169,86 +160,66 @@ const ProjectGrid = ({ user }) => {
       createdAt: new Date().toISOString()
     }
 
-    setComments(prev => ({
-      ...prev,
-      [projectId]: [...(prev[projectId] || []), newComment]
-    }))
-
+    setComments(prev => ({ ...prev, [projectId]: [...(prev[projectId] || []), newComment] }))
     setProjectStats(prev => ({
       ...prev,
-      [projectId]: {
-        ...prev[projectId],
-        comments: (prev[projectId]?.comments || 0) + 1
-      }
+      [projectId]: { ...prev[projectId], comments: (prev[projectId]?.comments || 0) + 1 }
     }))
-
     setCommentText(prev => ({ ...prev, [projectId]: '' }))
 
     try {
-      const response = await axios.post(
-        `/api/project/comment/${projectId}`,
-        { text },
-        { withCredentials: true }
-      )
-
+      const response = await axios.post(`/api/project/comment/${projectId}`, { text }, { withCredentials: true })
       setComments(prev => ({
         ...prev,
-        [projectId]: prev[projectId].map(c =>
-          c._id === newComment._id ? response.data.comment : c
-        )
+        [projectId]: prev[projectId].map(c => c._id === newComment._id ? response.data.comment : c)
       }))
     } catch (err) {
-      setComments(prev => ({
-        ...prev,
-        [projectId]: prev[projectId].filter(c => c._id !== newComment._id)
-      }))
+      setComments(prev => ({ ...prev, [projectId]: prev[projectId].filter(c => c._id !== newComment._id) }))
       setProjectStats(prev => ({
         ...prev,
-        [projectId]: {
-          ...prev[projectId],
-          comments: (prev[projectId]?.comments || 1) - 1
-        }
+        [projectId]: { ...prev[projectId], comments: (prev[projectId]?.comments || 1) - 1 }
       }))
       setCommentText(prev => ({ ...prev, [projectId]: text }))
-      alert(err.response?.data?.message || "Error adding comment")
+      toast.error(err.response?.data?.message || "Error adding comment")
     }
   }
 
   const handleDeleteComment = async (commentId, projectId) => {
-    if (!window.confirm("Delete this comment?")) return
+    const confirmed = await new Promise(resolve => {
+      toast((t) => (
+        <div className="flex flex-col gap-2">
+          <p className="font-semibold text-slate-800">Delete this comment?</p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => { toast.dismiss(t.id); resolve(true) }}
+              className="px-3 py-1 bg-red-500 text-white rounded-lg text-sm font-semibold hover:bg-red-600"
+            >Delete</button>
+            <button
+              onClick={() => { toast.dismiss(t.id); resolve(false) }}
+              className="px-3 py-1 bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-300"
+            >Cancel</button>
+          </div>
+        </div>
+      ), { duration: 8000 })
+    })
+    if (!confirmed) return
 
     const previousComments = comments[projectId] || []
     const previousCount = projectStats[projectId]?.comments || 0
 
-    setComments(prev => ({
-      ...prev,
-      [projectId]: prev[projectId].filter(c => c._id !== commentId)
-    }))
-
+    setComments(prev => ({ ...prev, [projectId]: prev[projectId].filter(c => c._id !== commentId) }))
     setProjectStats(prev => ({
       ...prev,
-      [projectId]: {
-        ...prev[projectId],
-        comments: Math.max(0, previousCount - 1)
-      }
+      [projectId]: { ...prev[projectId], comments: Math.max(0, previousCount - 1) }
     }))
 
     try {
       await axios.delete(`/api/project/comment/${commentId}`, { withCredentials: true })
-      alert("Comment deleted")
+      toast.success("Comment deleted")
     } catch (err) {
-      setComments(prev => ({
-        ...prev,
-        [projectId]: previousComments
-      }))
-      setProjectStats(prev => ({
-        ...prev,
-        [projectId]: {
-          ...prev[projectId],
-          comments: previousCount
-        }
-      }))
-      alert(err.response?.data?.message || "Error deleting comment")
+      setComments(prev => ({ ...prev, [projectId]: previousComments }))
+      setProjectStats(prev => ({ ...prev, [projectId]: { ...prev[projectId], comments: previousCount } }))
+      toast.error(err.response?.data?.message || "Error deleting comment")
     }
   }
 
@@ -256,16 +227,12 @@ const ProjectGrid = ({ user }) => {
     if (isSubmitting) return
     setIsSubmitting(true)
     try {
-      await axios.post(
-        `/api/project/collaborate/${projectId}`,
-        { message: collabMessage },
-        { withCredentials: true }
-      )
+      await axios.post(`/api/project/collaborate/${projectId}`, { message: collabMessage }, { withCredentials: true })
       setShowCollabModal(null)
       setCollabMessage('')
-      alert("Collaboration request sent successfully!")
+      toast.success("Collaboration request sent successfully!")
     } catch (err) {
-      alert(err.response?.data?.message || "Error sending request")
+      toast.error(err.response?.data?.message || "Error sending request")
     } finally {
       setIsSubmitting(false)
     }
@@ -276,143 +243,199 @@ const ProjectGrid = ({ user }) => {
   }
 
   return (
-    <div className="min-h-screen p-6 pt-18 bg-gradient-to-br from-blue-400 via-indigo-500 to-purple-500">
-      <h2 className="text-3xl md:text-3xl font-bold text-white text-center mb-6 drop-shadow-lg">
-        Discover Projects
-      </h2>
+    <div className="min-h-screen pt-20 pb-10 px-4 sm:px-6 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
 
-      {loading && (
-        <div className="flex items-center justify-center min-h-[200px]">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <p className="text-3xl">Loading ...</p>
+      {/* Header */}
+      <div className="max-w-7xl mx-auto mb-8">
+        <div className="flex flex-col lg:flex-row justify-between items-center gap-4">
+          <div>
+            <h2 className="text-3xl md:text-4xl font-bold text-white tracking-tight">
+              Discover Projects
+            </h2>
+            <p className="text-slate-400 text-sm mt-1">Explore and collaborate on amazing student projects</p>
           </div>
+
+          {/* Search Bar */}
+          <div className="relative w-full lg:w-96">
+            <BiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Search by title, tech, category..."
+              value={searchTerm}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="w-full pl-11 pr-10 py-3 bg-slate-800/80 backdrop-blur border border-slate-700 rounded-xl text-white font-medium focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 shadow-xl transition-all duration-300 placeholder-slate-500"
+            />
+            {isSearching && (
+              <div className="absolute right-10 top-1/2 -translate-y-1/2">
+                <svg className="animate-spin h-4 w-4 text-violet-400" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+              </div>
+            )}
+            {searchTerm && !isSearching && (
+              <button
+                onClick={clearSearch}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 rounded-full hover:bg-slate-700 transition-all"
+              >
+                <HiX className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Active search indicator */}
+        {searchTerm && !isSearching && (
+          <div className="mt-3 flex items-center gap-2">
+            <span className="text-slate-400 text-sm">
+              Showing results for <span className="text-violet-400 font-semibold">"{searchTerm}"</span>
+            </span>
+            <button onClick={clearSearch} className="text-xs text-slate-500 hover:text-slate-300 underline">Clear</button>
+          </div>
+        )}
+      </div>
+
+      {/* Loading State */}
+      {loading && (
+        <div className="flex flex-col items-center justify-center min-h-[300px] gap-4">
+          <div className="relative w-16 h-16">
+            <div className="absolute inset-0 rounded-full border-4 border-slate-700" />
+            <div className="absolute inset-0 rounded-full border-4 border-violet-500 border-t-transparent animate-spin" />
+          </div>
+          <p className="text-slate-400 text-lg font-medium">Loading projects...</p>
         </div>
       )}
 
+      {/* Error State */}
       {!loading && error && (
-        <div className="flex flex-col items-center justify-center gap-2 py-8">
-          <svg className="w-12 h-12 text-pink-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <p className=" text-pink-700 font-semibold text-4xl text-center">{error}</p>
+        <div className="flex flex-col items-center justify-center gap-4 py-16">
+          <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center">
+            <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <p className="text-red-400 font-semibold text-xl text-center">{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="mt-4 px-6 py-2 border bg-gray-300 text-indigo-600 rounded-lg font-medium hover:bg-gray-400 transition-colors"
+            className="mt-2 px-6 py-2.5 bg-violet-600 text-white rounded-xl font-semibold hover:bg-violet-700 transition-colors shadow-lg"
           >
             Try Again
           </button>
         </div>
       )}
 
+      {/* Empty State */}
       {!loading && !error && projects.length === 0 && (
-        <div className='py-8 text-center'>
-          <p className='text-gray-700 text-4xl mb-3'>There is no projects yet.</p>
-          <Link to='/upload' className='inline-block px-4 py-2 bg-indigo-600 text-white rounded-lg'>Upload the first project</Link>
+        <div className="flex flex-col items-center justify-center py-20 gap-4">
+          <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center text-4xl">
+            🔍
+          </div>
+          <p className="text-slate-300 text-xl font-semibold text-center">
+            {searchTerm ? `No projects found for "${searchTerm}"` : 'No projects yet'}
+          </p>
+          <p className="text-slate-500 text-sm text-center max-w-xs">
+            {searchTerm ? 'Try a different search term' : 'Be the first to share your project with the community!'}
+          </p>
+          {!searchTerm && (
+            <Link to='/upload' className='mt-2 inline-flex items-center gap-2 px-6 py-3 bg-violet-600 text-white rounded-xl font-semibold hover:bg-violet-700 transition-colors shadow-lg'>
+              Upload First Project
+            </Link>
+          )}
         </div>
       )}
 
+      {/* Projects Grid */}
       {!loading && !error && projects.length > 0 && (
         <>
           <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-7xl mx-auto">
             {projects.map((project, index) => (
               <div
                 key={project._id}
-                className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl  transition-all duration-300"
+                className="bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 rounded-2xl overflow-hidden shadow-xl hover:shadow-violet-500/10 hover:border-violet-500/30 transition-all duration-300 hover:-translate-y-1 flex flex-col"
               >
-                {/* Header with gradient */}
-                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-3 flex justify-between items-center">
+                {/* Card Header */}
+                <div className="bg-gradient-to-r from-violet-600 to-purple-600 px-4 py-3 flex justify-between items-center">
                   <div className="flex items-center gap-2">
-                    <span className="bg-white text-indigo-600 font-bold text-sm px-3 py-1 rounded-full">
-                      {index + 1}
+                    <span className="bg-white/20 text-white font-bold text-xs px-2.5 py-1 rounded-full">
+                      #{index + 1}
                     </span>
-                    <span className="text-white/90 text-xs">
-                      {new Date(project.createdAt).toLocaleDateString('en-IN', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric'
-                      })}
+                    <span className="text-white/80 text-xs">
+                      {new Date(project.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </span>
                   </div>
-                  <span className="bg-white/20 backdrop-blur text-white text-xs font-medium px-3 py-1 rounded-full">
-                    {project.category}
+                  <span className="bg-white/15 backdrop-blur text-white text-xs font-medium px-3 py-1 rounded-full border border-white/20">
+                    {Array.isArray(project.category) ? project.category[0] : project.category}
                   </span>
                 </div>
 
-                {/* Content */}
-                <div className="p-5">
-                  <h2 className="text-xl font-bold text-gray-800 mb-3 truncate">
-                    {project.title}
-                  </h2>
+                <div className="p-5 flex flex-col flex-1">
+                  <h2 className="text-lg font-bold text-white mb-3 truncate">{project.title}</h2>
 
-                  {/* Author Info */}
+                  {/* Author */}
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-md">
+                    <div className="w-9 h-9 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md flex-shrink-0">
                       {project.name?.charAt(0).toUpperCase() || project.email.charAt(0).toUpperCase()}
                     </div>
-                    <div className="text-sm">
-                      <p className="text-gray-800 font-semibold">{project.name || project.email.split('@')[0].slice(0, -2)}...</p>
-                      <p className="text-gray-700 text-xs">{project.college}</p>
+                    <div className="text-sm min-w-0">
+                      <p className="text-slate-200 font-semibold truncate">
+                        {project.name || project.email.split('@')[0].slice(0, -2)}...
+                      </p>
+                      <p className="text-slate-400 text-xs truncate">{project.college}</p>
                     </div>
                   </div>
 
                   {/* Description */}
-                  <p className="text-gray-700 text-sm h-18 leading-relaxed  overflow-y-auto mb-2.5">
+                  <p className="text-slate-400 text-sm leading-relaxed mb-4 line-clamp-3 flex-1">
                     {project.description}
                   </p>
 
                   {/* Tech Stack */}
                   <div className="mb-4">
-                    <p className="text-xs text-gray-500 font-semibold mb-2">Tech Stack:</p>
-                    <div className="flex flex-wrap gap-2">
+                    <p className="text-xs text-slate-500 font-semibold mb-2 uppercase tracking-wide">Tech Stack</p>
+                    <div className="flex flex-wrap gap-1.5">
                       {project.techStack.slice(0, 4).map((tech, i) => (
-                        <span
-                          key={i}
-                          className="bg-indigo-50 text-indigo-700 text-xs font-medium px-3 py-1 rounded-full border border-indigo-200"
-                        >
+                        <span key={i} className="bg-violet-500/10 text-violet-300 text-xs font-medium px-2.5 py-1 rounded-lg border border-violet-500/20">
                           {tech}
                         </span>
                       ))}
                       {project.techStack.length > 4 && (
-                        <span className="text-indigo-600 text-xs font-semibold px-2 py-1">
-                          +{project.techStack.length - 4}
+                        <span className="text-slate-500 text-xs font-semibold px-2 py-1">
+                          +{project.techStack.length - 4} more
                         </span>
                       )}
                     </div>
                   </div>
-                  <hr className="opacity-15" />
 
-                  {/* Action Buttons */}
-                  <div className="flex justify-between items-center py-0.5 border-t border-gray-100">
-                    <button disabled={isSubmitting}
+                  <hr className="border-slate-700 mb-3" />
+
+                  {/* Actions */}
+                  <div className="flex justify-between items-center">
+                    <button
+                      disabled={isSubmitting}
                       onClick={() => handleLike(project._id)}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-indigo-50 transition-colors group"
+                      className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-violet-500/10 transition-colors group"
                     >
                       {userLikes[project._id] ? (
-                        <BiSolidLike className="w-5 h-5 text-indigo-600 group-hover:scale-125 transition-transform" />
+                        <BiSolidLike className="w-5 h-5 text-violet-400 group-hover:scale-125 transition-transform" />
                       ) : (
-                        <BiLike className="w-5 h-5 text-gray-500 group-hover:text-indigo-600 group-hover:scale-125 transition-all" />
+                        <BiLike className="w-5 h-5 text-slate-400 group-hover:text-violet-400 group-hover:scale-125 transition-all" />
                       )}
-                      <span className={`text-sm font-semibold ${userLikes[project._id] ? 'text-indigo-600' : 'text-gray-600'}`}>
+                      <span className={`text-sm font-semibold ${userLikes[project._id] ? 'text-violet-400' : 'text-slate-400'}`}>
                         {projectStats[project._id]?.likes || 0}
                       </span>
                     </button>
 
                     <button
                       onClick={() => toggleComments(project._id)}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-purple-50 transition-colors group"
+                      className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-emerald-500/10 transition-colors group"
                     >
-                      <MdOutlineInsertComment className="w-5 h-5 text-gray-500 group-hover:text-purple-600 group-hover:scale-125 transition-all" />
-                      <span className="text-sm font-semibold text-gray-600 group-hover:text-purple-600">
+                      <MdOutlineInsertComment className="w-5 h-5 text-slate-400 group-hover:text-emerald-400 group-hover:scale-125 transition-all" />
+                      <span className="text-sm font-semibold text-slate-400 group-hover:text-emerald-400">
                         {projectStats[project._id]?.comments || 0}
                       </span>
                     </button>
                   </div>
 
-                  {/* Comments Section */}
                   <CommentSection
                     projectId={project._id}
                     showComments={showComments}
@@ -423,19 +446,18 @@ const ProjectGrid = ({ user }) => {
                     handleDeleteComment={handleDeleteComment}
                   />
 
-                  {/* Collaborate Button */}
                   <button
                     onClick={() => setShowCollabModal(project._id)}
-                    className="w-full mt-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold py-3 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all transform cursor-pointer shadow-md"
+                    className="w-full mt-4 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-semibold py-2.5 rounded-xl hover:from-violet-700 hover:to-purple-700 transition-all cursor-pointer shadow-md hover:shadow-violet-500/25 active:scale-95"
                   >
-                    Send Collaboration Request
+                    🤝 Request Collaboration
                   </button>
                 </div>
 
-                {/* Collaboration Modal */}
                 <CollabModel
                   showCollabModal={showCollabModal}
                   projectId={project._id}
+                  projectTitle={project.title}
                   collabMessage={collabMessage}
                   setCollabMessage={setCollabMessage}
                   handleCollabRequest={handleCollabRequest}
@@ -446,33 +468,30 @@ const ProjectGrid = ({ user }) => {
             ))}
           </div>
 
-          {/* Load More Button */}
+          {/* Load More */}
           {hasMore && (
-            <div className="flex justify-center mt-8">
+            <div className="flex justify-center mt-10">
               <button
                 onClick={loadMoreProjects}
                 disabled={loadingMore}
-                className="px-8 py-3 bg-white text-indigo-600 font-bold rounded-lg shadow-lg hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-8 py-3 bg-slate-800 border border-slate-700 text-white font-bold rounded-xl shadow-lg hover:bg-slate-700 hover:border-violet-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loadingMore ? (
                   <span className="flex items-center gap-2">
-                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
                     Loading...
                   </span>
-                ) : (
-                  'Load More Projects'
-                )}
+                ) : 'Load More Projects'}
               </button>
             </div>
           )}
 
-          {/* End of list message */}
           {!hasMore && projects.length > 0 && (
-            <div className="text-center mt-8">
-              <p className="text-white text-lg font-semibold"> You've reached the end!</p>
+            <div className="text-center mt-10">
+              <p className="text-slate-500 text-sm">✨ You've seen all projects</p>
             </div>
           )}
         </>
@@ -482,4 +501,3 @@ const ProjectGrid = ({ user }) => {
 }
 
 export default ProjectGrid
-

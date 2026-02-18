@@ -2,22 +2,32 @@ const User = require('../model/userSchema');
 const Projects = require('../model/projectSchema');
 const { Like, Comment } = require('../model/projectInteractionSchema');
 
-// Get all users (Admin only) - WITH PAGINATION
+// Get all users (Admin only) - WITH PAGINATION + SEARCH
 exports.getAllUsers = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1
         const limit = parseInt(req.query.limit) || 20
         const skip = (page - 1) * limit
-        
+        const search = req.query.search
+
+        const query = {}
+        if (search && search.trim()) {
+            const regex = new RegExp(search.trim(), 'i')
+            query.$or = [
+                { name: regex },
+                { email: regex }
+            ]
+        }
+
         const [users, totalCount] = await Promise.all([
-            User.find()
+            User.find(query)
                 .select('-password -emailVerifyToken -passwordResetToken')
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(limit),
-            User.countDocuments()
+            User.countDocuments(query)
         ])
-        
+
         res.status(200).json({
             data: users,
             pagination: {
@@ -32,21 +42,33 @@ exports.getAllUsers = async (req, res) => {
     }
 }
 
-// Get all projects (Admin only) - WITH PAGINATION
+// Get all projects (Admin only) - WITH PAGINATION + SEARCH
 exports.getAllProjects = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1
         const limit = parseInt(req.query.limit) || 20
         const skip = (page - 1) * limit
-        
+        const search = req.query.search
+
+        const query = {}
+        if (search && search.trim()) {
+            const regex = new RegExp(search.trim(), 'i')
+            query.$or = [
+                { title: regex },
+                { email: regex },
+                { description: regex },
+                { category: regex }
+            ]
+        }
+
         const [projects, totalCount] = await Promise.all([
-            Projects.find()
+            Projects.find(query)
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(limit),
-            Projects.countDocuments()
+            Projects.countDocuments(query)
         ])
-        
+
         res.status(200).json({
             data: projects,
             pagination: {
@@ -79,7 +101,7 @@ exports.deleteUser = async (req, res) => {
 
         // Delete user's projects
         await Projects.deleteMany({ email: user.email });
-        
+
         // Delete user's likes and comments
         await Like.deleteMany({ userEmail: user.email });
         await Comment.deleteMany({ userEmail: user.email });

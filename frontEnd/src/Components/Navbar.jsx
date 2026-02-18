@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { NavLink, Link, useNavigate } from "react-router-dom";
 import NotificationBell from "./NotificationBell";
 import codexa from '../assets/codexaa.png'
+import toast from 'react-hot-toast'
 
 const Navbar = ({ user, setUser }) => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -17,7 +18,6 @@ const Navbar = ({ user, setUser }) => {
 
 
   const handleLogOut = async (e) => {
-    //console.log("Logging out user");
     e.preventDefault();
     if (isSubmitting) return;
     setIsSubmitting(true);
@@ -25,20 +25,18 @@ const Navbar = ({ user, setUser }) => {
       const response = await axios.post('/api/auth/logOut', {}, { withCredentials: true });
       setUser(null);
       setShowProfileMenu(false);
-      alert(response.data.message);
+      toast.success(response.data.message || 'Logged out successfully');
       navigate("/");
-      //console.log("Logout successful");
     } catch (err) {
-      alert(err.response?.data?.error || err.response?.data?.message || "Something went wrong");
-    }
-    finally {
+      toast.error(err.response?.data?.error || err.response?.data?.message || "Something went wrong");
+    } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
     <>
-      <nav className="fixed top-0 bg-indigo-600 shadow-lg z-50 w-full py-1.5">
+      <nav className="fixed top-0 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 shadow-xl z-50 w-full py-1.5">
         <div className="flex justify-between items-center px-4 sm:px-8">
           <Link to="/Home">
             <img className="h-10 w-auto rounded-sm" src={codexa} alt="DevHubLogo" />
@@ -157,13 +155,12 @@ const Navbar = ({ user, setUser }) => {
                       />
 
                       {/* Dropdown Menu */}
-                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-2 z-50">
-                        <div className="px-4 py-2 border-b border-gray-200">
-                          <p className="text-sm text-gray-600">Signed in as
-                            <span className="font-bold text-blue-600"> {user.role === 'admin' ? ' Admin' : ' User'}</span>
+                      <div className="absolute right-0 mt-2 w-52 bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl py-2 z-50 overflow-hidden">
+                        <div className="px-4 py-3 border-b border-slate-700">
+                          <p className="text-xs text-slate-500 mb-0.5">Signed in as
+                            <span className="font-bold text-violet-400"> {user.role === 'admin' ? 'Admin' : 'User'}</span>
                           </p>
-
-                          <p className="text-sm font-semibold text-indigo-600 truncate">
+                          <p className="text-sm font-semibold text-slate-200 truncate">
                             {user?.email}
                           </p>
                         </div>
@@ -171,7 +168,7 @@ const Navbar = ({ user, setUser }) => {
                         <Link
                           to="/Myprofile"
                           onClick={() => setShowProfileMenu(false)}
-                          className="block px-4 py-2 text-gray-700 hover:bg-indigo-50 transition"
+                          className="flex items-center gap-2 px-4 py-2.5 text-slate-300 hover:bg-slate-700/60 hover:text-white transition text-sm"
                         >
                           👤 My Profile
                         </Link>
@@ -179,12 +176,12 @@ const Navbar = ({ user, setUser }) => {
                         <Link
                           to="/MyProjects"
                           onClick={() => setShowProfileMenu(false)}
-                          className="block px-4 py-2 text-gray-700 hover:bg-indigo-50 transition"
+                          className="flex items-center gap-2 px-4 py-2.5 text-slate-300 hover:bg-slate-700/60 hover:text-white transition text-sm"
                         >
                           📁 My Projects
                         </Link>
 
-                        <hr className="my-2" />
+                        <div className="my-1.5 border-t border-slate-700" />
 
                         <button
                           onClick={(e) => {
@@ -192,7 +189,7 @@ const Navbar = ({ user, setUser }) => {
                             setShowProfileMenu(false);
                           }}
                           disabled={isSubmitting}
-                          className="w-full cursor-pointer text-left px-4 py-2 text-red-600 hover:bg-red-200 transition font-semibold"
+                          className="w-full cursor-pointer text-left px-4 py-2.5 text-red-400 hover:bg-red-500/10 transition font-semibold text-sm"
                         >
                           {isSubmitting ? '🔄 Logging Out...' : '🚪 Log Out'}
                         </button>
@@ -209,10 +206,10 @@ const Navbar = ({ user, setUser }) => {
         <div
           className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${menuOpen ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'}`}
         >
-          <div className="bg-indigo-700 px-4 py-3 space-y-3">
+          <div className="bg-slate-800 border border-slate-700 px-4 py-3 space-y-3">
             {/* User info on mobile when logged in */}
             {user && (
-              <div className="flex items-center space-x-3 pb-3 border-b border-indigo-500">
+              <div className="flex items-center space-x-3 pb-3 border-b border-slate-700">
                 <div className="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center font-bold text-indigo-700">
                   {displayName.charAt(0).toUpperCase()}
                 </div>
@@ -266,7 +263,7 @@ const Navbar = ({ user, setUser }) => {
 
             {/* Mobile Notification Bell - Only when menu is open */}
             {user && menuOpen && (
-              <div className="py-1 border-t border-indigo-500">
+              <div className="py-1 border-t border-slate-700">
                 <NotificationBell />
               </div>
             )}
@@ -288,14 +285,14 @@ const Navbar = ({ user, setUser }) => {
             )}
 
             {user && (
-              <div className="space-y-3 pt-3 border-t border-indigo-500">
+              <div className="space-y-3 pt-3 border-t border-slate-700">
                 <Link to="/MyProfile" onClick={() => setMenuOpen(false)}>
-                  <button className="w-full px-4 py-2 text-left text-white hover:bg-indigo-600 rounded-lg transition">
+                  <button className="w-full px-4 py-2 text-left text-slate-300 hover:bg-slate-700 rounded-lg transition text-sm">
                     👤 My Profile
                   </button>
                 </Link>
                 <Link to="/MyProjects" onClick={() => setMenuOpen(false)}>
-                  <button className="w-full px-4 py-2 text-left text-white hover:bg-indigo-600 rounded-lg transition">
+                  <button className="w-full px-4 py-2 text-left text-slate-300 hover:bg-slate-700 rounded-lg transition text-sm">
                     📁 My Projects
                   </button>
                 </Link>
