@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { MdNotifications } from 'react-icons/md'
 import axios from 'axios'
 
@@ -7,6 +7,7 @@ const NotificationBell = ({ socket }) => {
     const [unreadCount, setUnreadCount] = useState(0)
     const [showDropdown, setShowDropdown] = useState(false)
     const [loading, setLoading] = useState(false)
+    const panelRef = useRef(null)
 
     const fetchNotifications = async () => {
         try {
@@ -21,10 +22,26 @@ const NotificationBell = ({ socket }) => {
         }
     }
 
-    // Initial fetch on mount — no polling interval anymore
+    // Initial fetch on mount
     useEffect(() => {
         fetchNotifications()
     }, [])
+
+    // ── Close on outside click (document-level, reliable on all devices) ──
+    useEffect(() => {
+        if (!showDropdown) return
+        const handleOutside = (e) => {
+            if (panelRef.current && !panelRef.current.contains(e.target)) {
+                setShowDropdown(false)
+            }
+        }
+        document.addEventListener('mousedown', handleOutside)
+        document.addEventListener('touchstart', handleOutside)
+        return () => {
+            document.removeEventListener('mousedown', handleOutside)
+            document.removeEventListener('touchstart', handleOutside)
+        }
+    }, [showDropdown])
 
     // ── Socket.IO: listen for real-time notifications ─────────────────────
     useEffect(() => {
@@ -111,7 +128,7 @@ const NotificationBell = ({ socket }) => {
     }
 
     return (
-        <div className="relative">
+        <div className="relative" ref={panelRef}>
             {/* Bell Button */}
             <button
                 onClick={handleToggleDropdown}
@@ -126,155 +143,145 @@ const NotificationBell = ({ socket }) => {
             </button>
 
             {showDropdown && (
-                <>
-                    {/* Backdrop — closes panel on outside click */}
-                    <div
-                        className="fixed inset-0 z-10"
-                        onClick={() => setShowDropdown(false)}
-                        onTouchStart={(e) => { e.stopPropagation(); setShowDropdown(false) }}
-                    />
-
-                    {/* Panel */}
-                    <div
-                        className="absolute right-0 mt-2 bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl z-20 overflow-hidden sm:w-96 sm:max-h-[70vh] max-sm:fixed max-sm:inset-x-4 max-sm:top-16 max-sm:max-h-[70vh] flex flex-col"
-                        style={{ touchAction: 'auto' }}
-                    >
-                        {/* Header */}
-                        <div className="sticky top-0 bg-slate-800 border-b border-slate-700 px-4 py-3 flex justify-between items-center z-30 flex-shrink-0">
-                            <div className="flex items-center gap-2">
-                                <h3 className="font-bold text-white">Notifications</h3>
-                                {unreadCount > 0 && (
-                                    <span className="bg-violet-500/20 text-violet-400 text-xs font-semibold px-2 py-0.5 rounded-full">
-                                        {unreadCount} new
-                                    </span>
-                                )}
-                            </div>
-                            <div className="flex items-center gap-2">
-                                {unreadCount > 0 && (
-                                    <button
-                                        onClick={markAllAsRead}
-                                        className="text-xs text-violet-400 hover:text-violet-300 font-medium transition px-2 py-1 rounded-lg hover:bg-violet-500/10"
-                                    >
-                                        Mark all read
-                                    </button>
-                                )}
-                                <button
-                                    onClick={() => setShowDropdown(false)}
-                                    className="sm:hidden text-slate-400 hover:text-white text-xl px-2 transition"
-                                    aria-label="Close notifications"
-                                >
-                                    ✕
-                                </button>
-                            </div>
+                <div
+                    className="fixed top-[60px] right-2 sm:right-4 bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl z-[9999] overflow-hidden w-[calc(100vw-16px)] sm:w-96 max-h-[75vh] flex flex-col"
+                    style={{ touchAction: 'auto' }}
+                >
+                    {/* Header */}
+                    <div className="sticky top-0 bg-slate-800 border-b border-slate-700 px-4 py-3 flex justify-between items-center z-30 flex-shrink-0">
+                        <div className="flex items-center gap-2">
+                            <h3 className="font-bold text-white">Notifications</h3>
+                            {unreadCount > 0 && (
+                                <span className="bg-violet-500/20 text-violet-400 text-xs font-semibold px-2 py-0.5 rounded-full">
+                                    {unreadCount} new
+                                </span>
+                            )}
                         </div>
+                        <div className="flex items-center gap-2">
+                            {unreadCount > 0 && (
+                                <button
+                                    onClick={markAllAsRead}
+                                    className="text-xs text-violet-400 hover:text-violet-300 font-medium transition px-2 py-1 rounded-lg hover:bg-violet-500/10"
+                                >
+                                    Mark all read
+                                </button>
+                            )}
+                            <button
+                                onClick={() => setShowDropdown(false)}
+                                className="text-slate-400 hover:text-white text-xl px-2 transition"
+                                aria-label="Close notifications"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                    </div>
 
-                        {/* Content */}
-                        <div className="overflow-y-auto flex-1">
-                            {loading ? (
-                                <div className="p-8 text-center text-slate-500">
-                                    <div className="relative w-8 h-8 mx-auto mb-3">
-                                        <div className="absolute inset-0 rounded-full border-2 border-slate-700" />
-                                        <div className="absolute inset-0 rounded-full border-2 border-violet-500 border-t-transparent animate-spin" />
-                                    </div>
-                                    Loading...
+                    {/* Content */}
+                    <div className="overflow-y-auto flex-1">
+                        {loading ? (
+                            <div className="p-8 text-center text-slate-500">
+                                <div className="relative w-8 h-8 mx-auto mb-3">
+                                    <div className="absolute inset-0 rounded-full border-2 border-slate-700" />
+                                    <div className="absolute inset-0 rounded-full border-2 border-violet-500 border-t-transparent animate-spin" />
                                 </div>
-                            ) : notifications.length === 0 ? (
-                                <div className="p-10 text-center">
-                                    <div className="text-4xl mb-3">🔔</div>
-                                    <p className="text-slate-400 font-medium">No notifications yet</p>
-                                    <p className="text-slate-500 text-sm mt-1">You're all caught up!</p>
-                                </div>
-                            ) : (
-                                <div>
-                                    {notifications.map((notification) => (
-                                        <div
-                                            key={notification._id}
-                                            className={`p-4 border-b border-slate-700/50 hover:bg-slate-700/30 transition cursor-pointer ${!notification.isRead ? 'bg-violet-500/5 border-l-2 border-l-violet-500' : ''}`}
-                                            onClick={() => !notification.isRead && markAsRead(notification._id)}
-                                        >
-                                            <div className="flex items-start gap-3">
-                                                <span className="text-xl flex-shrink-0 mt-0.5">
-                                                    {getNotificationIcon(notification.type)}
-                                                </span>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-sm text-slate-200 leading-snug">
-                                                        <span className="font-semibold text-white">{notification.senderName}</span>
-                                                        {' '}
-                                                        {notification.type === 'like' && 'liked your project'}
-                                                        {notification.type === 'comment' && 'commented on your project'}
-                                                        {notification.type === 'collaboration_request' && 'sent a collaboration request for'}
-                                                        {' '}
-                                                        <span className="text-violet-400 font-medium">"{notification.projectTitle}"</span>
-                                                    </p>
+                                Loading...
+                            </div>
+                        ) : notifications.length === 0 ? (
+                            <div className="p-10 text-center">
+                                <div className="text-4xl mb-3">🔔</div>
+                                <p className="text-slate-400 font-medium">No notifications yet</p>
+                                <p className="text-slate-500 text-sm mt-1">You're all caught up!</p>
+                            </div>
+                        ) : (
+                            <div>
+                                {notifications.map((notification) => (
+                                    <div
+                                        key={notification._id}
+                                        className={`p-4 border-b border-slate-700/50 hover:bg-slate-700/30 transition cursor-pointer ${!notification.isRead ? 'bg-violet-500/5 border-l-2 border-l-violet-500' : ''}`}
+                                        onClick={() => !notification.isRead && markAsRead(notification._id)}
+                                    >
+                                        <div className="flex items-start gap-3">
+                                            <span className="text-xl flex-shrink-0 mt-0.5">
+                                                {getNotificationIcon(notification.type)}
+                                            </span>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm text-slate-200 leading-snug">
+                                                    <span className="font-semibold text-white">{notification.senderName}</span>
+                                                    {' '}
+                                                    {notification.type === 'like' && 'liked your project'}
+                                                    {notification.type === 'comment' && 'commented on your project'}
+                                                    {notification.type === 'collaboration_request' && 'sent a collaboration request for'}
+                                                    {' '}
+                                                    <span className="text-violet-400 font-medium">"{notification.projectTitle}"</span>
+                                                </p>
 
-                                                    {notification.type === 'collaboration_request' && (
-                                                        <p className="text-xs text-slate-500 mt-1 break-all">
-                                                            Contact:{' '}
-                                                            <a
-                                                                href={`mailto:${notification.sender}`}
-                                                                className="text-violet-400 hover:underline ml-1"
-                                                                onClick={(e) => e.stopPropagation()}
-                                                            >
-                                                                {notification.sender}
-                                                            </a>
-                                                        </p>
-                                                    )}
-
-                                                    {notification.commentText && (
-                                                        <p className="text-xs text-slate-500 mt-1 italic break-words">
-                                                            "{notification.commentText}"
-                                                        </p>
-                                                    )}
-
-                                                    {/* Collab action buttons */}
-                                                    {notification.type === 'collaboration_request' && notification.status === 'pending' && (
-                                                        <div className="flex gap-2 mt-3 flex-wrap">
-                                                            <button
-                                                                onClick={(e) => { e.stopPropagation(); acceptCollaborationRequest(notification._id) }}
-                                                                className="text-xs cursor-pointer bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 px-3 py-1.5 rounded-lg font-semibold transition"
-                                                            >
-                                                                ✓ Accept
-                                                            </button>
-                                                            <button
-                                                                onClick={(e) => { e.stopPropagation(); rejectCollaborationRequest(notification._id) }}
-                                                                className="text-xs cursor-pointer bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 px-3 py-1.5 rounded-lg font-semibold transition"
-                                                            >
-                                                                ✕ Reject
-                                                            </button>
-                                                        </div>
-                                                    )}
-
-                                                    {/* Status badge */}
-                                                    {notification.type === 'collaboration_request' && notification.status !== 'pending' && (
-                                                        <div className="mt-2">
-                                                            <span className={`text-xs px-2.5 py-1 rounded-lg font-semibold ${notification.status === 'accepted'
-                                                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                                                                : 'bg-red-500/10 text-red-400 border border-red-500/30'
-                                                                }`}>
-                                                                {notification.status?.charAt(0).toUpperCase() + notification.status?.slice(1)}
-                                                            </span>
-                                                        </div>
-                                                    )}
-
-                                                    {/* Footer row */}
-                                                    <div className="flex justify-between items-center mt-2.5 gap-2">
-                                                        <span className="text-xs text-slate-500">{formatTime(notification.createdAt)}</span>
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); deleteNotification(notification._id) }}
-                                                            className="text-xs text-slate-600 hover:text-red-400 transition font-medium"
+                                                {notification.type === 'collaboration_request' && (
+                                                    <p className="text-xs text-slate-500 mt-1 break-all">
+                                                        Contact:{' '}
+                                                        <a
+                                                            href={`mailto:${notification.sender}`}
+                                                            className="text-violet-400 hover:underline ml-1"
+                                                            onClick={(e) => e.stopPropagation()}
                                                         >
-                                                            Delete
+                                                            {notification.sender}
+                                                        </a>
+                                                    </p>
+                                                )}
+
+                                                {notification.commentText && (
+                                                    <p className="text-xs text-slate-500 mt-1 italic break-words">
+                                                        "{notification.commentText}"
+                                                    </p>
+                                                )}
+
+                                                {/* Collab action buttons */}
+                                                {notification.type === 'collaboration_request' && notification.status === 'pending' && (
+                                                    <div className="flex gap-2 mt-3 flex-wrap">
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); acceptCollaborationRequest(notification._id) }}
+                                                            className="text-xs cursor-pointer bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 px-3 py-1.5 rounded-lg font-semibold transition"
+                                                        >
+                                                            ✓ Accept
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); rejectCollaborationRequest(notification._id) }}
+                                                            className="text-xs cursor-pointer bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 px-3 py-1.5 rounded-lg font-semibold transition"
+                                                        >
+                                                            ✕ Reject
                                                         </button>
                                                     </div>
+                                                )}
+
+                                                {/* Status badge */}
+                                                {notification.type === 'collaboration_request' && notification.status !== 'pending' && (
+                                                    <div className="mt-2">
+                                                        <span className={`text-xs px-2.5 py-1 rounded-lg font-semibold ${notification.status === 'accepted'
+                                                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                                                            : 'bg-red-500/10 text-red-400 border border-red-500/30'
+                                                            }`}>
+                                                            {notification.status?.charAt(0).toUpperCase() + notification.status?.slice(1)}
+                                                        </span>
+                                                    </div>
+                                                )}
+
+                                                {/* Footer row */}
+                                                <div className="flex justify-between items-center mt-2.5 gap-2">
+                                                    <span className="text-xs text-slate-500">{formatTime(notification.createdAt)}</span>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); deleteNotification(notification._id) }}
+                                                        className="text-xs text-slate-600 hover:text-red-400 transition font-medium"
+                                                    >
+                                                        Delete
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
-                </>
+                </div>
             )}
         </div>
     )

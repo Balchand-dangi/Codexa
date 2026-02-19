@@ -46,7 +46,7 @@ function CommentSection({
             <div className="flex justify-between items-start mb-1">
               <p className="font-semibold text-sm text-violet-400">{comment.userName}</p>
               <button
-                onClick={() => handleDeleteComment(comment._id, projectId)}
+                onClick={() => handleDeleteComment(comment._id, projectId, comment.text)}
                 className="text-xs text-red-400 hover:text-red-300 font-medium transition"
               >
                 Delete

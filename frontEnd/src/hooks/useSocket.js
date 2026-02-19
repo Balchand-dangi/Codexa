@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { io } from 'socket.io-client'
 
 /**
@@ -7,8 +7,12 @@ import { io } from 'socket.io-client'
  * - Joins the user's personal room for notifications
  * - Disconnects on logout / unmount
  * Returns the socket instance (or null if not connected)
+ *
+ * Uses useState (not just useRef) so that React re-renders when the socket
+ * is ready, ensuring all child components receive the live instance.
  */
 const useSocket = (user) => {
+    const [socket, setSocket] = useState(null)
     const socketRef = useRef(null)
 
     useEffect(() => {
@@ -17,34 +21,37 @@ const useSocket = (user) => {
             if (socketRef.current) {
                 socketRef.current.disconnect()
                 socketRef.current = null
+                setSocket(null)
             }
             return
         }
 
         // Create connection — connects to same origin as the page
-        const socket = io(window.location.origin, {
+        const newSocket = io(window.location.origin, {
             withCredentials: true,
             transports: ['websocket', 'polling'],
         })
 
-        socket.on('connect', () => {
+        newSocket.on('connect', () => {
             // Join personal notification room
-            socket.emit('join-user', user.email)
+            newSocket.emit('join-user', user.email)
         })
 
-        socket.on('connect_error', (err) => {
+        newSocket.on('connect_error', (err) => {
             console.warn('[Socket] Connection error:', err.message)
         })
 
-        socketRef.current = socket
+        socketRef.current = newSocket
+        setSocket(newSocket)  // ← triggers re-render so children get the live socket
 
         return () => {
-            socket.disconnect()
+            newSocket.disconnect()
             socketRef.current = null
+            setSocket(null)
         }
     }, [user?.email])
 
-    return socketRef.current
+    return socket
 }
 
 export default useSocket

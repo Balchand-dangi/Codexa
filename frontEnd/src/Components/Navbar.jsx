@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { NavLink, Link, useNavigate } from "react-router-dom";
 import NotificationBell from "./NotificationBell";
 import codexa from '../assets/codexaa.png'
@@ -9,7 +9,24 @@ const Navbar = ({ user, setUser, socket }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const profileRef = useRef(null);
   const navigate = useNavigate();
+
+  // Close profile dropdown on outside click/tap
+  useEffect(() => {
+    if (!showProfileMenu) return
+    const handleOutside = (e) => {
+      if (profileRef.current && !profileRef.current.contains(e.target)) {
+        setShowProfileMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleOutside)
+    document.addEventListener('touchstart', handleOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleOutside)
+      document.removeEventListener('touchstart', handleOutside)
+    }
+  }, [showProfileMenu]);
 
   const displayName =
     user?.name ||
@@ -119,7 +136,7 @@ const Navbar = ({ user, setUser, socket }) => {
                 </Link>
 
                 {/* Profile dropdown with avatar */}
-                <div className="relative">
+                <div className="relative" ref={profileRef}>
                   <div
                     onClick={() => setShowProfileMenu(!showProfileMenu)}
                     className="flex items-center space-x-2 bg-white/20 hover:bg-white/30 px-3 py-2 rounded-lg transition cursor-pointer"
@@ -141,21 +158,10 @@ const Navbar = ({ user, setUser, socket }) => {
                     </svg>
                   </div>
 
-                  {/* Dropdown Menu with Backdrop */}
+                  {/* Dropdown Menu */}
                   {showProfileMenu && (
                     <>
-                      {/* Backdrop - Closes dropdown when clicking outside */}
-                      <div
-                        className="fixed inset-0 z-40"
-                        onClick={() => setShowProfileMenu(false)}
-                        onTouchStart={(e) => {
-                          e.stopPropagation()
-                          setShowProfileMenu(false)
-                        }}
-                      />
-
-                      {/* Dropdown Menu */}
-                      <div className="absolute right-0 mt-2 w-52 bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl py-2 z-50 overflow-hidden">
+                      <div className="absolute right-0 mt-2 w-52 bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl py-2 z-[9999] overflow-hidden">
                         <div className="px-4 py-3 border-b border-slate-700">
                           <p className="text-xs text-slate-500 mb-0.5">Signed in as
                             <span className="font-bold text-violet-400"> {user.role === 'admin' ? 'Admin' : 'User'}</span>

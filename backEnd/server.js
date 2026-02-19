@@ -20,13 +20,16 @@ const { initSocket } = require('./socket')
 
 require('dotenv').config()
 
+// Trim any accidental whitespace in the env value (e.g. "http:// localhost:3000")
+const FRONTEND_URL = (process.env.FRONTEND_URL || '').trim()
+
 const app = express()
 const httpServer = http.createServer(app)
 
 // Socket.IO — attach to HTTP server with same CORS config
 const io = new Server(httpServer, {
     cors: {
-        origin: process.env.FRONTEND_URL,
+        origin: FRONTEND_URL,
         credentials: true
     }
 })
@@ -40,7 +43,7 @@ initSocket(io)
 // Middleware
 app.use(express.json())
 app.use(cors({
-    origin: process.env.FRONTEND_URL,
+    origin: FRONTEND_URL,
     credentials: true
 }))
 app.use(cookieParser())

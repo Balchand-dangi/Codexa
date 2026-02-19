@@ -23,6 +23,8 @@ const ProjectGrid = ({ user, socket }) => {
   const [error, setError] = useState(null)
 
   // Search state
+  // How search works in ProjectGrid
+  // The search in ProjectGrid is frontend filtering only — no API call on search. It uses a useMemo (or filter) over the already-fetched projects array. This is fast but limited to projects already loaded. The admin panel search is different — it does a debounced API call (700ms pause, min 2 chars) with a backend query so it can search across all data with pagination.
   const [searchTerm, setSearchTerm] = useState('')
   const [isSearching, setIsSearching] = useState(false)
   const searchTimeoutRef = useRef(null)
@@ -86,10 +88,14 @@ const ProjectGrid = ({ user, socket }) => {
     if (!socket) return
 
     const handleNewComment = (comment) => {
+      // Skip if this is our own comment — already added via optimistic update.
+      // The temp _id (Date.now()) vs real DB _id means the _id-based duplicate
+      // check can't catch this case, so we filter by email instead.
+      if (comment.userEmail === user?.email) return
+
       const pid = String(comment.projectId)
       setComments(prev => {
         const existing = prev[pid] || []
-        // Avoid duplicates — our own optimistic comment may already be in state
         if (existing.some(c => c._id === comment._id)) return prev
         return { ...prev, [pid]: [...existing, comment] }
       })
@@ -233,16 +239,21 @@ const ProjectGrid = ({ user, socket }) => {
     }
   }
 
-  const handleDeleteComment = async (commentId, projectId) => {
+  const handleDeleteComment = async (commentId, projectId, commentText) => {
     const confirmed = await new Promise(resolve => {
       toast((t) => (
         <div className="flex flex-col gap-2">
-          <p className="font-semibold text-slate-800">Delete this comment?</p>
+          <p className="font-semibold text-slate-500">Delete comment?</p>
+          {commentText && (
+            <p className="text-xs text-slate-500 italic line-clamp-2">
+              "{commentText.length > 60 ? commentText.slice(0, 60) + '…' : commentText}"
+            </p>
+          )}
           <div className="flex gap-2">
             <button
               onClick={() => { toast.dismiss(t.id); resolve(true) }}
               className="px-3 py-1 bg-red-500 text-white rounded-lg text-sm font-semibold hover:bg-red-600"
-            >Delete</button>
+            >Yes, Delete</button>
             <button
               onClick={() => { toast.dismiss(t.id); resolve(false) }}
               className="px-3 py-1 bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-300"

@@ -166,14 +166,18 @@ exports.deleteComment = async (req, res) => {
     try {
         const { commentId } = req.params
         const userEmail = req.user.email
+        const userRole = req.user?.role
 
         const comment = await Comment.findById(commentId)
         if (!comment) {
             return res.status(404).json({ message: 'Comment not found' })
         }
 
-        if (comment.userEmail !== userEmail) {
-            return res.status(403).json({ message: 'You can only delete your own comments' })
+        const isOwner = comment.userEmail === userEmail
+        const isAdmin = userRole === 'admin'
+
+        if (!isOwner && !isAdmin) {
+            return res.status(403).json({ message: 'You can only delete your own comments.' })
         }
 
         await Comment.findByIdAndDelete(commentId)

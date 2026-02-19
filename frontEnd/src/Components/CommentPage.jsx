@@ -79,7 +79,7 @@ function CommentPage({
                                         <div className="w-7 h-7 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                                             {comment.userName?.charAt(0).toUpperCase() || '?'}
                                         </div>
-                                        <p className="font-semibold text-sm text-violet-400">{comment.userName}</p>
+                                        <p className="font-semibold text-sm text-violet-400">{comment.userName}</p>{user?.name === comment.userName ? <span className="text-xs text-slate-400"> (You)</span> : ""}
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <span className="text-xs text-slate-500">
@@ -89,8 +89,8 @@ function CommentPage({
                                         </span>
                                         {(user?.email === comment.userEmail || user?.role === 'admin') && (
                                             <button
-                                                onClick={() => handleDeleteComment(comment._id, projectId)}
-                                                className="text-xs text-slate-600 hover:text-red-400 transition font-medium"
+                                                onClick={() => handleDeleteComment(comment._id, projectId, comment.text)}
+                                                className="text-xs text-red-400 hover:text-red-500 transition font-medium"
                                             >
                                                 Delete
                                             </button>

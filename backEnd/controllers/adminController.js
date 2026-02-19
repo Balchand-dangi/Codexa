@@ -42,7 +42,7 @@ exports.getAllUsers = async (req, res) => {
     }
 }
 
-// Get all projects (Admin only) - WITH PAGINATION + SEARCH
+// Get all projects (Admin only) - WITH PAGINATION + SEARCH + TEAM MEMBERS
 exports.getAllProjects = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1
@@ -50,10 +50,10 @@ exports.getAllProjects = async (req, res) => {
         const skip = (page - 1) * limit
         const search = req.query.search
 
-        const query = {}
+        const matchQuery = {}
         if (search && search.trim()) {
             const regex = new RegExp(search.trim(), 'i')
-            query.$or = [
+            matchQuery.$or = [
                 { title: regex },
                 { email: regex },
                 { description: regex },
@@ -61,20 +61,52 @@ exports.getAllProjects = async (req, res) => {
             ]
         }
 
-        const [projects, totalCount] = await Promise.all([
-            Projects.find(query)
-                .sort({ createdAt: -1 })
-                .skip(skip)
-                .limit(limit),
-            Projects.countDocuments(query)
+        // Use aggregation to join accepted collaboration requests as teamMembers
+        const [result] = await Projects.aggregate([
+            { $match: matchQuery },
+            { $sort: { createdAt: -1 } },
+            {
+                $facet: {
+                    data: [
+                        { $skip: skip },
+                        { $limit: limit },
+                        {
+                            $lookup: {
+                                from: 'collaborationRequests',
+                                let: { pid: '$_id' },
+                                pipeline: [
+                                    {
+                                        $match: {
+                                            $expr: { $eq: ['$$pid', '$projectId'] },
+                                            status: 'accepted'
+                                        }
+                                    },
+                                    {
+                                        $project: {
+                                            _id: 0,
+                                            name: '$requesterName',
+                                            email: '$requesterEmail'
+                                        }
+                                    }
+                                ],
+                                as: 'teamMembers'
+                            }
+                        }
+                    ],
+                    totalCount: [{ $count: 'count' }]
+                }
+            }
         ])
+
+        const projects = result.data
+        const totalCount = result.totalCount[0]?.count || 0
 
         res.status(200).json({
             data: projects,
             pagination: {
                 currentPage: page,
                 totalPages: Math.ceil(totalCount / limit),
-                totalCount: totalCount,
+                totalCount,
                 hasMore: page < Math.ceil(totalCount / limit)
             }
         })
@@ -82,6 +114,7 @@ exports.getAllProjects = async (req, res) => {
         res.status(500).json({ message: "Failed to fetch projects", error: err.message })
     }
 }
+
 
 
 // Delete user (Admin only)
