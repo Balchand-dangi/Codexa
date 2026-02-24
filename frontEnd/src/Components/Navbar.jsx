@@ -5,6 +5,7 @@ import NotificationBell from "./NotificationBell";
 import codexa from '../assets/codexaa.png'
 import toast from 'react-hot-toast'
 
+
 const Navbar = ({ user, setUser, socket }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -92,17 +93,6 @@ const Navbar = ({ user, setUser, socket }) => {
               }
             >Support
             </NavLink>
-            {user && user.role === 'admin' && (
-              <NavLink
-                to="/admin"
-                className={({ isActive }) =>
-                  `hover:text-yellow-300 px-3 py-2 rounded transition-colors ${isActive ? "bg-white/20 text-yellow-300" : ""}`
-                }
-              >
-                ⚙️ Admin Panel
-              </NavLink>
-            )}
-
           </ul>
 
           {/* Desktop Buttons */}
@@ -126,14 +116,16 @@ const Navbar = ({ user, setUser, socket }) => {
             {user && (
               <>
                 {/* Notification Bell - Desktop Only */}
-                <NotificationBell socket={socket} />
+                {user.role !== 'admin' && <NotificationBell socket={socket} />}
 
                 {/* Upload Project Button */}
-                <Link to="/upload">
-                  <button className="px-4 py-2 bg-yellow-400 cursor-pointer text-indigo-700 font-semibold rounded-lg hover:bg-yellow-300 transition flex items-center gap-2">
-                    <span>Upload project</span>
-                  </button>
-                </Link>
+                {user.role !== 'admin' && (
+                  <Link to="/upload">
+                    <button className="px-4 py-2 bg-violet-500 text-white font-semibold rounded-lg hover:bg-violet-600 transition">
+                      Upload Project
+                    </button>
+                  </Link>
+                )}
 
                 {/* Profile dropdown with avatar */}
                 <div className="relative" ref={profileRef}>
@@ -179,13 +171,24 @@ const Navbar = ({ user, setUser, socket }) => {
                           👤 My Profile
                         </Link>
 
-                        <Link
-                          to="/MyProjects"
-                          onClick={() => setShowProfileMenu(false)}
-                          className="flex items-center gap-2 px-4 py-2.5 text-slate-300 hover:bg-slate-700/60 hover:text-white transition text-sm"
-                        >
-                          📁 My Projects
-                        </Link>
+                       {/* Only show My Projects if user is not admin (since admins don't have projects) else show Admin Panel link */}
+                        {user.role !== 'admin' ? (
+                          <Link
+                            to="/MyProjects"
+                            onClick={() => setShowProfileMenu(false)}
+                            className="flex items-center gap-2 px-4 py-2.5 text-slate-300 hover:bg-slate-700/60 hover:text-white transition text-sm"
+                          >
+                            📁 My Projects
+                          </Link>
+                        ) : (
+                          <Link
+                            to="/admin"
+                            onClick={() => setShowProfileMenu(false)}
+                            className="flex items-center gap-2 px-4 py-2.5 text-slate-300 hover:bg-slate-700/60 hover:text-white transition text-sm"
+                          >
+                            ⚙️ Admin Panel
+                          </Link>
+                        )}
 
                         <div className="my-1.5 border-t border-slate-700" />
 
@@ -256,19 +259,11 @@ const Navbar = ({ user, setUser, socket }) => {
               Support
             </NavLink>
 
-            {user && user.role === 'admin' && (
-              <NavLink
-                to="/admin"
-                onClick={() => setMenuOpen(false)}
-                className="block font-semibold py-2 text-white hover:text-yellow-300 transition"
-              >
-                ⚙️ Admin Panel
-              </NavLink>
-            )}
+      
 
 
             {/* Mobile Notification Bell - Only when menu is open */}
-            {user && menuOpen && (
+            {user && user.role !== 'admin' && menuOpen && (
               <div className="py-1 border-t border-slate-700">
                 <NotificationBell socket={socket} />
               </div>
@@ -297,18 +292,26 @@ const Navbar = ({ user, setUser, socket }) => {
                     👤 My Profile
                   </button>
                 </Link>
-                <Link to="/MyProjects" onClick={() => setMenuOpen(false)}>
-                  <button className="w-full px-4 py-2 text-left text-slate-300 hover:bg-slate-700 rounded-lg transition text-sm">
-                    📁 My Projects
-                  </button>
-                </Link>
+                {user.role !== 'admin' ? (
+                  <Link to="/MyProjects" onClick={() => setMenuOpen(false)}>
+                    <button className="w-full px-4 py-2 text-left text-slate-300 hover:bg-slate-700 rounded-lg transition text-sm">
+                      📁 My Projects
+                    </button>
+                  </Link>
+                ) : (
+                  <Link to="/admin" onClick={() => setMenuOpen(false)}>
+                    <button className="w-full px-4 py-2 text-left text-slate-300 hover:bg-slate-700 rounded-lg transition text-sm">
+                      ⚙️ Admin Panel
+                    </button>
+                  </Link>
+                )}
 
-                <Link to="/upload" onClick={() => setMenuOpen(false)}>
-                  <button className="w-full m-1 px-4 py-2 bg-yellow-400 text-indigo-700 font-semibold rounded-lg hover:bg-yellow-300 transition">
-                    Upload Project
-                  </button>
-                </Link>
-
+                {user.roll !== "admin" && (
+                  <Link to="/upload" onClick={() => setMenuOpen(false)}>
+                    <button className="w-full px-4 py-2 text-left text-slate-300 hover:bg-slate-700 rounded-lg transition text-sm">
+                    </button>
+                  </Link>
+                )}
                 <button
                   onClick={(e) => {
                     handleLogOut(e);

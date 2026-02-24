@@ -8,6 +8,7 @@ import { HiX } from "react-icons/hi";
 import CollabModel from "../Components/CollabModel";
 import CommentPage from "../Components/CommentPage";
 import toast from "react-hot-toast";
+import {motion} from "framer-motion";
 
 const ProjectGrid = ({ user, socket }) => {
   const [projects, setProjects] = useState([])
@@ -450,20 +451,48 @@ const ProjectGrid = ({ user, socket }) => {
                   </p>
 
                   {/* Tech Stack */}
-                  <div className="mb-4">
-                    <p className="text-xs text-slate-500 font-semibold mb-2 uppercase tracking-wide">Tech Stack</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {project.techStack.slice(0, 4).map((tech, i) => (
-                        <span key={i} className="bg-violet-500/10 text-violet-300 text-xs font-medium px-2.5 py-1 rounded-lg border border-violet-500/20">
-                          {tech}
-                        </span>
-                      ))}
+                <div className="mb-4">
+                    <p className="text-xs text-slate-500 font-semibold mb-2 uppercase tracking-wide">
+                      Tech Stack
+                    </p>
+
+                    {/* Main Container */}
+                    <motion.div
+                      className="relative flex items-center gap-1.5 overflow-hidden group cursor-default"
+                      initial="initial"
+                      whileHover="hover"
+                    >
+                      {/* Sliding Wrapper */}
+                      <motion.div
+                        className="flex gap-1.5 transition-all duration-750 ease-linear"
+                        variants={{
+                          initial: { x: 0 },
+                          hover: { x: project.techStack.length > 4 ? '-36%' : 0 } // Adjust percentage as needed
+                        }}
+                      >
+                        {project.techStack.map((tech, i) => (
+                          <span
+                            key={i}
+                            className="whitespace-nowrap bg-violet-500/10 text-violet-300 text-xs font-medium px-2.5 py-1 rounded-lg border border-violet-500/20"
+                          >
+                            {tech}
+                          </span>
+                        ))}
+                      </motion.div>
+
+                      {/* Counter Badge (Visible only when not hovering) */}
                       {project.techStack.length > 4 && (
-                        <span className="text-slate-500 text-xs font-semibold px-2 py-1">
+                        <motion.span
+                          variants={{
+                            initial: { opacity: 1, x: 0 },
+                            hover: { opacity: 0, x: 20 }
+                          }}
+                          className="absolute right-0 bg-slate-900/80 pl-2 text-slate-500 text-xs font-semibold px-2 py-1"
+                        >
                           +{project.techStack.length - 4} more
-                        </span>
+                        </motion.span>
                       )}
-                    </div>
+                    </motion.div>
                   </div>
 
                   <hr className="border-slate-700 mb-3" />

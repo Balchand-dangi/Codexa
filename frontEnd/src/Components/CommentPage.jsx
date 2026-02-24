@@ -16,6 +16,10 @@ function CommentPage({
     user
 }) {
     const textareaRef = useRef(null)
+    const commentsEndRef = useRef(null)
+
+    const projectId = project._id
+    const projectComments = comments[projectId] || []
 
     // Lock body scroll while modal is open
     useEffect(() => {
@@ -30,8 +34,24 @@ function CommentPage({
         return () => window.removeEventListener('keydown', onKey)
     }, [onClose])
 
-    const projectId = project._id
-    const projectComments = comments[projectId] || []
+    // send comment on Enter (without Shift)
+    useEffect(() => {
+        const onKey = (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                handleComment(project._id)
+            }
+        }
+        window.addEventListener('keydown', onKey)
+        return () => window.removeEventListener('keydown', onKey)
+    }, [handleComment, project._id])
+
+    // scroll to bottom when new comment is added
+    useEffect(() => {
+        commentsEndRef.current?.scrollIntoView({ behavior: 'instant' })
+    }, [projectComments.length])
+
+
 
     return (
         <div
@@ -56,7 +76,7 @@ function CommentPage({
                     </div>
                     <button
                         onClick={onClose}
-                        className="text-slate-400 hover:text-white text-2xl leading-none px-2 hover:bg-slate-700 rounded-lg transition flex-shrink-0"
+                        className="text-slate-400 hover:text-white text-2xl leading-none px-2 py-1 hover:bg-slate-700 rounded-lg transition flex-shrink-0"
                         aria-label="Close comments"
                     >
                         ✕
@@ -100,7 +120,9 @@ function CommentPage({
                                 <p className="text-slate-300 text-sm leading-relaxed pl-9">{comment.text}</p>
                             </div>
                         ))
+
                     )}
+                    <div ref={commentsEndRef} />
                 </div>
 
                 {/* Comment Input */}
@@ -123,7 +145,7 @@ function CommentPage({
                             disabled={!(commentText[projectId] || '').trim()}
                             className="bg-violet-600 cursor-pointer text-white px-5 py-2 rounded-xl text-sm font-semibold hover:bg-violet-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                            Post Comment
+                            Post
                         </button>
                     </div>
                 </div>
