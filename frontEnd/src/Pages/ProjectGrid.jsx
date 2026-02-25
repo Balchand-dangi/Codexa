@@ -464,7 +464,7 @@ const ProjectGrid = ({ user, socket }) => {
                     >
                       {/* Sliding Wrapper */}
                       <motion.div
-                        className="flex gap-1.5 transition-all duration-750 ease-linear"
+                        className="flex gap-1.5 transition-all duration-950 ease-linear"
                         variants={{
                           initial: { x: 0 },
                           hover: { x: project.techStack.length > 4 ? '-36%' : 0 } // Adjust percentage as needed
