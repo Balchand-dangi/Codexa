@@ -52,7 +52,7 @@ const emptyForm = {
     dueDate: ''
 };
 
-function ProjectStatus() {
+function ProjectStatus({user}) {
     const { projectId } = useParams();
     const navigate = useNavigate();
 
@@ -302,7 +302,7 @@ function ProjectStatus() {
                         </div>
                         <div className="flex gap-2">
                             <button
-                                onClick={() => navigate('/MyProjects')}
+                                onClick={() => navigate(-1)}
                                 className="px-4 py-2 text-slate-200 bg-slate-700 rounded-xl hover:bg-slate-600 transition"
                             >
                                 ← Back
@@ -426,7 +426,7 @@ function ProjectStatus() {
 
                 <div className="flex justify-end gap-3">
                     <button
-                        onClick={() => navigate('/MyProjects')}
+                        onClick={() => user.role === 'user' ? navigate('/MyProjects') : navigate(-1)}
                         className="px-6 py-2.5 bg-slate-700 text-slate-200 rounded-xl hover:bg-slate-600 transition"
                     >
                         Cancel

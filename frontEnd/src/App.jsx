@@ -89,7 +89,7 @@ function App() {
         <Route path="/ForgotPassword" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
         <Route path="/admin" element={<AdminPanel user={user} />} />
-        <Route path="/projectStatus/:projectId" element={user ? <ProjectStatus /> : <SignInForm setUser={setUser} />} />
+        <Route path="/projectStatus/:projectId" element={user ? <ProjectStatus user={user} /> : <SignInForm setUser={setUser} />} />
       </Routes>
     </>
   );
