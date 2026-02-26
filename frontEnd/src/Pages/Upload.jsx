@@ -44,27 +44,74 @@ function Upload() {
     <div className='w-full flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4 py-5 mt-10'>
       <div className="w-full max-w-md">
         <div className="bg-slate-800/60 backdrop-blur border border-slate-700/50 rounded-2xl shadow-2xl p-8">
-          <div className="text-center mb-6">
-            <div className="w-12 h-12  bg-gradient-to-br from-violet-500 to-emerald-500 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3 shadow-lg">
-              📤
+          <div className="relative mb-6">
+            {/* Back button - Top Left  */}
+            <button
+              onClick={() => navigate(-1)}
+              className="absolute left-0 top-0 p-2 -translate-y-2 hover:text-violet-400 text-slate-400 transition-colors text-sm font-medium flex items-center gap-1 group"
+            >
+              <svg className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back
+            </button>
+            
+            {/* Centered content */}
+            <div className="text-center pt-12">
+              <span className="w-12 h-12 bg-gradient-to-br from-violet-500 to-emerald-500 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3 shadow-lg">
+                📤
+              </span>
+              <h2 className='text-2xl font-bold text-white'>Share Your Project</h2>
+              <p className="text-slate-400 text-sm mt-1">Let the community discover your work</p>
             </div>
-            <h2 className='text-2xl font-bold text-white'>Share Your Project</h2>
-            <p className="text-slate-400 text-sm mt-1">Let the community discover your work</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-3">
-            <input type="email" placeholder="Your registered email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} />
-            <input type="text" placeholder="Project title" value={title} onChange={(e) => setTitle(e.target.value)} className={inputClass} />
+            <input 
+              type="email" 
+              placeholder="Your registered email" 
+              value={email} 
+              onChange={(e) => setEmail(e.target.value)} 
+              className={inputClass} 
+              required 
+            />
+            <input 
+              type="text" 
+              placeholder="Project title" 
+              value={title} 
+              onChange={(e) => setTitle(e.target.value)} 
+              className={inputClass} 
+              required 
+            />
             <textarea
               placeholder="Project description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className={inputClass + " resize-none, h-auto"}
+              className={`${inputClass} resize-none h-auto`}
+              required
             />
-            <input type="text" placeholder="Tech stack (comma separated, e.g. React, Node.js)" value={techStack} onChange={(e) => setTechStack(e.target.value)} className={inputClass} />
-            <input type="text" placeholder="College / University name" value={college} onChange={(e) => setCollege(e.target.value)} className={inputClass} />
-            <input type="text" placeholder="Category (e.g. AIML, Full Stack, Cybersecurity)" value={category} onChange={(e) => setCategory(e.target.value)} className={inputClass} />
+            <input 
+              type="text" 
+              placeholder="Tech stack (comma separated, e.g. React, Node.js)" 
+              value={techStack} 
+              onChange={(e) => setTechStack(e.target.value)} 
+              className={inputClass} 
+            />
+            <input 
+              type="text" 
+              placeholder="College / University name" 
+              value={college} 
+              onChange={(e) => setCollege(e.target.value)} 
+              className={inputClass} 
+            />
+            <input 
+              type="text" 
+              placeholder="Category (e.g. AIML, Full Stack, Cybersecurity)" 
+              value={category} 
+              onChange={(e) => setCategory(e.target.value)} 
+              className={inputClass} 
+            />
 
             <button
               type='submit'

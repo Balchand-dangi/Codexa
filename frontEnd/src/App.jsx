@@ -18,6 +18,7 @@ import ResetPassword from "./Pages/ResetPassword";
 import AdminPanel from "./Pages/AdminPanel";
 import Navbar from "./Components/Navbar";
 import useSocket from "./hooks/useSocket";
+import ProjectStatus from "./Pages/ProjectStatus";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -88,6 +89,7 @@ function App() {
         <Route path="/ForgotPassword" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
         <Route path="/admin" element={<AdminPanel user={user} />} />
+        <Route path="/projectStatus/:projectId" element={user ? <ProjectStatus /> : <SignInForm setUser={setUser} />} />
       </Routes>
     </>
   );

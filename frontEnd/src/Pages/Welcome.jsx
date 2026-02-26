@@ -31,13 +31,13 @@ function Welcome() {
           <div className="flex flex-col sm:flex-row gap-3 justify-center mb-12">
             <button
               onClick={() => navigate("/signUpForm")}
-              className="px-8 py-3.5 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:from-violet-700 hover:to-purple-700 hover:shadow-violet-500/25 transition-all active:scale-95"
+              className="px-8 py-3.5 bg-gradient-to-r cursor-pointer from-violet-600 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:from-violet-700 hover:to-purple-700 hover:shadow-violet-500/25 transition-all active:scale-95"
             >
               Get Started — It's Free
             </button>
             <button
               onClick={() => navigate("/signInForm")}
-              className="px-8 py-3.5 bg-slate-700 text-slate-200 font-semibold rounded-xl border border-slate-600 hover:bg-slate-600 transition-all active:scale-95"
+              className="px-8 py-3.5 bg-slate-700 cursor-pointer text-slate-200 font-semibold rounded-xl border border-slate-600 hover:bg-slate-600 transition-all active:scale-95"
             >
               Sign In
             </button>

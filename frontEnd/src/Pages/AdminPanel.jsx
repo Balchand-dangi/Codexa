@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
-import { Navigate } from 'react-router-dom';
+import { Navigate,Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { BiSearch } from 'react-icons/bi';
 import { HiX } from 'react-icons/hi';
+
 
 const AdminPanel = ({ user }) => {
   const [activeTab, setActiveTab] = useState('stats');
@@ -233,6 +234,8 @@ const AdminPanel = ({ user }) => {
       <p className="text-slate-400 font-medium">Loading...</p>
     </div>
   );
+
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-20 px-3 sm:px-4 md:px-6 pb-10">
@@ -467,15 +470,8 @@ const AdminPanel = ({ user }) => {
                             </div>
                             <p className="text-sm text-slate-300/90 mb-3 line-clamp-2">{project.description}</p>
 
-                            {/* Meta row */}
-                            <div className="flex flex-wrap gap-x-2 gap-y-1 text-xs text-slate-400 mb-3">
-                              👤Team leader:<span className="text-slate-300">{project.email}</span>
-                              
-                              
-                            </div>
-
                             {/* Tech stack */}
-                            { /* project.techStack?.length > 0 && (
+                            {project.techStack?.length > 0 && (
                               <div className="flex flex-wrap gap-1.5 mb-3">
                                 {project.techStack.map(t => (
                                   <span key={t} className="text-xs bg-slate-700 text-slate-300 px-2 py-0.5 rounded-full border border-slate-600">
@@ -483,7 +479,12 @@ const AdminPanel = ({ user }) => {
                                   </span>
                                 ))}
                               </div>
-                            ) */}
+                            )}
+
+                            {/* Meta row */}
+                            <div className="flex flex-wrap gap-x-2 gap-y-1 text-xs text-slate-400 mb-3">
+                              👤Team leader:<span className="text-slate-300">{project.email}</span>
+                            </div>
 
                             {/* Team Members */}
                             <div className="mt-1">
@@ -513,10 +514,27 @@ const AdminPanel = ({ user }) => {
                             </div>
                           </div>
 
-                          <button onClick={() => deleteProject(project._id, project.title)}
-                            className="w-full sm:w-auto flex-shrink-0 px-4 py-2 bg-red-500/10 text-red-400 border border-red-500/30 rounded-xl hover:bg-red-500 hover:text-white transition text-sm font-semibold">
-                            Delete
-                          </button>
+                          {/* Action Buttons Container */}
+                          <div className="flex cursor-pointer flex-col gap-2 sm:ml-4" title='Delete the project'>
+                            <button onClick={() => deleteProject(project._id, project.title)}
+                              className="w-full sm:w-auto flex-shrink-0 px-4 py-2 bg-red-500/10 text-red-400 border border-red-500/30 rounded-xl hover:bg-red-500 hover:text-white transition text-sm font-semibold">
+
+                              Delete
+                            </button>
+
+                            {/* Current Status Button - Bottom Right */}
+                            <Link to={`/projectStatus/${project._id}`}>
+                            <button
+                              className="w-full cursor-pointer relative sm:w-auto px-4 py-2 bg-violet-500/20 text-violet-300 border border-violet-500/30 rounded-xl hover:bg-violet-500 hover:text-white hover:border-violet-500 transition-all duration-200 text-sm font-semibold shadow-sm hover:shadow-violet-500/25 flex items-center justify-center gap-0.5"
+                              title="View project status"
+                            >
+                                Current status
+                                <span className="absolute top-1 right-1 w-3 h-3 bg-emerald-400 rounded-full border-2 border-slate-800 animate-pulse"></span>
+                             
+                            </button>
+                            </Link>
+
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -541,6 +559,7 @@ const AdminPanel = ({ user }) => {
               )}
             </>
           )}
+
         </div>
       </div>
     </div>

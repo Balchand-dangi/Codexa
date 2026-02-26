@@ -1,6 +1,7 @@
 const User = require('../model/userSchema');
 const Projects = require('../model/projectSchema');
 const { Like, Comment } = require('../model/projectInteractionSchema');
+const mongoose = require('mongoose');
 
 // Get all users (Admin only) - WITH PAGINATION + SEARCH
 exports.getAllUsers = async (req, res) => {
@@ -190,6 +191,38 @@ exports.getStats = async (req, res) => {
         });
     } catch (err) {
         res.status(500).json({ message: "Failed to fetch stats", error: err.message });
+    }
+};
+
+// Get status for any project (Admin only)
+exports.getProjectStatus = async (req, res) => {
+    try {
+        const { projectId } = req.params;
+
+        if (!mongoose.Types.ObjectId.isValid(projectId)) {
+            return res.status(400).json({ message: 'Invalid project ID' });
+        }
+
+        const project = await Projects.findById(projectId).lean();
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found' });
+        }
+
+        const status = project.status || {};
+
+        res.status(200).json({
+            projectId: project._id,
+            projectTitle: project.title,
+            status: {
+                tasks: Array.isArray(status.tasks) ? status.tasks : [],
+                overallProgress: typeof status.overallProgress === 'number' ? status.overallProgress : 0,
+                totalTasks: typeof status.totalTasks === 'number' ? status.totalTasks : 0,
+                completedTasks: typeof status.completedTasks === 'number' ? status.completedTasks : 0,
+                stageStatuses: status.stageStatuses || {}
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ message: 'Failed to fetch project status', error: err.message });
     }
 };
 

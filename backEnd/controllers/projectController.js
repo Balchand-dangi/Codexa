@@ -2,6 +2,7 @@ const Project = require('../model/projectSchema')
 const User = require('../model/userSchema')
 const { Like, Comment } = require('../model/projectInteractionSchema')
 const validProject = require('../utils/validateProject')
+const mongoose = require('mongoose')
 
 // Get all projects with stats (CURSOR-BASED PAGINATION for feed)
 exports.getAllProjects = async (req, res) => {
@@ -143,6 +144,108 @@ exports.uploadProject = async (req, res) => {
     }
     catch (err) {
         res.send(err.message)
+    }
+}
+
+// Get status for a single user-owned project
+exports.getMyProjectStatus = async (req, res) => {
+    try {
+        const { projectId } = req.params
+        const userEmail = req.user.email
+
+        if (!mongoose.Types.ObjectId.isValid(projectId)) {
+            return res.status(400).json({ message: 'Invalid project ID' })
+        }
+
+        const project = await Project.findOne({ _id: projectId, email: userEmail }).lean()
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found' })
+        }
+
+        const status = project.status || {}
+
+        res.status(200).json({
+            projectId: project._id,
+            projectTitle: project.title,
+            status: {
+                tasks: Array.isArray(status.tasks) ? status.tasks : [],
+                overallProgress: typeof status.overallProgress === 'number' ? status.overallProgress : 0,
+                totalTasks: typeof status.totalTasks === 'number' ? status.totalTasks : 0,
+                completedTasks: typeof status.completedTasks === 'number' ? status.completedTasks : 0,
+                stageStatuses: status.stageStatuses || {}
+            }
+        })
+    } catch (error) {
+        console.error('Error fetching project status:', error)
+        res.status(500).json({ message: 'Failed to fetch project status' })
+    }
+}
+
+// Update status for a single user-owned project
+exports.updateMyProjectStatus = async (req, res) => {
+    try {
+        const { projectId } = req.params
+        const userEmail = req.user.email
+        const { tasks } = req.body
+
+        if (!mongoose.Types.ObjectId.isValid(projectId)) {
+            return res.status(400).json({ message: 'Invalid project ID' })
+        }
+
+        if (!Array.isArray(tasks)) {
+            return res.status(400).json({ message: 'tasks must be an array' })
+        }
+
+        const validStatuses = new Set(['todo', 'in-progress', 'completed'])
+        const validPriorities = new Set(['low', 'medium', 'high'])
+
+        const normalizedTasks = tasks.map((task, index) => {
+            const safeStatus = validStatuses.has(task?.status) ? task.status : (task?.completed ? 'completed' : 'todo')
+            const safePriority = validPriorities.has(task?.priority) ? task.priority : 'medium'
+
+            return {
+                id: String(task?.id || `${Date.now()}-${index}`),
+                title: String(task?.title || '').trim(),
+                description: String(task?.description || '').trim(),
+                priority: safePriority,
+                status: safeStatus,
+                dueDate: task?.dueDate ? new Date(task.dueDate) : null,
+                createdAt: task?.createdAt ? new Date(task.createdAt) : new Date()
+            }
+        }).filter(task =>
+            task.title.length > 0 &&
+            !Number.isNaN(task.createdAt.getTime()) &&
+            (task.dueDate === null || !Number.isNaN(task.dueDate.getTime()))
+        )
+
+        const project = await Project.findOne({ _id: projectId, email: userEmail })
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found' })
+        }
+
+        if (!project.status) {
+            project.status = {}
+        }
+
+        project.status.tasks = normalizedTasks
+        project.status.updatedBy = userEmail
+        project.recalculateProgress()
+
+        await project.save()
+
+        res.status(200).json({
+            message: 'Project status updated successfully',
+            status: {
+                tasks: project.status.tasks,
+                overallProgress: project.status.overallProgress,
+                totalTasks: project.status.totalTasks,
+                completedTasks: project.status.completedTasks,
+                stageStatuses: project.status.stageStatuses
+            }
+        })
+    } catch (error) {
+        console.error('Error updating project status:', error)
+        res.status(500).json({ message: 'Failed to update project status' })
     }
 }
 

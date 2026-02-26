@@ -100,13 +100,13 @@ const Navbar = ({ user, setUser, socket }) => {
             {!user && (
               <>
                 <Link to="/signInForm">
-                  <button className="px-4 py-2 bg-white text-indigo-600 font-semibold rounded-lg hover:bg-yellow-300 hover:text-indigo-700 transition">
+                  <button className="px-4 py-2 bg-slate-700 text-slate-200 cursor-pointer  font-semibold rounded-lg  border-slate-600 hover:bg-slate-600  active:scale-95 transition">
                     Sign In
                   </button>
                 </Link>
 
                 <Link to="/signUpForm">
-                  <button className="px-4 py-2 border-2 border-white text-white font-semibold rounded-lg hover:bg-white hover:text-indigo-600 transition">
+                  <button className="px-4 py-2 border-1 cursor-pointer border-white text-white font-semibold rounded-lg hover:bg-slate-600  transition">
                     Sign Up
                   </button>
                 </Link>
@@ -272,13 +272,13 @@ const Navbar = ({ user, setUser, socket }) => {
             {!user && (
               <div className="space-y-3 pt-3">
                 <Link to="/signInForm" onClick={() => setMenuOpen(false)}>
-                  <button className="w-full px-4 py-2 bg-white text-indigo-600 font-semibold rounded-lg hover:bg-yellow-300 transition">
+                  <button className="w-full px-4 py-2 bg-slate-700 text-slate-200 cursor-pointer  font-semibold rounded-lg  border-slate-600 hover:bg-slate-600  active:scale-95 transition">
                     Sign In
                   </button>
                 </Link>
 
                 <Link to="/signUpForm" onClick={() => setMenuOpen(false)}>
-                  <button className="w-full px-4 py-2 mt-1 border-2 border-white text-white font-semibold rounded-lg hover:bg-white hover:text-indigo-600 transition">
+                  <button className="w-full px-4 py-2 mt-1 border-1 cursor-pointer border-white text-white font-semibold rounded-lg hover:bg-slate-600  transition">
                     Sign Up
                   </button>
                 </Link>
@@ -306,10 +306,16 @@ const Navbar = ({ user, setUser, socket }) => {
                   </Link>
                 )}
 
-                {user.roll !== "admin" && (
+                <hr className="border-slate-700 my-2" />
+
+                {user.role !== "admin" && (
                   <Link to="/upload" onClick={() => setMenuOpen(false)}>
-                    <button className="w-full px-4 py-2 text-left text-slate-300 hover:bg-slate-700 rounded-lg transition text-sm">
-                    </button>
+                    <button
+              
+                  className="w-full  mt-2 px-4 py-2 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-semibold rounded-lg hover:bg-red-600 transition"
+                >
+                  Upload project
+                </button>
                   </Link>
                 )}
                 <button
@@ -318,7 +324,7 @@ const Navbar = ({ user, setUser, socket }) => {
                     setMenuOpen(false);
                   }}
                   disabled={isSubmitting}
-                  className="w-full px-4 py-2 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 transition"
+                  className="w-full px-4 py-2 my-2 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 transition"
                 >
                   {isSubmitting ? ' Logging Out...' : ' Log Out'}
                 </button>
