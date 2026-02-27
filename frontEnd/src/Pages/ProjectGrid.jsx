@@ -8,7 +8,7 @@ import { HiX } from "react-icons/hi";
 import CollabModel from "../Components/CollabModel";
 import CommentPage from "../Components/CommentPage";
 import toast from "react-hot-toast";
-import {motion} from "framer-motion";
+import { motion } from "framer-motion";
 
 const ProjectGrid = ({ user, socket }) => {
   const [projects, setProjects] = useState([])
@@ -22,6 +22,10 @@ const ProjectGrid = ({ user, socket }) => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const commentSoundRef = useRef(null)
+  const activeCommentProjectIdRef = useRef(selectedCommentProject?._id ? String(selectedCommentProject._id) : null)
+  const currentUserEmailRef = useRef(user?.email || null)
+  const isCommentPageAtBottomRef = useRef(true)
 
   // Search state
   // How search works in ProjectGrid
@@ -74,6 +78,24 @@ const ProjectGrid = ({ user, socket }) => {
     return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current) }
   }, [])
 
+  useEffect(() => {
+    commentSoundRef.current = new Audio('/sounds/comment.mp3')
+    commentSoundRef.current.volume = 0.7
+  }, [])
+
+  useEffect(() => {
+    activeCommentProjectIdRef.current = selectedCommentProject?._id
+      ? String(selectedCommentProject._id)
+      : null
+    if (!selectedCommentProject) {
+      isCommentPageAtBottomRef.current = true
+    }
+  }, [selectedCommentProject])
+
+  useEffect(() => {
+    currentUserEmailRef.current = user?.email || null
+  }, [user?.email])
+
   // ── Socket.IO: join project rooms when projects load ──────────────────────
   useEffect(() => {
     if (!socket || projects.length === 0) return
@@ -89,17 +111,26 @@ const ProjectGrid = ({ user, socket }) => {
     if (!socket) return
 
     const handleNewComment = (comment) => {
-      // Skip if this is our own comment — already added via optimistic update.
-      // The temp _id (Date.now()) vs real DB _id means the _id-based duplicate
-      // check can't catch this case, so we filter by email instead.
-      if (comment.userEmail === user?.email) return
-
       const pid = String(comment.projectId)
+      const isFromOtherUser = comment.userEmail !== currentUserEmailRef.current
+      const isActiveProjectOpen = !!activeCommentProjectIdRef.current
+      const isSameActiveProject = activeCommentProjectIdRef.current === pid
+      const isUserAwayFromBottom = !isCommentPageAtBottomRef.current
+
+      // Ignore own comment echo from socket (already added optimistically).
+      if (!isFromOtherUser) return
+
+      if (isFromOtherUser && isActiveProjectOpen && isSameActiveProject && isUserAwayFromBottom) {
+        commentSoundRef.current.currentTime = 0
+        commentSoundRef.current.play().catch(() => { })
+      }
+
       setComments(prev => {
         const existing = prev[pid] || []
         if (existing.some(c => c._id === comment._id)) return prev
         return { ...prev, [pid]: [...existing, comment] }
       })
+
       setProjectStats(prev => ({
         ...prev,
         [pid]: { ...prev[pid], comments: (prev[pid]?.comments || 0) + 1 }
@@ -126,6 +157,21 @@ const ProjectGrid = ({ user, socket }) => {
       socket.off('delete-comment', handleDeleteComment)
     }
   }, [socket])
+
+
+  useEffect(() => {
+    const unlockAudio = () => {
+      commentSoundRef.current?.play().then(() => {
+        commentSoundRef.current.pause()
+        commentSoundRef.current.currentTime = 0
+      }).catch(() => { })
+      window.removeEventListener('click', unlockAudio)
+    }
+
+    window.addEventListener('click', unlockAudio)
+
+    return () => window.removeEventListener('click', unlockAudio)
+  }, [])
 
   const fetchProjects = async (cursor = null, search = null) => {
     const isInitialLoad = !cursor
@@ -303,6 +349,10 @@ const ProjectGrid = ({ user, socket }) => {
     setSelectedCommentProject(project)
   }
 
+  const handleCommentPageBottomStateChange = useCallback((isAtBottom) => {
+    isCommentPageAtBottomRef.current = isAtBottom
+  }, [])
+
   return (
     <div className="min-h-screen pt-20 pb-10 px-4 sm:px-6 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
 
@@ -318,13 +368,13 @@ const ProjectGrid = ({ user, socket }) => {
 
           {/* Search Bar */}
           <div className="relative w-full lg:w-96">
-            <BiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+            <BiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2  text-white z-1 w-5 h-5" />
             <input
               type="text"
               placeholder="Search by title, tech, category..."
               value={searchTerm}
               onChange={(e) => handleSearch(e.target.value)}
-              className="w-full pl-11 pr-10 py-3 bg-slate-800/80 backdrop-blur border border-slate-700 rounded-xl text-white font-medium focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 shadow-xl transition-all duration-300 placeholder-slate-500"
+              className="w-full px-10 py-3 bg-slate-800/80 backdrop-blur border border-slate-500 rounded-xl text-white font-medium focus:outline-none focus:ring-1 focus:ring-violet-500 focus:border-violet-500 shadow-xl transition-all duration-300 placeholder-slate-400"
             />
             {isSearching && (
               <div className="absolute right-10 top-1/2 -translate-y-1/2">
@@ -339,7 +389,7 @@ const ProjectGrid = ({ user, socket }) => {
                 onClick={clearSearch}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 rounded-full hover:bg-slate-700 transition-all"
               >
-                <HiX className="w-4 h-4" />
+                <HiX className="w-4 cursor-pointer h-4" />
               </button>
             )}
           </div>
@@ -451,7 +501,7 @@ const ProjectGrid = ({ user, socket }) => {
                   </p>
 
                   {/* Tech Stack */}
-                <div className="mb-4">
+                  <div className="mb-4">
                     <p className="text-xs text-slate-500 font-semibold mb-2 uppercase tracking-wide">
                       Tech Stack
                     </p>
@@ -489,7 +539,7 @@ const ProjectGrid = ({ user, socket }) => {
                           }}
                           className="absolute right-0 bg-slate-900/80 pl-2 text-slate-500 text-xs font-semibold px-2 py-1"
                         >
-                          +{project.techStack.length - 4} more
+                          +{project.techStack.length - 4}
                         </motion.span>
                       )}
                     </motion.div>
@@ -585,6 +635,7 @@ const ProjectGrid = ({ user, socket }) => {
           setCommentText={setCommentText}
           handleComment={handleComment}
           handleDeleteComment={handleDeleteComment}
+          onBottomStateChange={handleCommentPageBottomStateChange}
           onClose={() => setSelectedCommentProject(null)}
           user={user}
         />

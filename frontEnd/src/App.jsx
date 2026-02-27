@@ -23,6 +23,8 @@ import ProjectStatus from "./Pages/ProjectStatus";
 function App() {
   const [user, setUser] = useState(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [workflowPrompt, setWorkflowPrompt] = useState(null);
+  const [workflowActionLoading, setWorkflowActionLoading] = useState(false);
   const navigate = useNavigate();
 
   // Single shared socket connection — alive when user is logged in
@@ -44,8 +46,61 @@ function App() {
     verifyUser();
   }, []);
 
+  useEffect(() => {
+    const loadWorkflowPrompt = async () => {
+      if (!user || user.role !== 'user') {
+        setWorkflowPrompt(null);
+        return;
+      }
+
+      try {
+        const res = await axios.get('/api/my-projects/stages/workflow', { withCredentials: true });
+        const workflow = res.data?.workflow;
+        if (workflow?.shouldPrompt) {
+          setWorkflowPrompt(workflow);
+        } else {
+          setWorkflowPrompt(null);
+        }
+      } catch {
+        setWorkflowPrompt(null);
+      }
+    };
+
+    loadWorkflowPrompt();
+  }, [user]);
+
+ 
+ const formatTimeline = (stage) => {
+    if (stage.timelineType === 'duration') {
+      return `${stage.durationDays} day${stage.durationDays === 3 ? '' : 's'} from stage start`;
+    }
+    const start = stage.startDate ? new Date(stage.startDate).toLocaleDateString() : 'N/A';
+    const end = stage.endDate ? new Date(stage.endDate).toLocaleDateString() : 'N/A';
+    return `${start} -> ${end}`;
+  };
+
+  const acceptWorkflow = async () => {
+    setWorkflowActionLoading(true);
+    try {
+      await axios.post('/api/my-projects/stages/workflow/accept', {}, { withCredentials: true });
+      setWorkflowPrompt(null);
+    } finally {
+      setWorkflowActionLoading(false);
+    }
+  };
+
+  const remindWorkflowLater = async () => {
+    setWorkflowActionLoading(true);
+    try {
+      await axios.post('/api/my-projects/stages/workflow/remind-later', {}, { withCredentials: true });
+      setWorkflowPrompt(null);
+    } finally {
+      setWorkflowActionLoading(false);
+    }
+  };
+
   if (checkingAuth) {
-    return navigate("/Home");
+    return null;
   }
 
   return (
@@ -91,6 +146,63 @@ function App() {
         <Route path="/admin" element={<AdminPanel user={user} />} />
         <Route path="/projectStatus/:projectId" element={user ? <ProjectStatus user={user} /> : <SignInForm setUser={setUser} />} />
       </Routes>
+
+      {workflowPrompt && (
+        <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-4xl bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-5 sm:p-6 max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-1">Project Workflow Updated</h2>
+            <p className="text-slate-400 text-sm mb-5">
+              Admin updated global project stages. Accept to activate this workflow.
+            </p>
+
+            <div className="space-y-3">
+              {(workflowPrompt.stages || []).map((stage, idx) => (
+                <div key={stage.stageId} className="bg-slate-800/70 border border-slate-700 rounded-xl p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="text-white font-semibold">
+                      Stage {idx + 1}: {stage.title}
+                    </h3>
+                    <span className="text-xs px-2 py-1 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30">
+                      {stage.marks} marks
+                    </span>
+                  </div>
+                  <p className="text-slate-300 text-sm mt-2">{stage.description || 'No description provided.'}</p>
+                  <p className="text-slate-400 text-xs mt-2">
+                    Timeline: <span className="text-slate-200">{formatTimeline(stage)}</span>
+                  </p>
+                  <p className="text-slate-400 text-xs mt-1">
+                    Guidelines: <span className="text-slate-200">{stage.guidelines || 'No additional guidelines.'}</span>
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-5 flex flex-wrap gap-2 justify-end">
+              <button
+                onClick={() => setWorkflowPrompt(null)}
+                disabled={workflowActionLoading}
+                className="px-4 py-2 rounded-lg bg-slate-700 text-slate-200 hover:bg-slate-600 transition disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={remindWorkflowLater}
+                disabled={workflowActionLoading}
+                className="px-4 py-2 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition disabled:opacity-60"
+              >
+                Remind Later
+              </button>
+              <button
+                onClick={acceptWorkflow}
+                disabled={workflowActionLoading}
+                className="px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition disabled:opacity-60"
+              >
+                {workflowActionLoading ? 'Processing...' : 'Accept Workflow'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

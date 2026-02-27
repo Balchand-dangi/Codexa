@@ -50,6 +50,17 @@ const userSchema = new mongoose.Schema({
     default: 'user'
    },
 
+    workflowAcceptedVersion: {
+        type: Number,
+        default: 0,
+        min: 0
+    },
+
+    workflowRemindLaterUntil: {
+        type: Date,
+        default: null
+    },
+
     emailVerifyToken: String,
     emailVerifyTokenExpiry: Date,
 

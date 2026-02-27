@@ -91,6 +91,45 @@ const projectSchema = new mongoose.Schema({
             },
             default: {}
         },
+        stageSubmissions: [{
+            stageId: {
+                type: String,
+                required: true
+            },
+            stageTitle: {
+                type: String,
+                default: ''
+            },
+            proofImage: {
+                type: String,
+                required: true
+            },
+            status: {
+                type: String,
+                enum: ['pending', 'approved', 'rejected'],
+                default: 'pending'
+            },
+            adminFeedback: {
+                type: String,
+                default: ''
+            },
+            submittedBy: {
+                type: String,
+                default: ''
+            },
+            submittedAt: {
+                type: Date,
+                default: Date.now
+            },
+            reviewedBy: {
+                type: String,
+                default: ''
+            },
+            reviewedAt: {
+                type: Date,
+                default: null
+            }
+        }],
         updatedBy: {
             type: String,
             default: ''
@@ -110,6 +149,9 @@ projectSchema.methods.recalculateProgress = function () {
     this.status.totalTasks = totalTasks
     this.status.completedTasks = completedTasks
     this.status.stageStatuses = {}
+    if (!Array.isArray(this.status.stageSubmissions)) {
+        this.status.stageSubmissions = []
+    }
     return this
 }
 

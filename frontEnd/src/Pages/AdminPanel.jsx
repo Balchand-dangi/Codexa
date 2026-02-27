@@ -5,9 +5,29 @@ import toast from 'react-hot-toast';
 import { BiSearch } from 'react-icons/bi';
 import { HiX } from 'react-icons/hi';
 
+const initialStageForm = {
+  title: '',
+  description: '',
+  guidelines: '',
+  timelineType: 'range',
+  startDate: '',
+  endDate: '',
+  durationDays: '',
+  marks: ''
+};
+
+const stageTimelineLabel = (stage) => {
+  if (stage.timelineType === 'duration') {
+    return `${stage.durationDays} day(s)`;
+  }
+  const start = stage.startDate ? new Date(stage.startDate).toLocaleDateString() : 'N/A';
+  const end = stage.endDate ? new Date(stage.endDate).toLocaleDateString() : 'N/A';
+  return `${start} -> ${end}`;
+};
 
 const AdminPanel = ({ user }) => {
   const [activeTab, setActiveTab] = useState('stats');
+  const [projectSubTab, setProjectSubTab] = useState('all-projects');
   const [users, setUsers] = useState([]);
   const [projects, setProjects] = useState([]);
   const [stats, setStats] = useState({});
@@ -22,15 +42,32 @@ const AdminPanel = ({ user }) => {
   // Pagination states
   const [usersPagination, setUsersPagination] = useState({ currentPage: 1, totalPages: 0, totalCount: 0 });
   const [projectsPagination, setProjectsPagination] = useState({ currentPage: 1, totalPages: 0, totalCount: 0 });
+  const [stages, setStages] = useState([]);
+  const [stageVersion, setStageVersion] = useState(1);
+  const [stageForm, setStageForm] = useState(initialStageForm);
+  const [editingStageId, setEditingStageId] = useState(null);
+  const [stageSaving, setStageSaving] = useState(false);
+  const [stageReorderSaving, setStageReorderSaving] = useState(false);
+  const [dragStageId, setDragStageId] = useState(null);
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewFeedback, setReviewFeedback] = useState({});
 
   // Redirect if not admin
   if (!user || user.role !== 'admin') return <Navigate to="/Home" />;
 
   useEffect(() => {
     if (activeTab === 'users') fetchUsers(1, userSearch);
-    if (activeTab === 'projects') fetchProjects(1, projectSearch);
+    if (activeTab === 'projects') {
+      if (projectSubTab === 'all-projects') {
+        fetchProjects(1, projectSearch);
+      } else {
+        fetchProjectStages();
+        fetchReviewQueue();
+      }
+    }
     if (activeTab === 'stats') fetchStats();
-  }, [activeTab]);
+  }, [activeTab, projectSubTab]);
 
   // Debounced user search — fires only when ≥2 chars, 700ms pause
   const handleUserSearch = useCallback((term) => {
@@ -94,12 +131,138 @@ const AdminPanel = ({ user }) => {
     } finally { setLoading(false); }
   };
 
+  const fetchProjectStages = async () => {
+    try {
+      const res = await axios.get('/api/admin/project-stages', { withCredentials: true });
+      setStages(res.data?.stages || []);
+      setStageVersion(res.data?.version || 1);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to fetch project stages');
+    }
+  };
+
+  const fetchReviewQueue = async () => {
+    setReviewsLoading(true);
+    try {
+      const res = await axios.get('/api/admin/stage-submissions?status=pending', { withCredentials: true });
+      setReviews(res.data?.reviews || []);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to load review queue');
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
   const handleUsersPageChange = (newPage) => {
     if (newPage >= 1 && newPage <= usersPagination.totalPages) fetchUsers(newPage, userSearch);
   };
 
   const handleProjectsPageChange = (newPage) => {
     if (newPage >= 1 && newPage <= projectsPagination.totalPages) fetchProjects(newPage, projectSearch);
+  };
+
+  const resetStageForm = () => {
+    setStageForm(initialStageForm);
+    setEditingStageId(null);
+  };
+
+  const beginEditStage = (stage) => {
+    setEditingStageId(stage.stageId);
+    setStageForm({
+      title: stage.title || '',
+      description: stage.description || '',
+      guidelines: stage.guidelines || '',
+      timelineType: stage.timelineType || 'range',
+      startDate: stage.startDate ? new Date(stage.startDate).toISOString().slice(0, 10) : '',
+      endDate: stage.endDate ? new Date(stage.endDate).toISOString().slice(0, 10) : '',
+      durationDays: stage.durationDays ?? '',
+      marks: stage.marks ?? ''
+    });
+  };
+
+  const submitStage = async (e) => {
+    e.preventDefault();
+    setStageSaving(true);
+    try {
+      const payload = {
+        title: stageForm.title.trim(),
+        description: stageForm.description.trim(),
+        guidelines: stageForm.guidelines.trim(),
+        timelineType: stageForm.timelineType,
+        startDate: stageForm.timelineType === 'range' ? stageForm.startDate : null,
+        endDate: stageForm.timelineType === 'range' ? stageForm.endDate : null,
+        durationDays: stageForm.timelineType === 'duration' ? Number(stageForm.durationDays) : null,
+        marks: Number(stageForm.marks)
+      };
+
+      if (editingStageId) {
+        await axios.put(`/api/admin/project-stages/${editingStageId}`, payload, { withCredentials: true });
+        toast.success('Stage updated');
+      } else {
+        await axios.post('/api/admin/project-stages', payload, { withCredentials: true });
+        toast.success('Stage created');
+      }
+
+      resetStageForm();
+      fetchProjectStages();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to save stage');
+    } finally {
+      setStageSaving(false);
+    }
+  };
+
+  const deleteStage = async (stageId) => {
+    try {
+      await axios.delete(`/api/admin/project-stages/${stageId}`, { withCredentials: true });
+      toast.success('Stage deleted');
+      if (editingStageId === stageId) resetStageForm();
+      fetchProjectStages();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to delete stage');
+    }
+  };
+
+  const reorderLocalStages = (fromId, toId) => {
+    if (!fromId || !toId || fromId === toId) return;
+    const next = [...stages];
+    const fromIndex = next.findIndex(s => s.stageId === fromId);
+    const toIndex = next.findIndex(s => s.stageId === toId);
+    if (fromIndex < 0 || toIndex < 0) return;
+    const [moved] = next.splice(fromIndex, 1);
+    next.splice(toIndex, 0, moved);
+    setStages(next.map((stage, idx) => ({ ...stage, order: idx })));
+  };
+
+  const saveReorder = async () => {
+    setStageReorderSaving(true);
+    try {
+      await axios.patch('/api/admin/project-stages/reorder', { orderedStageIds: stages.map(stage => stage.stageId) }, { withCredentials: true });
+      toast.success('Stage order saved');
+      fetchProjectStages();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to save order');
+    } finally {
+      setStageReorderSaving(false);
+    }
+  };
+
+  const reviewAction = async (review, action) => {
+    try {
+      if (action === 'approve') {
+        await axios.patch(`/api/admin/stage-submissions/${review.projectId}/${review.stageId}/approve`, {}, { withCredentials: true });
+      } else {
+        await axios.patch(
+          `/api/admin/stage-submissions/${review.projectId}/${review.stageId}/reject`,
+          { feedback: reviewFeedback[`${review.projectId}-${review.stageId}`] || '' },
+          { withCredentials: true }
+        );
+      }
+      toast.success(`Submission ${action}d`);
+      fetchReviewQueue();
+    } catch (err) {
+      toast.error(err.response?.data?.message || `Failed to ${action} submission`);
+    }
   };
 
   // Delete with descriptive confirmation — shows the user/project name
@@ -224,7 +387,7 @@ const AdminPanel = ({ user }) => {
     { label: 'Total Likes', value: stats.totalLikes || 0, icon: '❤️' },
   ];
 
-  // ─── Inline loading spinner (doesn't unmount search input) ──────────────
+  // ─── Inline loading spinner (doesn't unmount search input) 
   const Spinner = () => (
     <div className="flex flex-col items-center justify-center py-16 gap-4">
       <div className="relative w-12 h-12">
@@ -276,10 +439,7 @@ const AdminPanel = ({ user }) => {
                   <div key={card.label} className="bg-slate-700/50 border border-slate-600/50 rounded-2xl p-6 hover:bg-slate-700/70 transition">
                     <div className="flex items-center justify-between mb-4">
                       <span className="text-2xl">{card.icon}</span>
-                      <div className="w-8 h-8 bg-violet-500/20 rounded-lg flex items-center justify-center">
-                        <div className="w-2 h-2 bg-violet-400 rounded-full" />
                       </div>
-                    </div>
                     <p className="text-3xl font-bold text-white mb-1">{card.value.toLocaleString()}</p>
                     <p className="text-sm text-slate-400 font-medium">{card.label}</p>
                   </div>
@@ -288,7 +448,7 @@ const AdminPanel = ({ user }) => {
             )
           )}
 
-          {/* ── Users Tab ──────────────────────────────────── */}
+          {/* ── Users Tab  */}
           {activeTab === 'users' && (
             <>
               {/* Search bar — ALWAYS mounted so it keeps focus during loading */}
@@ -422,6 +582,23 @@ const AdminPanel = ({ user }) => {
           {/* ── Projects Tab ──────────────────────────────────── */}
           {activeTab === 'projects' && (
             <>
+              <div className="mb-4 flex flex-wrap gap-2">
+                <button
+                  onClick={() => setProjectSubTab('all-projects')}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${projectSubTab === 'all-projects' ? 'bg-violet-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+                >
+                  All Projects
+                </button>
+                <button
+                  onClick={() => setProjectSubTab('stages')}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${projectSubTab === 'stages' ? 'bg-violet-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+                >
+                  Stages
+                </button>
+              </div>
+
+              {projectSubTab === 'all-projects' && (
+                <>
               {/* Search bar — ALWAYS mounted so it keeps focus during loading */}
               <div className="mb-5">
                 <div className="relative max-w-md">
@@ -556,6 +733,172 @@ const AdminPanel = ({ user }) => {
                     itemName="projects"
                   />
                 </>
+              )}
+
+                </>
+              )}
+
+              {projectSubTab === 'stages' && (
+              <div className="mt-8 pt-6 border-t border-slate-700/60">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold text-white">Project Stages</h3>
+                  <span className="text-xs px-2 py-1 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30">
+                    Workflow v{stageVersion}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 xl:grid-cols-5 gap-4">
+                  <div className="xl:col-span-2 bg-slate-900/40 border border-slate-700 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-white font-semibold">{editingStageId ? 'Update Stage' : 'Create Stage'}</h4>
+                    </div>
+                    <form onSubmit={submitStage} className="space-y-3">
+                      <input
+                        required
+                        value={stageForm.title}
+                        onChange={(e) => setStageForm(prev => ({ ...prev, title: e.target.value }))}
+                        placeholder="Stage Title"
+                        className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
+                      />
+                      <textarea
+                        value={stageForm.description}
+                        onChange={(e) => setStageForm(prev => ({ ...prev, description: e.target.value }))}
+                        placeholder="Description"
+                        className="w-full min-h-20 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
+                      />
+                      <textarea
+                        value={stageForm.guidelines}
+                        onChange={(e) => setStageForm(prev => ({ ...prev, guidelines: e.target.value }))}
+                        placeholder="Guidelines"
+                        className="w-full min-h-20 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
+                      />
+                      <select
+                        value={stageForm.timelineType}
+                        onChange={(e) => setStageForm(prev => ({ ...prev, timelineType: e.target.value }))}
+                        className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
+                      >
+                        <option value="range">Start Date -&gt; End Date</option>
+                        <option value="duration">Duration</option>
+                      </select>
+                      {stageForm.timelineType === 'range' ? (
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            type="date"
+                            value={stageForm.startDate}
+                            onChange={(e) => setStageForm(prev => ({ ...prev, startDate: e.target.value }))}
+                            className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
+                            required
+                          />
+                          <input
+                            type="date"
+                            value={stageForm.endDate}
+                            onChange={(e) => setStageForm(prev => ({ ...prev, endDate: e.target.value }))}
+                            className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
+                            required
+                          />
+                        </div>
+                      ) : (
+                        <input
+                          type="number"
+                          min="1"
+                          value={stageForm.durationDays}
+                          onChange={(e) => setStageForm(prev => ({ ...prev, durationDays: e.target.value }))}
+                          placeholder="Duration (days)"
+                          className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
+                          required
+                        />
+                      )}
+                      <input
+                        type="number"
+                        min="0"
+                        required
+                        value={stageForm.marks}
+                        onChange={(e) => setStageForm(prev => ({ ...prev, marks: e.target.value }))}
+                        placeholder="Marks / Weightage"
+                        className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
+                      />
+                      <div className="flex gap-2">
+                        <button disabled={stageSaving} className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold">
+                          {stageSaving ? 'Saving...' : editingStageId ? 'Update Stage' : 'Create Stage'}
+                        </button>
+                        {editingStageId && (
+                          <button type="button" onClick={resetStageForm} className="px-4 py-2 bg-slate-700 text-slate-100 rounded-lg text-sm">
+                            Cancel
+                          </button>
+                        )}
+                      </div>
+                    </form>
+                  </div>
+
+                  <div className="xl:col-span-3 space-y-4">
+                    <div className="bg-slate-900/40 border border-slate-700 rounded-xl p-4">
+                      <div className="flex justify-between items-center mb-3">
+                        <h4 className="text-white font-semibold">Defined Global Stages (drag to reorder)</h4>
+                        <button onClick={saveReorder} disabled={stageReorderSaving || stages.length < 2} className="px-3 py-1.5 text-sm rounded-lg bg-violet-600 text-white disabled:opacity-50">
+                          {stageReorderSaving ? 'Saving...' : 'Save Order'}
+                        </button>
+                      </div>
+                      <div className="space-y-2 cursor-move">
+                        {stages.map((stage, idx) => (
+                          <div
+                            key={stage.stageId}
+                            draggable
+                            onDragStart={() => setDragStageId(stage.stageId)}
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={() => { reorderLocalStages(dragStageId, stage.stageId); setDragStageId(null); }}
+                            className="bg-slate-800 border border-slate-700 rounded-lg p-3"
+                          >
+                            <div className="flex items-center  justify-between gap-2">
+                              <p className="text-white font-semibold">#{idx + 1} {stage.title}</p>
+                              <div className="flex gap-2">
+                                <button onClick={() => beginEditStage(stage)} className="px-2 py-1 text-xs rounded-md bg-violet-500/20 text-violet-300">Edit</button>
+                                <button onClick={() => deleteStage(stage.stageId)} className="px-2 py-1 text-xs rounded-md bg-red-500/20 text-red-300">Delete</button>
+                              </div>
+                            </div>
+                            <p className="text-slate-400 text-xs mt-1">{stageTimelineLabel(stage)} | {stage.marks} marks</p>
+                            <p className="text-slate-300 text-sm mt-2">{stage.description || 'No description'}</p>
+                          </div>
+                        ))}
+                        {stages.length === 0 && <p className="text-slate-400 text-sm">No stages defined yet.</p>}
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-900/40 border border-slate-700 rounded-xl p-4">
+                      <h4 className="text-white font-semibold mb-3">Submission Review Panel</h4>
+                      {reviewsLoading ? <p className="text-slate-400">Loading submissions...</p> : (
+                        <div className="space-y-3">
+                          {reviews.map(review => {
+                            const reviewKey = `${review.projectId}-${review.stageId}`;
+                            return (
+                              <div key={reviewKey} className="bg-slate-800 border border-slate-700 rounded-lg p-3">
+                                <p className="text-white font-semibold">{review.projectTitle}</p>
+                                <p className="text-slate-300 text-sm">Stage: {review.stageTitle}</p>
+                                <p className="text-slate-400 text-xs">{review.projectOwnerEmail}</p>
+                                <img src={review.proofImage} alt="Stage proof" className="mt-2 max-h-52 rounded border border-slate-700" />
+                                <textarea
+                                  value={reviewFeedback[reviewKey] || ''}
+                                  onChange={(e) => setReviewFeedback(prev => ({ ...prev, [reviewKey]: e.target.value }))}
+                                  placeholder="Feedback (required if rejecting)"
+                                  className="w-full mt-2 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white min-h-16"
+                                />
+                                <div className="flex gap-2 mt-2">
+                                  <button onClick={() => reviewAction(review, 'approve')} className="px-3 py-1.5 rounded-lg text-sm bg-emerald-600 text-white">
+                                    Approve
+                                  </button>
+                                  <button onClick={() => reviewAction(review, 'reject')} className="px-3 py-1.5 rounded-lg text-sm bg-red-600 text-white">
+                                    Reject
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                          {reviews.length === 0 && <p className="text-slate-400 text-sm">No pending submissions.</p>}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
               )}
             </>
           )}

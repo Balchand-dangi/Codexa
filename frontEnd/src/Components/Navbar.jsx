@@ -116,7 +116,7 @@ const Navbar = ({ user, setUser, socket }) => {
             {user && (
               <>
                 {/* Notification Bell - Desktop Only */}
-                {user.role !== 'admin' && <NotificationBell socket={socket} />}
+                 <NotificationBell socket={socket} />
 
                 {/* Upload Project Button */}
                 {user.role !== 'admin' && (
