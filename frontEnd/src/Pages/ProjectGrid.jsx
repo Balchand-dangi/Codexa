@@ -29,7 +29,8 @@ const ProjectGrid = ({ user, socket }) => {
 
   // Search state
   // How search works in ProjectGrid
-  // The search in ProjectGrid is frontend filtering only — no API call on search. It uses a useMemo (or filter) over the already-fetched projects array. This is fast but limited to projects already loaded. The admin panel search is different — it does a debounced API call (700ms pause, min 2 chars) with a backend query so it can search across all data with pagination.
+  // The search in ProjectGrid is frontend filtering only — no API call on search. It uses a useMemo (or filter) over the already-fetched projects array. This is fast but limited to projects already loaded.
+  // The admin panel search is different — it does a debounced API call (700ms pause, min 2 chars) with a backend query so it can search across all data with pagination.
   const [searchTerm, setSearchTerm] = useState('')
   const [isSearching, setIsSearching] = useState(false)
   const searchTimeoutRef = useRef(null)
@@ -74,13 +75,14 @@ const ProjectGrid = ({ user, socket }) => {
     fetchProjects()
   }, [user])
 
+  // high volume
   useEffect(() => {
     return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current) }
   }, [])
 
   useEffect(() => {
-    commentSoundRef.current = new Audio('/sounds/comment.mp3')
-    commentSoundRef.current.volume = 0.7
+    commentSoundRef.current = new Audio('/comment.mp3')
+    commentSoundRef.current.volume = 1.0
   }, [])
 
   useEffect(() => {
@@ -307,7 +309,7 @@ const ProjectGrid = ({ user, socket }) => {
             >Cancel</button>
           </div>
         </div>
-      ), { duration: 8000 })
+      ), { duration: 7000 })
     })
     if (!confirmed) return
 

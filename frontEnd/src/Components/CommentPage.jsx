@@ -90,7 +90,7 @@ function CommentPage({
   const handleTextareaFocus = () => {
     setTimeout(() => {
       commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }, 300)
+    }, 200)
   }
 
   return (
