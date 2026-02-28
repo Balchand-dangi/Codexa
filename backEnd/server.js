@@ -65,7 +65,7 @@ app.use('/api/admin', rate_limiter_light,adminMiddleware, adminRouter)
 const frontendDistPath = path.join(__dirname, '../frontEnd/dist')
 if (fs.existsSync(frontendDistPath)) {
     app.use(express.static(frontendDistPath))
-    app.get('*', (req, res, next) => {
+    app.get(/.*/, (req, res, next) => {
         if (req.path.startsWith('/api')) return next()
         res.sendFile(path.join(frontendDistPath, 'index.html'))
     })
