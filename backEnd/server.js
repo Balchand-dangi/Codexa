@@ -9,6 +9,7 @@ const getProjects = require('./routers/getProjects')
 const projectInteractionRouter = require('./routers/projectInteractionRouter')
 const notificationRouter = require('./routers/notificationRouter')
 const redisClient = require('./config/redis')
+const fs = require('fs')
 const {rate_limiter_strict, rate_limiter_light} = require('./middleware/rate_limiter')
 const myprofileRouter = require('./routers/myProfileRouter')
 const MyProjects = require('./routers/myProjectsRouter')
@@ -60,11 +61,15 @@ app.use('/api/myProfile', userAuth, rate_limiter_strict, myprofileRouter)
 app.use('/api/my-projects', userAuth, rate_limiter_strict, MyProjects)
 app.use('/api/admin', rate_limiter_light,adminMiddleware, adminRouter)
 
-// Serve static files (e.g. project proof images)
-app.use('/static', express.static(path.join(__dirname, '../frontEnd/dist')))
-app.get(/.*/, (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontEnd/dist/index.html'))
-})
+// Serve frontend app and static assets
+const frontendDistPath = path.join(__dirname, '../frontEnd/dist')
+if (fs.existsSync(frontendDistPath)) {
+    app.use(express.static(frontendDistPath))
+    app.get('*', (req, res, next) => {
+        if (req.path.startsWith('/api')) return next()
+        res.sendFile(path.join(frontendDistPath, 'index.html'))
+    })
+}
 
 const PORT = process.env.PORT || 5000
 const initialize_connection = async () => {
