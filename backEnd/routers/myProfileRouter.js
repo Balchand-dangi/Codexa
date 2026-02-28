@@ -5,6 +5,8 @@ const userController = require('../controllers/userController')
 const myprofileRouter = express.Router()
 
 // Routes - mapping URLs to controller methods
-myprofileRouter.get("/", userAuth, userController.getMyProfile)
+myprofileRouter.get("/getMyProfile", userAuth, userController.getMyProfile)
+
+myprofileRouter.patch("/updateMyProfile", userAuth, userController.updateMyProfile)
 
 module.exports = myprofileRouter

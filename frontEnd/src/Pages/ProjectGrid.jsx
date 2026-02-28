@@ -539,7 +539,7 @@ const ProjectGrid = ({ user, socket }) => {
                             initial: { opacity: 1, x: 0 },
                             hover: { opacity: 0, x: 20 }
                           }}
-                          className="absolute right-0 bg-slate-900/80 pl-2 text-slate-500 text-xs font-semibold px-2 py-1"
+                          className="absolute  right-0 bg-slate-900/80 pl-2 text-slate-500 text-xs font-semibold px-2 py-1"
                         >
                           +{project.techStack.length - 4}
                         </motion.span>

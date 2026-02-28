@@ -113,7 +113,7 @@ exports.signIn = async (req, res) => {
             return res.status(401).json('Invalid credential')
         }
         // jwt
-        const token = jwt.sign({ _id: data._id, email: data.email }, process.env.SECRET_KEY, { expiresIn: "7d" })
+        const token = jwt.sign({ _id: data._id, email: data.email, role: data.role }, process.env.SECRET_KEY, { expiresIn: "7d" })
         res.cookie("token", token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",

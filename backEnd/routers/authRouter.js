@@ -7,11 +7,11 @@ const authRouter = express.Router()
 
 // Routes - mapping URLs to controller methods
 authRouter.get("/verify", userAuth, authController.verify)
-authRouter.post("/signUp", rate_limiter, authController.signUp)
+authRouter.post("/signUp",  authController.signUp)
 authRouter.get("/verify-email/:token", authController.verifyEmail)
-authRouter.post('/signIn', rate_limiter, authController.signIn)
-authRouter.post("/logOut", userAuth, authController.logOut)
-authRouter.post("/forgot-password", rate_limiter, authController.forgotPassword)
-authRouter.post("/reset-password/:token", rate_limiter, authController.resetPassword)
+authRouter.post('/signIn',  authController.signIn)
+authRouter.post("/logOut", authController.logOut)
+authRouter.post("/forgot-password",  authController.forgotPassword)
+authRouter.post("/reset-password/:token", authController.resetPassword)
 
 module.exports = authRouter

@@ -9,7 +9,7 @@ const getProjects = require('./routers/getProjects')
 const projectInteractionRouter = require('./routers/projectInteractionRouter')
 const notificationRouter = require('./routers/notificationRouter')
 const redisClient = require('./config/redis')
-const rate_limiter = require('./middleware/rate_limiter')
+const {rate_limiter_strict, rate_limiter_light} = require('./middleware/rate_limiter')
 const myprofileRouter = require('./routers/myProfileRouter')
 const MyProjects = require('./routers/myProjectsRouter')
 const path = require('path')
@@ -17,6 +17,7 @@ const userAuth = require('./middleware/userAuth')
 const adminRouter = require('./routers/adminRouter')
 const cors = require('cors')
 const { initSocket } = require('./socket')
+const adminMiddleware = require('./middleware/adminMiddleware')
 
 require('dotenv').config()
 
@@ -42,7 +43,7 @@ initSocket(io)
 
 // Middleware
 // Allow stage proof image payloads (base64) beyond default 100kb JSON limit.
-app.use(express.json({ limit: '10mb' }))
+app.use(express.json({ limit: '2mb' }))
 app.use(cors({
     origin: FRONTEND_URL,
     credentials: true
@@ -50,20 +51,15 @@ app.use(cors({
 app.use(cookieParser())
 
 // Routes
-app.use('/api/auth', authRouter)
-app.use('/api/uploadProject', rate_limiter, projectRouter)
-app.use('/api/getProjects', getProjects)
+app.use('/api/auth',rate_limiter_strict, authRouter)
+app.use('/api/uploadProject', userAuth, rate_limiter_strict, projectRouter)
+app.use('/api/getProjects',rate_limiter_light, getProjects)
 app.use('/api/project', userAuth, projectInteractionRouter)
-app.use('/api/notifications', notificationRouter)
-app.use('/api/getMyProfile', myprofileRouter)
-app.use('/api/my-projects', MyProjects)
-app.use('/api/admin', adminRouter)
+app.use('/api/notifications', userAuth, rate_limiter_light, notificationRouter)
+app.use('/api/myProfile', userAuth, rate_limiter_strict, myprofileRouter)
+app.use('/api/my-projects', userAuth, rate_limiter_strict, MyProjects)
+app.use('/api/admin', rate_limiter_light,adminMiddleware, adminRouter)
 
-// Serve static files
-app.use(express.static(path.join(__dirname, '../frontEnd/dist')))
-app.get(/.*/, (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontEnd/dist/index.html'))
-})
 
 const PORT = process.env.PORT || 5000
 const initialize_connection = async () => {

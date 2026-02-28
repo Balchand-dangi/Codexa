@@ -1,12 +1,15 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
+import feature from '../../Components/FeaturesDoc'
 
 function About() {
+
     return (
         <>
             <div className="h-px bg-slate-700/50" />
             <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white py-20 px-6 md:px-20 lg:px-32 border-t border-slate-800">
                 <div className="max-w-5xl mx-auto">
-                    
+
                     {/* Hero Section */}
                     <div className="text-center mb-16">
                         <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-violet-400 via-purple-400 to-emerald-400 bg-clip-text text-transparent">
@@ -23,8 +26,8 @@ function About() {
                         <div className="grid md:grid-cols-2 gap-12 items-center">
                             <div>
                                 <p className="text-lg leading-relaxed text-slate-300 mb-6">
-                                    Codexa is more than just a platform—it's a community built for <strong>developers, students, and tech enthusiasts</strong>. 
-                                    We solve the biggest challenges in collaborative development: finding the right teammates, showcasing real projects, 
+                                    Codexa is more than just a platform—it's a community built for <strong>developers, students, and tech enthusiasts</strong>.
+                                    We solve the biggest challenges in collaborative development: finding the right teammates, showcasing real projects,
                                     and turning ideas into working code.
                                 </p>
                                 <p className="text-lg leading-relaxed text-slate-300">
@@ -104,7 +107,7 @@ function About() {
                                 <p className="text-slate-400 text-sm uppercase tracking-wide font-semibold">Real-time Collab</p>
                             </div>
                         </div>
-                       
+
                     </section>
 
                     {/* Final Words */}
@@ -112,10 +115,10 @@ function About() {
                         <div className="text-center">
                             <h2 className="text-2xl md:text-3xl font-bold mb-6 text-white">Ready to Build Something Amazing?</h2>
                             <p className="text-lg text-slate-400 max-w-2xl mx-auto mb-8 leading-relaxed">
-                                Join thousands of students turning ideas into reality. Whether you're looking for teammates, 
+                                Join thousands of students turning ideas into reality. Whether you're looking for teammates,
                                 inspiration, or a place to showcase your work—Codexa has you covered.
                             </p>
-                          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                            <div className="flex flex-col sm:flex-row gap-4 justify-center">
                                 <a href="/upload" className="px-8 py-4 bg-violet-600 text-white font-bold rounded-xl hover:bg-violet-700 transition-all shadow-lg">
                                     Create Project
                                 </a>
@@ -124,6 +127,14 @@ function About() {
                                 </a>
                             </div>
                         </div>
+
+                        <Link to="/features">
+                           <div className='flex justify-center'>
+                             <button className="mt-8 px-6 py-3 bg-slate-700 text-slate-300 font-semibold rounded-lg hover:bg-slate-600 transition-all">
+                                Learn More
+                            </button>
+                           </div>
+                        </Link>
                     </section>
 
                 </div>

@@ -19,6 +19,7 @@ import AdminPanel from "./Pages/AdminPanel";
 import Navbar from "./Components/Navbar";
 import useSocket from "./hooks/useSocket";
 import ProjectStatus from "./Pages/ProjectStatus";
+import FeaturesDoc from "./Components/FeaturesDoc";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -145,6 +146,7 @@ function App() {
         <Route path="/reset-password/:token" element={<ResetPassword />} />
         <Route path="/admin" element={<AdminPanel user={user} />} />
         <Route path="/projectStatus/:projectId" element={user ? <ProjectStatus user={user} /> : <SignInForm setUser={setUser} />} />
+        <Route path="/features" element={<FeaturesDoc />} />
       </Routes>
 
       {workflowPrompt && (

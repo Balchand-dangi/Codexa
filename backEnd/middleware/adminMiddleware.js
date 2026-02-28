@@ -9,8 +9,8 @@ const adminMiddleware = async (req, res, next) => {
         }
 
         const decoded = jwt.verify(token, process.env.SECRET_KEY);
-        const user = await User.findById(decoded._id);
-
+       // const user = await User.findById(decoded._id);   // when we don't send role in token, we can fetch it from DB to check if user is admin or not. This way we can also handle role changes without needing to reissue tokens.
+        const user = decoded; // when we include role in token, we can skip DB fetch and directly check role from decoded token payload.
         if (!user || user.role !== 'admin') {
             return res.status(403).json({ message: "Admin access required" });
         }

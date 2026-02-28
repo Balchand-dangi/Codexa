@@ -129,7 +129,7 @@ exports.getMyProjects = async (req, res) => {
                 .lean(),
             Project.countDocuments({ email: userEmail })
         ]);
-
+ 
         res.json({
             data: myProjects,
             pagination: {
