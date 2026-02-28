@@ -60,6 +60,11 @@ app.use('/api/myProfile', userAuth, rate_limiter_strict, myprofileRouter)
 app.use('/api/my-projects', userAuth, rate_limiter_strict, MyProjects)
 app.use('/api/admin', rate_limiter_light,adminMiddleware, adminRouter)
 
+// Serve static files (e.g. project proof images)
+app.use('/static', express.static(path.join(__dirname, '../frontEnd/dist')))
+app.get(/.*/, (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontEnd/dist/index.html'))
+})
 
 const PORT = process.env.PORT || 5000
 const initialize_connection = async () => {
