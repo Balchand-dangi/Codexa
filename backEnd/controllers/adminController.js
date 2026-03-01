@@ -5,6 +5,7 @@ const Notification = require('../model/notificationSchema');
 const ProjectStageConfig = require('../model/projectStageSchema');
 const { Like, Comment } = require('../model/projectInteractionSchema');
 const { getIO } = require('../socket');
+const { getCache, setCache, deleteByPattern, deleteByPatterns, deleteKeys } = require('../utils/cache');
 
 const GLOBAL_STAGE_KEY = 'global-project-stages';
 
@@ -74,6 +75,10 @@ const normalizeStageInput = (payload = {}, orderFallback = 0) => {
 };
 
 const createStageId = () => `stage-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+const clearFeedCache = async () => deleteByPattern('FEED:*');
+const clearWorkflowCaches = async () => deleteByPatterns(['WORKFLOW_NOTICE:*', 'MY_PROJECT_STATUS:*']);
+const buildAdminUsersCacheKey = ({ page, limit, search }) => `ADMIN_USERS:${page}:${limit}:${search || 'none'}`;
+const buildAdminProjectsCacheKey = ({ page, limit, search }) => `ADMIN_PROJECTS:${page}:${limit}:${search || 'none'}`;
 
 // Get all users (Admin only) - WITH PAGINATION + SEARCH
 exports.getAllUsers = async (req, res) => {
@@ -82,6 +87,12 @@ exports.getAllUsers = async (req, res) => {
         const limit = parseInt(req.query.limit, 10) || 20;
         const skip = (page - 1) * limit;
         const search = req.query.search;
+        const cacheKey = buildAdminUsersCacheKey({ page, limit, search });
+
+        const cached = await getCache(cacheKey);
+        if (cached) {
+            return res.status(200).json(JSON.parse(cached));
+        }
 
         const query = {};
         if (search && search.trim()) {
@@ -98,7 +109,7 @@ exports.getAllUsers = async (req, res) => {
             User.countDocuments(query)
         ]);
 
-        res.status(200).json({
+        const response = {
             data: users,
             pagination: {
                 currentPage: page,
@@ -106,7 +117,10 @@ exports.getAllUsers = async (req, res) => {
                 totalCount,
                 hasMore: page < Math.ceil(totalCount / limit)
             }
-        });
+        };
+
+        await setCache(cacheKey, JSON.stringify(response), 900);
+        res.status(200).json(response);
     } catch (err) {
         res.status(500).json({ message: 'Failed to fetch users', error: err.message });
     }
@@ -119,6 +133,12 @@ exports.getAllProjects = async (req, res) => {
         const limit = parseInt(req.query.limit, 10) || 20;
         const skip = (page - 1) * limit;
         const search = req.query.search;
+        const cacheKey = buildAdminProjectsCacheKey({ page, limit, search });
+
+        const cached = await getCache(cacheKey);
+        if (cached) {
+            return res.status(200).json(JSON.parse(cached));
+        }
 
         const matchQuery = {};
         if (search && search.trim()) {
@@ -165,7 +185,7 @@ exports.getAllProjects = async (req, res) => {
         const projects = result.data;
         const totalCount = result.totalCount[0]?.count || 0;
 
-        res.status(200).json({
+        const response = {
             data: projects,
             pagination: {
                 currentPage: page,
@@ -173,7 +193,10 @@ exports.getAllProjects = async (req, res) => {
                 totalCount,
                 hasMore: page < Math.ceil(totalCount / limit)
             }
-        });
+        };
+
+        await setCache(cacheKey, JSON.stringify(response), 900);
+        res.status(200).json(response);
     } catch (err) {
         res.status(500).json({ message: 'Failed to fetch projects', error: err.message });
     }
@@ -197,6 +220,14 @@ exports.deleteUser = async (req, res) => {
         await Like.deleteMany({ userEmail: user.email });
         await Comment.deleteMany({ userEmail: user.email });
         await User.findByIdAndDelete(userId);
+        await deleteByPatterns([
+            'FEED:*',
+            `MY_PROJECTS:${user.email}:*`,
+            `MY_PROJECT_STATUS:${user.email}:*`,
+            `WORKFLOW_NOTICE:${user.email}`,
+            'ADMIN_USERS:*',
+            'ADMIN_PROJECTS:*'
+        ]);
 
         res.status(200).json({ message: 'User and their data deleted successfully' });
     } catch (err) {
@@ -217,6 +248,12 @@ exports.deleteProject = async (req, res) => {
         await Like.deleteMany({ projectId });
         await Comment.deleteMany({ projectId });
         await Projects.findByIdAndDelete(projectId);
+        await clearFeedCache();
+        if (project.email) {
+            await deleteByPatterns([`MY_PROJECTS:${project.email}:*`]);
+            await deleteKeys([`MY_PROJECT_STATUS:${project.email}:${projectId}`]);
+        }
+        await deleteByPattern('ADMIN_PROJECTS:*');
 
         res.status(200).json({ message: 'Project deleted successfully' });
     } catch (err) {
@@ -317,6 +354,7 @@ exports.createProjectStage = async (req, res) => {
         config.updatedBy = req.user.email;
         config.stages = config.stages.map((stage, idx) => ({ ...stage.toObject(), order: idx }));
         await config.save();
+        await clearWorkflowCaches();
 
         res.status(201).json({
             message: 'Stage created successfully',
@@ -352,6 +390,7 @@ exports.updateProjectStage = async (req, res) => {
         config.version += 1;
         config.updatedBy = req.user.email;
         await config.save();
+        await clearWorkflowCaches();
 
         res.status(200).json({
             message: 'Stage updated successfully',
@@ -378,6 +417,7 @@ exports.deleteProjectStage = async (req, res) => {
         config.version += 1;
         config.updatedBy = req.user.email;
         await config.save();
+        await clearWorkflowCaches();
 
         res.status(200).json({
             message: 'Stage deleted successfully',
@@ -417,6 +457,7 @@ exports.reorderProjectStages = async (req, res) => {
         config.version += 1;
         config.updatedBy = req.user.email;
         await config.save();
+        await clearWorkflowCaches();
 
         res.status(200).json({
             message: 'Stages reordered successfully',
@@ -488,6 +529,7 @@ exports.approveStageSubmission = async (req, res) => {
         submissions[index].reviewedAt = new Date();
 
         await project.save();
+        await deleteKeys([`MY_PROJECT_STATUS:${project.email}:${projectId}`]);
 
         const ownerEmail = project.email;
         const adminName = req.user.name || 'Admin';
@@ -538,6 +580,7 @@ exports.rejectStageSubmission = async (req, res) => {
         submissions[index].reviewedAt = new Date();
 
         await project.save();
+        await deleteKeys([`MY_PROJECT_STATUS:${project.email}:${projectId}`]);
 
         const ownerEmail = project.email;
         const adminName = req.user.name || 'Admin';

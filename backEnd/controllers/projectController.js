@@ -6,6 +6,7 @@ const ProjectStageConfig = require('../model/projectStageSchema');
 const { Like, Comment } = require('../model/projectInteractionSchema');
 const validProject = require('../utils/validateProject');
 const { getIO } = require('../socket');
+const { getCache, setCache, deleteByPatterns, deleteKeys } = require('../utils/cache');
 
 const GLOBAL_STAGE_KEY = 'global-project-stages';
 
@@ -37,81 +38,124 @@ const toSafeStages = (stages = []) =>
         }))
         .sort((a, b) => a.order - b.order);
 
+const buildFeedCacheKey = ({ cursor, search }) => `FEED:${cursor || 'first'}:${search || 'none'}`;
+const buildMyProjectsCacheKey = ({ userEmail, page, limit }) => `MY_PROJECTS:${userEmail}:${page}:${limit}`;
+const buildWorkflowNoticeCacheKey = userEmail => `WORKFLOW_NOTICE:${userEmail}`;
+const buildProjectStatusCacheKey = ({ userEmail, projectId }) => `MY_PROJECT_STATUS:${userEmail}:${projectId}`;
+
 // Get all projects with stats (CURSOR-BASED PAGINATION for feed)
 exports.getAllProjects = async (req, res) => {
     try {
-        const userEmail = req.user.email;
-        const limit = parseInt(req.query.limit, 10) || 21;
-        const cursor = req.query.cursor;
-        const search = req.query.search;
+        const userEmail = req.user.email
+        const limit = parseInt(req.query.limit, 10) || 21
+        const cursor = req.query.cursor
+        const search = req.query.search
 
-        const query = cursor ? { _id: { $lt: cursor } } : {};
+        const cacheKey = buildFeedCacheKey({ cursor, search })
+
+        // CACHE HIT
+        const cached = await getCache(cacheKey)
+        if (cached) {
+            const parsed = JSON.parse(cached)
+            //console.log('Cache hit for key:', cacheKey)
+
+            // only userLiked is dynamic
+            parsed.data.forEach(project => {
+                project.userLiked = project.likes.some(
+                    like => like.userEmail === userEmail
+                )
+                delete project.likes
+            })
+
+            return res.json(parsed)
+        }
+
+        //  ORIGINAL DB LOGIC
+
+        const query = cursor ? { _id: { $lt: cursor } } : {}
 
         if (search && search.trim()) {
-            const regex = new RegExp(search.trim(), 'i');
+            const regex = new RegExp(search.trim(), 'i')
             query.$or = [
                 { title: regex },
                 { description: regex },
                 { category: regex },
                 { techStack: regex }
-            ];
+            ]
         }
 
         const projects = await Project.find(query)
             .sort({ _id: -1 })
             .limit(limit + 1)
-            .lean();
+            .lean()
+        //console.log('DB HIT:', cacheKey)
 
-        const hasMore = projects.length > limit;
-        const results = hasMore ? projects.slice(0, limit) : projects;
-        const projectIds = results.map(p => p._id);
+        const hasMore = projects.length > limit
+        const results = hasMore ? projects.slice(0, limit) : projects
+        const projectIds = results.map(p => p._id)
 
         const [allLikes, allComments] = await Promise.all([
             Like.find({ projectId: { $in: projectIds } }).lean(),
             Comment.find({ projectId: { $in: projectIds } }).lean()
-        ]);
+        ])
 
-        const likesMap = {};
-        const commentsMap = {};
+        const likesMap = {}
+        const commentsMap = {}
 
         allLikes.forEach(like => {
-            const id = like.projectId.toString();
-            if (!likesMap[id]) likesMap[id] = [];
-            likesMap[id].push(like);
-        });
+            const id = like.projectId.toString()
+            if (!likesMap[id]) likesMap[id] = []
+            likesMap[id].push(like)
+        })
 
         allComments.forEach(comment => {
-            const id = comment.projectId.toString();
-            if (!commentsMap[id]) commentsMap[id] = [];
-            commentsMap[id].push(comment);
-        });
+            const id = comment.projectId.toString()
+            if (!commentsMap[id]) commentsMap[id] = []
+            commentsMap[id].push(comment)
+        })
 
         const projectsWithStats = results.map(project => {
-            const projectId = project._id.toString();
-            const projectLikes = likesMap[projectId] || [];
-            const projectComments = commentsMap[projectId] || [];
+            const projectId = project._id.toString()
+            const projectLikes = likesMap[projectId] || []
+            const projectComments = commentsMap[projectId] || []
 
             return {
                 ...project,
+                likes: projectLikes, // store temporarily for userLiked
                 likesCount: projectLikes.length,
                 commentsCount: projectComments.length,
-                userLiked: projectLikes.some(like => like.userEmail === userEmail),
                 comments: projectComments
-            };
-        });
+            }
+        })
 
-        res.json({
+        const response = {
             data: projectsWithStats,
             pagination: {
                 hasMore,
-                nextCursor: hasMore ? results[results.length - 1]._id : null
+                nextCursor: hasMore
+                    ? results[results.length - 1]._id
+                    : null
             }
-        });
+        }
+
+        // STORE IN CACHE (without userLiked)
+        await setCache(cacheKey, JSON.stringify(response), 900)
+
+        // ADD userLiked before sending
+        response.data.forEach(project => {
+            project.userLiked = project.likes.some(
+                like => like.userEmail === userEmail
+            )
+            delete project.likes
+        })
+
+        res.json(response)
+
     } catch (err) {
-        console.error('Error fetching projects:', err);
-        res.status(500).json({ message: 'Unable to fetch data from DB' });
+        console.error('Error fetching projects:', err)
+        res.status(500).json({ message: 'Unable to fetch data from DB' })
     }
-};
+}
 
 // Get user's own projects (OFFSET-BASED PAGINATION)
 exports.getMyProjects = async (req, res) => {
@@ -120,6 +164,12 @@ exports.getMyProjects = async (req, res) => {
         const page = parseInt(req.query.page, 10) || 1;
         const limit = parseInt(req.query.limit, 10) || 10;
         const skip = (page - 1) * limit;
+        const cacheKey = buildMyProjectsCacheKey({ userEmail, page, limit });
+
+        const cached = await getCache(cacheKey);
+        if (cached) {
+            return res.status(200).json(JSON.parse(cached));
+        }
 
         const [myProjects, totalCount] = await Promise.all([
             Project.find({ email: userEmail })
@@ -129,8 +179,8 @@ exports.getMyProjects = async (req, res) => {
                 .lean(),
             Project.countDocuments({ email: userEmail })
         ]);
- 
-        res.json({
+
+        const response = {
             data: myProjects,
             pagination: {
                 currentPage: page,
@@ -138,7 +188,10 @@ exports.getMyProjects = async (req, res) => {
                 totalCount,
                 hasMore: page < Math.ceil(totalCount / limit)
             }
-        });
+        };
+
+        await setCache(cacheKey, JSON.stringify(response), 300);
+        res.json(response);
     } catch (error) {
         console.error('Error fetching user projects:', error);
         res.status(500).json({ message: 'Failed to fetch projects' });
@@ -161,6 +214,11 @@ exports.uploadProject = async (req, res) => {
             return res.json({ message: 'This project already uploaded' });
         }
         await Project.create(req.body);
+        await deleteByPatterns([
+            'FEED:*',
+            `MY_PROJECTS:${req.body.email}:*`,
+            'ADMIN_PROJECTS:*'
+        ]);
         res.status(200).json({ message: 'Project successfully uploaded' });
     } catch (err) {
         res.send(err.message);
@@ -170,6 +228,12 @@ exports.uploadProject = async (req, res) => {
 // Get stage workflow notice shown on next visit
 exports.getStageWorkflowNotice = async (req, res) => {
     try {
+        const cacheKey = buildWorkflowNoticeCacheKey(req.user.email);
+        const cached = await getCache(cacheKey);
+        if (cached) {
+            return res.status(200).json(JSON.parse(cached));
+        }
+
         const config = await ensureStageConfig();
         const user = req.user;
         const now = new Date();
@@ -180,7 +244,7 @@ exports.getStageWorkflowNotice = async (req, res) => {
             hasPendingWorkflowUpdate &&
             (!remindLaterUntil || new Date(remindLaterUntil).getTime() <= now.getTime());
 
-        res.status(200).json({
+        const response = {
             workflow: {
                 currentVersion: config.version,
                 acceptedVersion,
@@ -189,7 +253,10 @@ exports.getStageWorkflowNotice = async (req, res) => {
                 shouldPrompt,
                 stages: toSafeStages(config.stages)
             }
-        });
+        };
+
+        await setCache(cacheKey, JSON.stringify(response), 300);
+        res.status(200).json(response);
     } catch (error) {
         console.error('Error fetching stage workflow notice:', error);
         res.status(500).json({ message: 'Failed to fetch stage workflow notice' });
@@ -202,6 +269,7 @@ exports.acceptStageWorkflow = async (req, res) => {
         req.user.workflowAcceptedVersion = config.version;
         req.user.workflowRemindLaterUntil = null;
         await req.user.save();
+        await deleteKeys([buildWorkflowNoticeCacheKey(req.user.email)]);
 
         res.status(200).json({
             message: 'Workflow accepted successfully',
@@ -219,6 +287,7 @@ exports.remindStageWorkflowLater = async (req, res) => {
         const remindLaterUntil = new Date(Date.now() + remindAfterHours * 60 * 60 * 1000);
         req.user.workflowRemindLaterUntil = remindLaterUntil;
         await req.user.save();
+        await deleteKeys([buildWorkflowNoticeCacheKey(req.user.email)]);
 
         res.status(200).json({
             message: 'Reminder saved',
@@ -239,6 +308,11 @@ exports.getMyProjectStatus = async (req, res) => {
         if (!mongoose.Types.ObjectId.isValid(projectId)) {
             return res.status(400).json({ message: 'Invalid project ID' });
         }
+        const cacheKey = buildProjectStatusCacheKey({ userEmail, projectId });
+        const cached = await getCache(cacheKey);
+        if (cached) {
+            return res.status(200).json(JSON.parse(cached));
+        }
 
         const [project, config] = await Promise.all([
             Project.findOne({ _id: projectId, email: userEmail }).lean(),
@@ -252,7 +326,7 @@ exports.getMyProjectStatus = async (req, res) => {
         const status = project.status || {};
         const stages = toSafeStages(config.stages);
 
-        res.status(200).json({
+        const response = {
             projectId: project._id,
             projectTitle: project.title,
             workflow: {
@@ -269,7 +343,10 @@ exports.getMyProjectStatus = async (req, res) => {
                 stageStatuses: status.stageStatuses || {},
                 stageSubmissions: Array.isArray(status.stageSubmissions) ? status.stageSubmissions : []
             }
-        });
+        };
+
+        await setCache(cacheKey, JSON.stringify(response), 300);
+        res.status(200).json(response);
     } catch (error) {
         console.error('Error fetching project status:', error);
         res.status(500).json({ message: 'Failed to fetch project status' });
@@ -330,6 +407,10 @@ exports.updateMyProjectStatus = async (req, res) => {
         project.recalculateProgress();
 
         await project.save();
+        await deleteByPatterns([
+            `MY_PROJECTS:${userEmail}:*`
+        ]);
+        await deleteKeys([buildProjectStatusCacheKey({ userEmail, projectId })]);
 
         res.status(200).json({
             message: 'Project status updated successfully',
@@ -417,6 +498,7 @@ exports.submitStageProof = async (req, res) => {
 
         project.status.updatedBy = userEmail;
         await project.save();
+        await deleteKeys([buildProjectStatusCacheKey({ userEmail, projectId })]);
 
         const admins = await User.find({ role: 'admin' }).select('email name').lean();
         const io = getIO();

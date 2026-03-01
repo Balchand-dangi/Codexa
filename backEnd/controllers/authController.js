@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const User = require("../model/userSchema")
 const validUser = require("../utils/validateUser");
 const redisClient = require("../config/redis")
+const { deleteByPattern } = require('../utils/cache');
 const crypto = require("crypto");
 const sendEmail = require("../utils/sendEmail");
 
@@ -62,6 +63,7 @@ exports.signUp = async (req, res) => {
             emailVerifyToken: emailToken,
             emailVerifyTokenExpiry: Date.now() + 24 * 60 * 60 * 1000
         });
+        await deleteByPattern('ADMIN_USERS:*');
 
         return res.status(201).json({
             message: "Check spam/inbox! Verification link sent to your email."

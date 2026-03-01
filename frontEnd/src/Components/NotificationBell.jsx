@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { MdNotifications } from 'react-icons/md';
 import axios from 'axios';
-
+import { toast } from 'react-hot-toast';
 const NotificationBell = ({ socket }) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -16,6 +16,7 @@ const NotificationBell = ({ socket }) => {
       setNotifications(response.data.notifications || []);
       setUnreadCount(response.data.unreadCount || 0);
     } catch (err) {
+      toast.error('Failed to fetch notifications, your limit has been exceeded.');
       console.error('Error fetching notifications:', err);
     } finally {
       setLoading(false);
@@ -54,9 +55,11 @@ const NotificationBell = ({ socket }) => {
   const markAsRead = async (notificationId) => {
     try {
       await axios.patch(`/api/notifications/${notificationId}/read`, {}, { withCredentials: true });
+      toast.success('Notification marked as read');
       setNotifications(prev => prev.map(n => (n._id === notificationId ? { ...n, isRead: true } : n)));
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (err) {
+      toast.error('Failed to mark notification as read, your limit has been exceeded.');
       console.error('Error marking as read:', err);
     }
   };
@@ -67,6 +70,7 @@ const NotificationBell = ({ socket }) => {
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
       setUnreadCount(0);
     } catch (err) {
+      toast.error('Failed to mark all notifications as read, your limit has been exceeded.');
       console.error('Error marking all as read:', err);
     }
   };
@@ -74,8 +78,10 @@ const NotificationBell = ({ socket }) => {
   const deleteNotification = async (notificationId) => {
     try {
       await axios.delete(`/api/notifications/${notificationId}`, { withCredentials: true });
+      toast.success('Notification deleted');
       setNotifications(prev => prev.filter(n => n._id !== notificationId));
     } catch (err) {
+      toast.error('Failed to delete notification, your limit has been exceeded.');
       console.error('Error deleting notification:', err);
     }
   };
@@ -83,9 +89,11 @@ const NotificationBell = ({ socket }) => {
   const acceptCollaborationRequest = async (notificationId) => {
     try {
       await axios.patch(`/api/notifications/${notificationId}/accept`, {}, { withCredentials: true });
+      toast.success('Collaboration request accepted');
       setNotifications(prev => prev.map(n => (n._id === notificationId ? { ...n, status: 'accepted', isRead: true } : n)));
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (err) {
+      toast.error('Failed to accept collaboration request, your limit has been exceeded.');
       console.error('Error accepting request:', err);
     }
   };
@@ -93,9 +101,11 @@ const NotificationBell = ({ socket }) => {
   const rejectCollaborationRequest = async (notificationId) => {
     try {
       await axios.patch(`/api/notifications/${notificationId}/reject`, {}, { withCredentials: true });
+      toast.success('Collaboration request rejected');
       setNotifications(prev => prev.map(n => (n._id === notificationId ? { ...n, status: 'rejected', isRead: true } : n)));
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (err) {
+      toast.error('Failed to reject collaboration request, your limit has been exceeded.');
       console.error('Error rejecting request:', err);
     }
   };
@@ -155,7 +165,11 @@ const NotificationBell = ({ socket }) => {
             </div>
             <div className="flex items-center gap-2">
               {unreadCount > 0 && <button onClick={markAllAsRead} className="text-xs text-violet-400 hover:text-violet-300 font-medium transition px-2 py-1 rounded-lg hover:bg-violet-500/10">Mark all read</button>}
-              <button onClick={() => setShowDropdown(false)} className="text-slate-400 hover:text-white text-xl px-2 transition" aria-label="Close notifications">×</button>
+              <button onClick={() => setShowDropdown(false)} className="text-slate-400 cursor-pointer hover:text-white text-xl px-2 transition" aria-label="Close notifications">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>  
+              </button>
             </div>
           </div>
 

@@ -70,9 +70,12 @@ const collaborationRequestSchema = new mongoose.Schema({
     }
 }, { timestamps: true })
 
-// Create unique indexes to prevent duplicate likes and collaboration requests
+// Create unique indexes to prevent duplicate likes and collaboration requests and get faster queries
 likeSchema.index({ projectId: 1, userEmail: 1 }, { unique: true })
 collaborationRequestSchema.index({ projectId: 1, requesterEmail: 1 }, { unique: true })
+commentSchema.index({ projectId: 1, createdAt: -1 })  // Fast getComments()
+collaborationRequestSchema.index({ projectOwnerEmail: 1, status: 1 })
+
 
 const Like = mongoose.model('Like', likeSchema, 'likes')
 const Comment = mongoose.model('Comment', commentSchema, 'comments')

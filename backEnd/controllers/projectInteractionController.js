@@ -3,45 +3,48 @@ const Notification = require('../model/notificationSchema')
 const Project = require('../model/projectSchema')
 const mongoose = require('mongoose')
 const { getIO } = require('../socket')
+const { getCache, setCache, deleteByPattern, deleteKeys } = require('../utils/cache')
+// Helper: Get project minimally (used everywhere)
+const getProjectLean = async (projectId) => {
+    return await Project.findById(projectId, { _id: 1, email: 1, title: 1 }).lean()
+}
+
+const clearFeedCache = async () => {
+    try {
+        await deleteByPattern('FEED:*')
+    } catch (err) {
+        console.log('Redis cache clear error:', err.message)
+    }
+}
+
+const likesCacheKey = projectId => `PROJECT_LIKES:${projectId}`
+const commentsCacheKey = projectId => `PROJECT_COMMENTS:${projectId}`
 
 // Like a project
 exports.likeProject = async (req, res) => {
     try {
         const { projectId } = req.params
-        const userEmail = req.user.email
-        const userName = req.user.name
+        const { email: userEmail, name: userName } = req.user
+        const io = getIO()
 
-        // Check if project exists
-        const project = await Project.findById(projectId)
-        if (!project) {
-            return res.status(404).json({ message: 'Project not found' })
-        }
+        const project = await getProjectLean(projectId)
+        if (!project) return res.status(404).json({ message: 'Project not found' })
 
-        // Check if user already liked
-        const existingLike = await Like.findOne({ projectId, userEmail })
-        if (existingLike) {
-            return res.status(400).json({ message: 'You already liked this project' })
-        }
+        const existingLike = await Like.findOne({ projectId, userEmail }, { _id: 1 }).lean()
+        if (existingLike) return res.status(400).json({ message: 'You already liked this project' })
 
-        // Create like
         await Like.create({ projectId, userEmail, userName })
 
-        // Create notification for project owner (if not liking own project)
+        await clearFeedCache() // Clear feed cache after like
+        await deleteKeys([likesCacheKey(projectId)])
+
         if (project.email !== userEmail) {
             const notification = await Notification.create({
-                recipient: project.email,
-                sender: userEmail,
-                senderName: userName,
-                projectId,
-                projectTitle: project.title,
-                type: 'like',
+                recipient: project.email, sender: userEmail, senderName: userName,
+                projectId, projectTitle: project.title, type: 'like',
                 message: `${userName} liked your project "${project.title}"`
             })
-            // Push notification in real time
-            const io = getIO()
-            if (io) {
-                io.to(`user:${project.email}`).emit('new-notification', notification)
-            }
+            if (io) io.to(`user:${project.email}`).emit('new-notification', notification)
         }
 
         res.status(200).json({ message: 'Project liked successfully' })
@@ -54,18 +57,17 @@ exports.likeProject = async (req, res) => {
 exports.unlikeProject = async (req, res) => {
     try {
         const { projectId } = req.params
-        const userEmail = req.user.email
+        const { email: userEmail } = req.user
 
         const result = await Like.findOneAndDelete({ projectId, userEmail })
-        if (!result) {
-            return res.status(404).json({ message: 'Like not found' })
-        }
+
+        if (!result) return res.status(404).json({ message: 'Like not found' })
+        await clearFeedCache() // Clear feed cache after unlike
+        await deleteKeys([likesCacheKey(projectId)])
 
         res.status(200).json({ message: 'Project unliked successfully' })
     } catch (err) {
-        res.status(500).json({ message: err.message }
-
-        )
+        res.status(500).json({ message: err.message })
     }
 }
 
@@ -73,15 +75,24 @@ exports.unlikeProject = async (req, res) => {
 exports.getLikes = async (req, res) => {
     try {
         const { projectId } = req.params
-        const likes = await Like.find({ projectId }).sort({ createdAt: -1 })
-        res.status(200).json({
+        const cacheKey = likesCacheKey(projectId)
+        const cached = await getCache(cacheKey)
+        if (cached) {
+            return res.status(200).json(JSON.parse(cached))
+        }
+
+        const likes = await Like.find({ projectId })
+            .select('userName userEmail createdAt')
+            .sort({ createdAt: -1 })
+            .lean()
+
+        const response = {
             count: likes.length,
-            likes: likes.map(like => ({
-                userName: like.userName,
-                userEmail: like.userEmail,
-                createdAt: like.createdAt
-            }))
-        })
+            likes
+        }
+
+        await setCache(cacheKey, JSON.stringify(response), 180)
+        res.status(200).json(response)
     } catch (err) {
         res.status(500).json({ message: err.message })
     }
@@ -92,53 +103,32 @@ exports.addComment = async (req, res) => {
     try {
         const { projectId } = req.params
         const { text } = req.body
-        const userEmail = req.user.email
-        const userName = req.user.name
-
-        if (!text || text.trim().length === 0) {
-            return res.status(400).json({ message: 'Comment text is required' })
-        }
-
-        if (text.length > 500) {
-            return res.status(400).json({ message: 'Comment must be less than 500 characters' })
-        }
-
-        // Check if project exists
-        const project = await Project.findById(projectId)
-        if (!project) {
-            return res.status(404).json({ message: 'Project not found' })
-        }
-
-        // Create comment
-        const comment = await Comment.create({
-            projectId,
-            userEmail,
-            userName,
-            text: text.trim()
-        })
-
-        // Emit real-time comment to all clients in this project's room
+        const { email: userEmail, name: userName } = req.user
         const io = getIO()
-        if (io) {
-            io.to(`project:${projectId}`).emit('new-comment', comment)
-        }
 
-        // Create notification for project owner (if not commenting on own project)
+        if (!text?.trim()) return res.status(400).json({ message: 'Comment text is required' })
+        const trimmedText = text.trim()
+        if (trimmedText.length > 500) return res.status(400).json({ message: 'Comment must be less than 500 characters' })
+
+        const project = await getProjectLean(projectId)
+        if (!project) return res.status(404).json({ message: 'Project not found' })
+
+        const comment = await Comment.create({ projectId, userEmail, userName, text: trimmedText })
+        await clearFeedCache() // Clear feed cache after comment
+        await deleteKeys([commentsCacheKey(projectId)])
+
+        // Real-time to project room
+        if (io) io.to(`project:${projectId}`).emit('new-comment', comment)
+
+        // Notification to owner (if not self)
         if (project.email !== userEmail) {
             const notification = await Notification.create({
-                recipient: project.email,
-                sender: userEmail,
-                senderName: userName,
-                projectId,
-                projectTitle: project.title,
-                type: 'comment',
+                recipient: project.email, sender: userEmail, senderName: userName,
+                projectId, projectTitle: project.title, type: 'comment',
                 message: `${userName} commented on your project "${project.title}"`,
-                commentText: text.trim()
+                commentText: trimmedText
             })
-            // Push notification to project owner in real time
-            if (io) {
-                io.to(`user:${project.email}`).emit('new-notification', notification)
-            }
+            if (io) io.to(`user:${project.email}`).emit('new-notification', notification)
         }
 
         res.status(201).json({ message: 'Comment added successfully', comment })
@@ -151,45 +141,43 @@ exports.addComment = async (req, res) => {
 exports.getComments = async (req, res) => {
     try {
         const { projectId } = req.params
-        const comments = await Comment.find({ projectId }).sort({ createdAt: -1 })
-        res.status(200).json({
-            count: comments.length,
-            comments
-        })
+        const cacheKey = commentsCacheKey(projectId)
+        const cached = await getCache(cacheKey)
+        if (cached) {
+            return res.status(200).json(JSON.parse(cached))
+        }
+
+        const comments = await Comment.find({ projectId })
+            .sort({ createdAt: -1 })
+            .lean()
+
+        const response = { count: comments.length, comments }
+        await setCache(cacheKey, JSON.stringify(response), 180)
+        res.status(200).json(response)
     } catch (err) {
         res.status(500).json({ message: err.message })
     }
 }
 
-// Delete a comment (only by comment owner)
+// Delete a comment
 exports.deleteComment = async (req, res) => {
     try {
         const { commentId } = req.params
-        const userEmail = req.user.email
-        const userRole = req.user?.role
+        const { email: userEmail, role: userRole } = req.user
+        const io = getIO()
 
-        const comment = await Comment.findById(commentId)
-        if (!comment) {
-            return res.status(404).json({ message: 'Comment not found' })
-        }
+        const comment = await Comment.findById(commentId, { userEmail: 1, projectId: 1 }).lean()
+        if (!comment) return res.status(404).json({ message: 'Comment not found' })
 
-        const isOwner = comment.userEmail === userEmail
-        const isAdmin = userRole === 'admin'
-
-        if (!isOwner && !isAdmin) {
-            return res.status(403).json({ message: 'You can only delete your own comments.' })
+        if (comment.userEmail !== userEmail && userRole !== 'admin') {
+            return res.status(403).json({ message: 'You can only delete your own comments' })
         }
 
         await Comment.findByIdAndDelete(commentId)
+        await clearFeedCache() // Clear feed cache after comment deletion
+        await deleteKeys([commentsCacheKey(comment.projectId)])
 
-        // Emit real-time delete to all clients in this project's room
-        const io = getIO()
-        if (io) {
-            io.to(`project:${comment.projectId}`).emit('delete-comment', {
-                commentId,
-                projectId: comment.projectId
-            })
-        }
+        if (io) io.to(`project:${comment.projectId}`).emit('delete-comment', { commentId, projectId: comment.projectId })
 
         res.status(200).json({ message: 'Comment deleted successfully' })
     } catch (err) {
@@ -202,57 +190,31 @@ exports.sendCollaborationRequest = async (req, res) => {
     try {
         const { projectId } = req.params
         const { message } = req.body
-        const requesterEmail = req.user.email
-        const requesterName = req.user.name
+        const { email: requesterEmail, name: requesterName } = req.user
+        const io = getIO()
 
-        // Check if project exists
-        const project = await Project.findById(projectId)
-        if (!project) {
-            return res.status(404).json({ message: 'Project not found' })
-        }
+        const project = await getProjectLean(projectId)
+        if (!project) return res.status(404).json({ message: 'Project not found' })
+        if (project.email === requesterEmail) return res.status(400).json({ message: 'Cannot request on own project' })
 
-        // Check if requesting collaboration on own project
-        if (project.email === requesterEmail) {
-            return res.status(400).json({ message: 'You cannot send collaboration request on your own project' })
-        }
-
-        // Check if already requested
-        const existingRequest = await CollaborationRequest.findOne({
-            projectId,
-            requesterEmail
-        })
+        const existingRequest = await CollaborationRequest.findOne({ projectId, requesterEmail }, { _id: 1, status: 1 }).lean()
         if (existingRequest) {
-            return res.status(400).json({
-                message: `You already sent a collaboration request (Status: ${existingRequest.status})`
-            })
+            return res.status(400).json({ message: `Already requested (Status: ${existingRequest.status})` })
         }
 
-        // Create collaboration request and STORE THE RETURNED DOCUMENT
         const collaborationRequest = await CollaborationRequest.create({
-            projectId,
-            projectOwnerEmail: project.email,
-            requesterEmail,
-            requesterName,
-            message: message || ''
+            projectId, projectOwnerEmail: project.email, requesterEmail, requesterName, message: message || ''
         })
+        await clearFeedCache() // Clear feed cache after collaboration request
 
-        // Create notification for project owner WITH collaborationRequestId
         const notification = await Notification.create({
-            recipient: project.email,
-            sender: requesterEmail,
-            senderName: requesterName,
-            projectId,
-            projectTitle: project.title,
-            type: 'collaboration_request',
+            recipient: project.email, sender: requesterEmail, senderName: requesterName,
+            projectId, projectTitle: project.title, type: 'collaboration_request',
             message: `${requesterName} sent a collaboration request for "${project.title}"`,
             collaborationRequestId: collaborationRequest._id
         })
 
-        // Push notification to project owner in real time
-        const io = getIO()
-        if (io) {
-            io.to(`user:${project.email}`).emit('new-notification', notification)
-        }
+        if (io) io.to(`user:${project.email}`).emit('new-notification', notification)
 
         res.status(201).json({ message: 'Collaboration request sent successfully' })
     } catch (err) {
@@ -260,30 +222,21 @@ exports.sendCollaborationRequest = async (req, res) => {
     }
 }
 
-// Get collaboration requests
+// Get collaboration requests (unchanged, but add .lean() + projection if not populating full docs)
 exports.getCollaborationRequests = async (req, res) => {
     try {
         const { projectId } = req.query
-        if (!req.user || !req.user.email) {
-            return res.status(401).json({ message: 'User not authenticated' })
-        }
-        const filter = {} // anyone can see the team status
-        if (projectId) {
-            if (mongoose.Types.ObjectId.isValid(projectId)) {
-                filter.projectId = new mongoose.Types.ObjectId(projectId)
-            } else {
-                return res.status(400).json({ message: 'Invalid project ID' })
-            }
-        }
+        if (!req.user?.email) return res.status(401).json({ message: 'User not authenticated' })
+
+        const filter = projectId ? { projectId: new mongoose.Types.ObjectId(projectId) } : {}
         const requests = await CollaborationRequest.find(filter)
             .populate('projectId')
             .sort({ createdAt: -1 })
+            .lean()  // Add if you don't mutate results
+
         res.json({ requests })
-    } catch (error) {
-        res.status(500).json({
-            message: 'Error fetching requests',
-            error: error.message
-        })
+    } catch (err) {
+        res.status(500).json({ message: err.message })
     }
 }
 
@@ -292,28 +245,24 @@ exports.updateCollaborationRequestStatus = async (req, res) => {
     try {
         const { requestId } = req.params
         const { status } = req.body
-        const userEmail = req.user.email
+        const { email: userEmail } = req.user
 
         if (!['accepted', 'rejected'].includes(status)) {
             return res.status(400).json({ message: 'Invalid status' })
         }
 
-        const request = await CollaborationRequest.findById(requestId)
-        if (!request) {
-            return res.status(404).json({ message: 'Request not found' })
-        }
+        const request = await CollaborationRequest.findByIdAndUpdate(
+            requestId,
+            { status },
+            { new: true, runValidators: true }
+        ).lean()
+        await clearFeedCache() // Clear feed cache after collaboration request status update
 
-        if (request.projectOwnerEmail !== userEmail) {
-            return res.status(403).json({ message: 'Unauthorized' })
-        }
-
-        request.status = status
-        await request.save()
+        if (!request) return res.status(404).json({ message: 'Request not found' })
+        if (request.projectOwnerEmail !== userEmail) return res.status(403).json({ message: 'Unauthorized' })
 
         res.status(200).json({ message: `Request ${status}`, request })
     } catch (err) {
         res.status(500).json({ message: err.message })
     }
 }
-
-

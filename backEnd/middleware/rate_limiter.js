@@ -1,5 +1,6 @@
 const redisClient = require('../config/redis');
 
+
 const createRateLimiter = ({ windowSizeMs, maxRequests, prefix }) => {
   return async (req, res, next) => {
     try {
@@ -11,19 +12,19 @@ const createRateLimiter = ({ windowSizeMs, maxRequests, prefix }) => {
 
       const multi = redisClient.multi();
 
-      // 1️⃣ Remove old requests
+      // 1️ Remove old requests
       multi.zRemRangeByScore(key, 0, windowStart);
 
-      // 2️⃣ Add current request
+      // 2️ Add current request
       multi.zAdd(key, {
         score: currentTime,
         value: `${currentTime}`
       });
 
-      // 3️⃣ Get current count
+      // 3️ Get current count
       multi.zCard(key);
 
-      // 4️⃣ Set expiry
+      // 4️ Set expiry
       multi.expire(key, Math.ceil(windowSizeMs / 1000));
 
       const [, , requestCount] = await multi.exec();
@@ -52,7 +53,7 @@ const rate_limiter_strict = createRateLimiter({
 
 const rate_limiter_light = createRateLimiter({
   windowSizeMs: 15 * 60 * 1000,
-  maxRequests: 30,
+  maxRequests: 60,
   prefix: "rate_limit:light",
 });
 

@@ -152,10 +152,12 @@ function App() {
                     type="button"
                     onClick={() => toast.dismiss(t.id)}
                     onTouchEnd={() => toast.dismiss(t.id)}
-                    className="absolute right-0 top-0 text-slate-300 hover:text-white text-sm leading-none"
+                    className="absolute bg-slate-700 p-0.5 cursor-pointer right-0 top-0 text-slate-300 hover:text-white text-sm leading-none"
                     aria-label="Dismiss notification"
                   >
-                    X
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                   </button>
                 )}
               </div>

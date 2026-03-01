@@ -11,7 +11,7 @@ const notificationRouter = require('./routers/notificationRouter')
 const redisClient = require('./config/redis')
 const { rate_limiter_strict, rate_limiter_light } = require('./middleware/rate_limiter')
 const myprofileRouter = require('./routers/myProfileRouter')
-const MyProjects = require('./routers/myProjectsRouter')
+const myProjectsRouter = require('./routers/myProjectsRouter')
 const path = require('path')
 const userAuth = require('./middleware/userAuth')
 const adminRouter = require('./routers/adminRouter')
@@ -50,15 +50,15 @@ app.use(cors({
 }))
 app.use(cookieParser())
 
-// Routes
-app.use('/api/auth', rate_limiter_strict, authRouter)
+// Routes with rate limiting and authentication where needed. Caching is handled inside controllers for routes that have mixed interactions (feed + non-feed) to ensure cache consistency, while pure feed routes have caching implemented directly in controllers for optimal performance.
+app.use('/api/auth', rate_limiter_strict, authRouter) 
 app.use('/api/uploadProject', userAuth, rate_limiter_strict, projectRouter)
-app.use('/api/getProjects', rate_limiter_light, getProjects)
-app.use('/api/project', userAuth, projectInteractionRouter)
-app.use('/api/notifications', userAuth, rate_limiter_light, notificationRouter)
+app.use('/api/getProjects', rate_limiter_light, getProjects)   
+app.use('/api/project', userAuth, projectInteractionRouter) 
+app.use('/api/notifications', userAuth, rate_limiter_light, notificationRouter)   
 app.use('/api/myProfile', userAuth, rate_limiter_strict, myprofileRouter)
-app.use('/api/my-projects', userAuth, rate_limiter_light, MyProjects)
-app.use('/api/admin', rate_limiter_light, adminMiddleware, adminRouter)
+app.use('/api/my-projects', userAuth, rate_limiter_light, myProjectsRouter)  
+app.use('/api/admin', rate_limiter_light, adminMiddleware, adminRouter) 
 
 // Serve static files
 app.use(express.static(path.join(__dirname, '../frontEnd/dist')))
