@@ -187,6 +187,19 @@ function ProjectStatus({ user }) {
     completed: tasks.filter(t => t.status === 'completed')
   }), [tasks]);
 
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const mediaQuery = window.matchMedia('(max-width: 768px), (pointer: coarse)');
+    const updateIsMobile = () => setIsMobile(mediaQuery.matches);
+
+    updateIsMobile();
+    mediaQuery.addEventListener('change', updateIsMobile);
+    return () => mediaQuery.removeEventListener('change', updateIsMobile);
+  }, []);
+
   const openCreateModal = () => {
     setEditingTaskId(null);
     setForm(emptyForm);
@@ -257,6 +270,16 @@ function ProjectStatus({ user }) {
   };
 
   const openSubmissionModal = (stage) => {
+    if (readOnly) return;
+    if (!workflow.isActive) {
+      toast.error('Accept latest workflow update first');
+      return;
+    }
+    if (!['in-progress', 'pending'].includes(stage.state)) {
+      toast.error('Only active or pending stages can be submitted');
+      return;
+    }
+
     setSubmissionModalStage(stage);
     setSubmissionImage('');
   };
@@ -372,22 +395,26 @@ function ProjectStatus({ user }) {
             {stageStates.map((stage, idx) => (
               <div
                 key={stage.stageId}
-                draggable={!readOnly && workflow.isActive && ['in-progress', 'pending'].includes(stage.state)}
-                onDragStart={() => setDragStageId(stage.stageId)}
+                draggable={!isMobile && !readOnly && workflow.isActive && ['in-progress', 'pending'].includes(stage.state)} onDragStart={() => setDragStageId(stage.stageId)}
                 onDragEnd={() => setDragStageId(null)}
-                className={`relative min-w-[260px] rounded-xl border p-3 ${
-                  stage.state === 'completed' ? 'bg-emerald-500/10 border-emerald-500/30' :
-                  stage.state === 'in-progress' ? 'bg-violet-500/10 cursor-move border-violet-500/30' :
-                  stage.state === 'pending' ? 'bg-blue-500/10 cursor-move border-blue-500/30' :
-                  stage.state === 'pending-review' ? 'bg-amber-500/10 border-amber-500/30' :
-                  'bg-slate-900/60 border-slate-700'
-                }`}
+                className={`relative min-w-[260px] rounded-xl border p-3 ${stage.state === 'completed' ? 'bg-emerald-500/10 border-emerald-500/30' :
+                    stage.state === 'in-progress' ? 'bg-violet-500/10 cursor-move border-violet-500/30' :
+                      stage.state === 'pending' ? 'bg-blue-500/10 cursor-move border-blue-500/30' :
+                        stage.state === 'pending-review' ? 'bg-amber-500/10 border-amber-500/30' :
+                          'bg-slate-900/60 border-slate-700'
+                  }`}
               >
                 {stage.state === 'in-progress' && (
                   <span className="absolute top-2 right-2 w-3.5 h-3.5 bg-emerald-400 rounded-full border-2 border-slate-800 animate-pulse"></span>
                 )}
                 <p className="text-xs text-slate-400 mb-1">Stage {idx + 1}</p>
-                <h3 className="text-white font-semibold">{stage.title}</h3>
+                <span><h3 className="text-white font-semibold">{stage.title}</h3></span>
+                { !readOnly && workflow.isActive && ['in-progress', 'pending'].includes(stage.state) && (
+                  <span onClick={() => openSubmissionModal(stage)} className="mt-2 inline-flex items-center gap-1 text-xs text-emerald-400 cursor-pointer">
+                    <HiOutlineClipboardDocumentCheck className="w-4 h-4" />
+                    Submit proof
+                  </span>
+                )}
                 <p className="text-xs text-slate-300 mt-1">{stage.description || 'No description provided'}</p>
                 <p className="text-xs text-slate-400 mt-2 flex items-center gap-1">
                   <HiOutlineCalendarDays className="w-4 h-4" />
@@ -407,7 +434,7 @@ function ProjectStatus({ user }) {
             onDragOver={(e) => e.preventDefault()}
             onDrop={onStageDropToCompleted}
           >
-            Drag active stage here to mark Completed (proof image required)
+            Drag active stage here to mark Completed or from the stage itself (proof image required)
             <span className="ml-2 text-xs text-slate-300">
               Pending: {stageCounts.pending || 0} | In Progress: {stageCounts['in-progress'] || 0} | Completed: {stageCounts.completed || 0}
             </span>
@@ -533,3 +560,4 @@ function ProjectStatus({ user }) {
 }
 
 export default ProjectStatus;
+

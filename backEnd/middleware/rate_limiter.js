@@ -1,81 +1,59 @@
 const redisClient = require('../config/redis');
 
-const rate_limiter_strict = async (req, res, next) => {
+const createRateLimiter = ({ windowSizeMs, maxRequests, prefix }) => {
+  return async (req, res, next) => {
     try {
-        const identifier = req.user?.email || req.ip;
-        const currentTime = Date.now();
-        const windowSize = 3600 * 1000; // 1 hour in milliseconds
-        const maxRequests = 30;
-        const key = `rate_limit:${identifier}`;
+      const identifier = req.user?.email || req.ip;
+      const key = `${prefix}:${identifier}`;
 
-        // Remove entries outside the sliding window
-        await redisClient.zRemRangeByScore(key, 0, currentTime - windowSize);
+      const currentTime = Date.now();
+      const windowStart = currentTime - windowSizeMs;
 
-        // Count requests in current window
-        const requestCount = await redisClient.zCard(key);
+      const multi = redisClient.multi();
 
-        //console.log(`Strict: Identifier: ${identifier}, Count: ${requestCount}`);
+      // 1️⃣ Remove old requests
+      multi.zRemRangeByScore(key, 0, windowStart);
 
-        if (requestCount >= maxRequests) {
-            return res.status(429).json({ 
-                message: "Too many requests! Please try after some time, Thank you." 
-            });
-        }
+      // 2️⃣ Add current request
+      multi.zAdd(key, {
+        score: currentTime,
+        value: `${currentTime}`
+      });
 
-        // Add current request with timestamp as score
-        await redisClient.zAdd(key, {
-            score: currentTime,
-            value: `${currentTime}-${Math.random()}` // Unique value
+      // 3️⃣ Get current count
+      multi.zCard(key);
+
+      // 4️⃣ Set expiry
+      multi.expire(key, Math.ceil(windowSizeMs / 1000));
+
+      const [, , requestCount] = await multi.exec();
+      //console.log(`Rate limiter [${prefix}] for ${identifier}: ${requestCount} requests in the last ${windowSizeMs / 60000} minutes.`);
+
+      if (requestCount > maxRequests) {
+        return res.status(429).json({
+          message: "Too many requests! Please try after some time."
         });
+      }
 
-        // Set expiry for the key (cleanup)
-        await redisClient.expire(key, Math.ceil(windowSize / 1000));
-
-        next();
-
+      next();
     } catch (err) {
-        console.error('Rate limiter error:', err);
-        res.status(500).json({ message: "Internal server Error!" });
+      console.error("Rate limiter error:", err);
+      res.status(500).json({ message: "Internal server error!" });
     }
+  };
 };
 
-const rate_limiter_light = async (req, res, next) => {
-    try {
-        const identifier = req.user?.email || req.ip;
-        const currentTime = Date.now();
-        const windowSize = 1800 * 1000; // 30 minutes in milliseconds
-        const maxRequests = 30;
-        const key = `rate_limit:${identifier}`;
+// 🔥 Create different limiters
+const rate_limiter_strict = createRateLimiter({
+  windowSizeMs: 30 * 60 * 1000,
+  maxRequests: 60,
+  prefix: "rate_limit:strict",
+});
 
-        // Remove entries outside the sliding window
-        await redisClient.zRemRangeByScore(key, 0, currentTime - windowSize);
+const rate_limiter_light = createRateLimiter({
+  windowSizeMs: 15 * 60 * 1000,
+  maxRequests: 30,
+  prefix: "rate_limit:light",
+});
 
-        // Count requests in current window
-        const requestCount = await redisClient.zCard(key);
-
-        //console.log(`Light: Identifier: ${identifier}, Count: ${requestCount}`);
-
-        if (requestCount >= maxRequests) {
-            return res.status(429).json({ 
-                message: "Too many requests! Please try after some time, Thank you." 
-            });
-        }
-
-        // Add current request with timestamp as score
-        await redisClient.zAdd(key, {
-            score: currentTime,
-            value: `${currentTime}-${Math.random()}` // Unique value
-        });
-
-        // Set expiry for the key (cleanup)
-        await redisClient.expire(key, Math.ceil(windowSize / 1000));
-
-        next();
-
-    } catch (err) {
-        console.error('Rate limiter error:', err);
-        res.status(500).json({ message: "Internal server Error!" });
-    }
-};
-
-module.exports = {rate_limiter_strict,rate_limiter_light};
+module.exports = { rate_limiter_strict, rate_limiter_light };

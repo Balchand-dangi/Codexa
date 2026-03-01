@@ -161,7 +161,7 @@ function CommentPage({
                     {(user?.email === comment.userEmail || user?.role === 'admin') && (
                       <button
                         onClick={() =>
-                          handleDeleteComment(comment._id, projectId, comment.text)
+                          handleDeleteComment(comment._id, projectId, comment.text, !!comment.pending)
                         }
                         className="text-xs text-red-400 font-medium"
                       >
@@ -217,7 +217,7 @@ function CommentPage({
                       {(user?.email === comment.userEmail || user?.role === 'admin') && (
                         <button
                           onClick={() =>
-                            handleDeleteComment(comment._id, projectId, comment.text)
+                            handleDeleteComment(comment._id, projectId, comment.text, !!comment.pending)
                           }
                           className="text-xs text-red-400 hover:text-red-500 font-medium"
                         >

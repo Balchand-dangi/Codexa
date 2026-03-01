@@ -98,7 +98,7 @@ const ProjectGrid = ({ user, socket }) => {
     currentUserEmailRef.current = user?.email || null
   }, [user?.email])
 
-  // ── Socket.IO: join project rooms when projects load ──────────────────────
+  // ── Socket.IO: join project rooms when projects load ──
   useEffect(() => {
     if (!socket || projects.length === 0) return
     projects.forEach(p => socket.emit('join-project', p._id))
@@ -261,7 +261,8 @@ const ProjectGrid = ({ user, socket }) => {
       userEmail: user.email,
       userName: user.name,
       text,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      pending: true
     }
 
     setComments(prev => ({ ...prev, [projectId]: [...(prev[projectId] || []), newComment] }))
@@ -275,7 +276,7 @@ const ProjectGrid = ({ user, socket }) => {
       const response = await axios.post(`/api/project/comment/${projectId}`, { text }, { withCredentials: true })
       setComments(prev => ({
         ...prev,
-        [projectId]: prev[projectId].map(c => c._id === newComment._id ? response.data.comment : c)
+        [projectId]: prev[projectId].map(c => c._id === newComment._id ? { ...response.data.comment, pending: false } : c)
       }))
     } catch (err) {
       setComments(prev => ({ ...prev, [projectId]: prev[projectId].filter(c => c._id !== newComment._id) }))
@@ -288,7 +289,18 @@ const ProjectGrid = ({ user, socket }) => {
     }
   }
 
-  const handleDeleteComment = async (commentId, projectId, commentText) => {
+  const handleDeleteComment = async (commentId, projectId, commentText, isPending = false) => {
+    if (isPending) {
+      toast.error("Please wait, comment is still posting")
+      return
+    }
+
+    const isMongoObjectId = /^[a-fA-F0-9]{24}$/.test(String(commentId))
+    if (!isMongoObjectId) {
+      toast.error("Please wait, comment is still syncing")
+      return
+    }
+
     const confirmed = await new Promise(resolve => {
       toast((t) => (
         <div className="flex flex-col gap-2">
@@ -321,7 +333,6 @@ const ProjectGrid = ({ user, socket }) => {
       ...prev,
       [projectId]: { ...prev[projectId], comments: Math.max(0, previousCount - 1) }
     }))
-
     try {
       await axios.delete(`/api/project/comment/${commentId}`, { withCredentials: true })
       toast.success("Comment deleted")

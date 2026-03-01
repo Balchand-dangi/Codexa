@@ -263,7 +263,7 @@ const Navbar = ({ user, setUser, socket }) => {
 
 
             {/* Mobile Notification Bell - Only when menu is open */}
-            {user && user.role !== 'admin' && menuOpen && (
+            {user && menuOpen && (
               <div className="py-1 border-t border-slate-700">
                 <NotificationBell socket={socket} />
               </div>

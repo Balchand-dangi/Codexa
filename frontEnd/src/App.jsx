@@ -1,6 +1,6 @@
 import axios from "axios";
-import { useEffect, useState } from "react";
-import { Toaster } from "react-hot-toast";
+import { Children, isValidElement, useEffect, useState } from "react";
+import { Toaster, ToastBar, toast } from "react-hot-toast";
 
 import SignupForm from "./Pages/SignUpForm";
 import SignInForm from "./Pages/SignInForm";
@@ -99,6 +99,22 @@ function App() {
       setWorkflowActionLoading(false);
     }
   };
+  const hasToastActionButton = (node) => {
+    if (node == null || typeof node === 'boolean') return false;
+    if (typeof node === 'string' || typeof node === 'number') return false;
+    if (Array.isArray(node)) return node.some(hasToastActionButton);
+    if (!isValidElement(node)) return false;
+
+    const elementType = typeof node.type === 'string' ? node.type.toLowerCase() : '';
+    if (elementType === 'button') return true;
+
+    return hasToastActionButton(node.props?.children);
+  };
+
+  const shouldShowToastClose = (toastItem, messageNode) => {
+    if (toastItem.type === 'custom') return false;
+    return !hasToastActionButton(messageNode);
+  };
 
   if (checkingAuth) {
     return null;
@@ -110,6 +126,7 @@ function App() {
         position="top-center"
         toastOptions={{
           duration: 3500,
+          removeDelay: 400,
           style: {
             background: '#1e293b',
             color: '#f1f5f9',
@@ -118,10 +135,34 @@ function App() {
             fontSize: '14px',
             fontWeight: '500',
           },
-          success: { iconTheme: { primary: '#10b981', secondary: '#1e293b' } },
-          error: { iconTheme: { primary: '#ef4444', secondary: '#1e293b' } },
+          success: { duration: 3500, iconTheme: { primary: '#10b981', secondary: '#1e293b' } },
+          error: { duration: 3500, iconTheme: { primary: '#ef4444', secondary: '#1e293b' } },
+          loading: { duration: 3500 },
+          custom: { duration: 3500 },
         }}
-      />
+      >
+        {(t) => (
+          <ToastBar toast={t}>
+            {({ icon, message }) => (
+              <div className="relative flex items-start gap-2 pr-7">
+                {icon}
+                <div className="flex-1">{message}</div>
+                {shouldShowToastClose(t, message) && (
+                  <button
+                    type="button"
+                    onClick={() => toast.dismiss(t.id)}
+                    onTouchEnd={() => toast.dismiss(t.id)}
+                    className="absolute right-0 top-0 text-slate-300 hover:text-white text-sm leading-none"
+                    aria-label="Dismiss notification"
+                  >
+                    X
+                  </button>
+                )}
+              </div>
+            )}
+          </ToastBar>
+        )}
+      </Toaster>
       {/* Pass socket to Navbar so NotificationBell can use it */}
       <Navbar user={user} setUser={setUser} socket={socket} />
       <ScrollToTop />
@@ -210,3 +251,4 @@ function App() {
 }
 
 export default App;
+

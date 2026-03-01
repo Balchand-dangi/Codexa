@@ -9,8 +9,7 @@ const getProjects = require('./routers/getProjects')
 const projectInteractionRouter = require('./routers/projectInteractionRouter')
 const notificationRouter = require('./routers/notificationRouter')
 const redisClient = require('./config/redis')
-const fs = require('fs')
-const {rate_limiter_strict, rate_limiter_light} = require('./middleware/rate_limiter')
+const { rate_limiter_strict, rate_limiter_light } = require('./middleware/rate_limiter')
 const myprofileRouter = require('./routers/myProfileRouter')
 const MyProjects = require('./routers/myProjectsRouter')
 const path = require('path')
@@ -52,24 +51,20 @@ app.use(cors({
 app.use(cookieParser())
 
 // Routes
-app.use('/api/auth',rate_limiter_strict, authRouter)
+app.use('/api/auth', rate_limiter_strict, authRouter)
 app.use('/api/uploadProject', userAuth, rate_limiter_strict, projectRouter)
-app.use('/api/getProjects',rate_limiter_light, getProjects)
+app.use('/api/getProjects', rate_limiter_light, getProjects)
 app.use('/api/project', userAuth, projectInteractionRouter)
 app.use('/api/notifications', userAuth, rate_limiter_light, notificationRouter)
 app.use('/api/myProfile', userAuth, rate_limiter_strict, myprofileRouter)
-app.use('/api/my-projects', userAuth, rate_limiter_strict, MyProjects)
-app.use('/api/admin', rate_limiter_light,adminMiddleware, adminRouter)
+app.use('/api/my-projects', userAuth, rate_limiter_light, MyProjects)
+app.use('/api/admin', rate_limiter_light, adminMiddleware, adminRouter)
 
-// Serve frontend app and static assets
-const frontendDistPath = path.join(__dirname, '../frontEnd/dist')
-if (fs.existsSync(frontendDistPath)) {
-    app.use(express.static(frontendDistPath))
-    app.get(/.*/, (req, res, next) => {
-        if (req.path.startsWith('/api')) return next()
-        res.sendFile(path.join(frontendDistPath, 'index.html'))
-    })
-}
+// Serve static files
+app.use(express.static(path.join(__dirname, '../frontEnd/dist')))
+app.get(/.*/, (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontEnd/dist/index.html'))
+})
 
 const PORT = process.env.PORT || 5000
 const initialize_connection = async () => {
