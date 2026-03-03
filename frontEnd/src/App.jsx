@@ -73,7 +73,7 @@ function App() {
 
   const formatTimeline = (stage) => {
     if (stage.timelineType === 'duration') {
-      return `${stage.durationDays} day${stage.durationDays === 3 ? '' : 's'} from stage start`;
+      return `${stage.durationDays} day${stage.durationDays === 1 ? '' : 's'} from stage start`;
     }
     const start = stage.startDate ? new Date(stage.startDate).toLocaleDateString() : 'N/A';
     const end = stage.endDate ? new Date(stage.endDate).toLocaleDateString() : 'N/A';

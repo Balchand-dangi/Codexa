@@ -142,6 +142,22 @@ const ProjectGrid = ({ user, socket }) => {
     return () => socket.off('connect', handleReconnect)
   }, [socket])
 
+  // ── Socket.IO: re-fetch feed when admin deletes a project/user ────────────
+  // Backend emits io.emit('feed-invalidated') globally after admin deletes.
+  // This ensures deleted projects disappear from all users' home feeds instantly.
+  useEffect(() => {
+    if (!socket || !user) return
+    const handleFeedInvalidated = () => {
+      setProjects([])
+      setNextCursor(null)
+      setHasMore(true)
+      setSearchTerm('')
+      fetchProjects()
+    }
+    socket.on('feed-invalidated', handleFeedInvalidated)
+    return () => socket.off('feed-invalidated', handleFeedInvalidated)
+  }, [socket, user])
+
   // ── Socket.IO: listen for real-time comment events ───────────────────────
   useEffect(() => {
     if (!socket) return

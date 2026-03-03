@@ -229,6 +229,10 @@ exports.deleteUser = async (req, res) => {
             'ADMIN_PROJECTS:*'
         ]);
 
+        // Notify all connected clients so home feed refreshes automatically
+        const io = getIO();
+        if (io) io.emit('feed-invalidated');
+
         res.status(200).json({ message: 'User and their data deleted successfully' });
     } catch (err) {
         res.status(500).json({ message: 'Failed to delete user', error: err.message });
@@ -254,6 +258,10 @@ exports.deleteProject = async (req, res) => {
             await deleteKeys([`MY_PROJECT_STATUS:${project.email}:${projectId}`]);
         }
         await deleteByPattern('ADMIN_PROJECTS:*');
+
+        // Notify all connected clients so home feed refreshes automatically
+        const io = getIO();
+        if (io) io.emit('feed-invalidated');
 
         res.status(200).json({ message: 'Project deleted successfully' });
     } catch (err) {

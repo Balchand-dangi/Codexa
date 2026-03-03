@@ -197,7 +197,7 @@ const NotificationBell = ({ socket }) => {
                 <p className="text-slate-400 font-medium">No notifications yet</p>
               </div>
             ) : (
-             
+            
               notifications.map((notification) => (
                 <div key={notification._id} title={notification.isRead  ? undefined : 'Click to mark as read'} className={`p-4 border-b border-slate-700/50 hover:bg-slate-700/30 transition  ${!notification.isRead ? 'bg-violet-500/5 border-l-2 border-l-violet-500' : ''}`} onClick={() => !notification.isRead && markAsRead(notification._id)}>
                   <div className="flex items-start gap-3">

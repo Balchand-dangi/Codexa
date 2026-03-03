@@ -201,7 +201,7 @@ exports.getMyProjects = async (req, res) => {
 // Upload a new project
 exports.uploadProject = async (req, res) => {
     try {
-        const userEmail = req.user.email; // Always use authenticated user's email
+        const userEmail = req.user.email; // authenticated user's email
         const userExists = await User.findOne({ email: userEmail });
         if (!userExists) {
             return res.status(401).send({ message: 'Unauthorized ! Please log in first' });

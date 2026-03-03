@@ -13,6 +13,5 @@ router.get('/comments/:projectId',rate_limiter_light, projectInteractionControll
 router.delete('/comment/:commentId',rate_limiter_strict, projectInteractionController.deleteComment)
 router.post('/collaborate/:projectId', rate_limiter_strict, projectInteractionController.sendCollaborationRequest)
 router.get('/collaboration-requests',rate_limiter_light, projectInteractionController.getCollaborationRequests)
-router.patch('/collaboration-request/:requestId', rate_limiter_strict, projectInteractionController.updateCollaborationRequestStatus)
 
 module.exports = router

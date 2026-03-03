@@ -251,30 +251,3 @@ exports.getCollaborationRequests = async (req, res) => {
         res.status(500).json({ message: err.message })
     }
 }
-
-// Update collaboration request status
-exports.updateCollaborationRequestStatus = async (req, res) => {
-    try {
-        const { requestId } = req.params
-        const { status } = req.body
-        const { email: userEmail } = req.user
-
-        if (!['accepted', 'rejected'].includes(status)) {
-            return res.status(400).json({ message: 'Invalid status' })
-        }
-
-        const request = await CollaborationRequest.findByIdAndUpdate(
-            requestId,
-            { status },
-            { new: true, runValidators: true }
-        ).lean()
-        await clearFeedCache() // Clear feed cache after collaboration request status update
-
-        if (!request) return res.status(404).json({ message: 'Request not found' })
-        if (request.projectOwnerEmail !== userEmail) return res.status(403).json({ message: 'Unauthorized' })
-
-        res.status(200).json({ message: `Request ${status}`, request })
-    } catch (err) {
-        res.status(500).json({ message: err.message })
-    }
-}

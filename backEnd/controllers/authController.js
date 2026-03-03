@@ -142,7 +142,7 @@ exports.logOut = async (req, res) => {
         const { token } = req.cookies;
         if (!token) return res.status(400).json({ error: "No token found login first" });
 
-        const payload = jwt.decode(token);  //to extract expiry time and also verify that token is not tempered and expired
+        const payload = jwt.verify(token, process.env.SECRET_KEY);  //to extract expiry time and also verify that token is not tempered and expired
 
         // Blocklist  token in redis
         await redisClient.set(`token:${token}`, "Blocked");
