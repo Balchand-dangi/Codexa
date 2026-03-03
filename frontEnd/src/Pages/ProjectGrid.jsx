@@ -248,15 +248,14 @@ const ProjectGrid = ({ user, socket }) => {
 
       const stats = {}
       const likes = {}
-      const commentData = {}
       newProjects.forEach(project => {
         stats[project._id] = { likes: project.likesCount, comments: project.commentsCount }
         likes[project._id] = project.userLiked
-        commentData[project._id] = project.comments
       })
       setProjectStats(prev => ({ ...prev, ...stats }))
       setUserLikes(prev => ({ ...prev, ...likes }))
-      setComments(prev => ({ ...prev, ...commentData }))
+      // Comments are NOT pre-loaded from the feed anymore.
+      // They are fetched fresh on-demand when the comment panel opens.
     } catch (err) {
       console.error(err)
       setError('Unable to load projects!')
@@ -408,8 +407,24 @@ const ProjectGrid = ({ user, socket }) => {
     }
   }
 
-  const openCommentPage = (project) => {
+  const openCommentPage = async (project) => {
+    // Open the panel immediately so the user sees it right away
     setSelectedCommentProject(project)
+
+    // Always fetch fresh comments from the server (not from feed cache)
+    // The getComments endpoint has its own 3-min cache that addComment correctly invalidates
+    try {
+      const res = await axios.get(`/api/project/comments/${project._id}`, { withCredentials: true })
+      const freshComments = res.data.comments || []
+      setComments(prev => ({ ...prev, [project._id]: freshComments }))
+      // Sync the card's comment count with the actual count from DB
+      setProjectStats(prev => ({
+        ...prev,
+        [project._id]: { ...prev[project._id], comments: res.data.count ?? freshComments.length }
+      }))
+    } catch (err) {
+      console.error('Failed to load comments:', err)
+    }
   }
 
   const handleCommentPageBottomStateChange = useCallback((isAtBottom) => {

@@ -159,7 +159,7 @@ exports.getComments = async (req, res) => {
         }
 
         const comments = await Comment.find({ projectId })
-            .sort({ createdAt: -1 })
+            .sort({ createdAt: 1 })
             .lean()
 
         const response = { count: comments.length, comments }
@@ -243,7 +243,7 @@ exports.getCollaborationRequests = async (req, res) => {
         const filter = projectId ? { projectId: new mongoose.Types.ObjectId(projectId) } : {}
         const requests = await CollaborationRequest.find(filter)
             .populate('projectId')
-            .sort({ createdAt: -1 })
+            .sort({ createdAt: 1 })
             .lean()  // Add if you don't mutate results
 
         res.json({ requests })
