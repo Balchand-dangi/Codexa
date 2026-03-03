@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 
-function Upload() {
-  const [email, setEmail] = useState("")
+function Upload({ user }) {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [techStack, setTechStack] = useState('')
@@ -20,14 +19,14 @@ function Upload() {
 
     const techStackArray = techStack.split(',').map(item => item.trim()).filter(Boolean)
     const categoryArray = category.split(',').map(item => item.trim()).filter(Boolean)
-    const projectData = { email, title, description, techStack: techStackArray, category: categoryArray, college }
+    const projectData = { title, description, techStack: techStackArray, category: categoryArray, college }
 
     try {
-      const response = await axios.post('api/uploadProject', projectData)
+      const response = await axios.post('/api/uploadProject', projectData, { withCredentials: true })
       if (response.data.message === "Project successfully uploaded") {
         toast.success(response.data.message)
-        setEmail(''); setTitle(''); setDescription(''); setCollege(''); setCategory(''); setTechStack('');
-        navigate("/Home")
+        setTitle(''); setDescription(''); setCollege(''); setCategory(''); setTechStack('');
+        navigate("/Home", { state: { refresh: true } })
       } else {
         toast.error(response.data.message || "Upload failed")
       }
@@ -70,10 +69,10 @@ function Upload() {
             <input 
               type="email" 
               placeholder="Your registered email" 
-              value={email} 
-              onChange={(e) => setEmail(e.target.value)} 
-              className={inputClass} 
-              required 
+              value={user?.email || ''} 
+              readOnly
+              className={`${inputClass} opacity-60 cursor-not-allowed`}
+              title="Email is taken from your logged-in account"
             />
             <input 
               type="text" 

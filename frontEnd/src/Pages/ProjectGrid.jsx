@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import axios from 'axios'
 import { MdOutlineInsertComment } from "react-icons/md";
 import { BiLike, BiSolidLike } from "react-icons/bi";
@@ -40,6 +40,9 @@ const ProjectGrid = ({ user, socket }) => {
   const [nextCursor, setNextCursor] = useState(null)
   const [loadingMore, setLoadingMore] = useState(false)
 
+  // Keep a ref of current project IDs so we can re-join on socket reconnect
+  const projectIdsRef = useRef([])
+
   // Debounced search — 250ms, sends `search=` param to backend
   const handleSearch = useCallback((term) => {
     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
@@ -70,10 +73,26 @@ const ProjectGrid = ({ user, socket }) => {
     if (user) fetchProjects()
   }, [user])
 
+  const location = useLocation()
+
   useEffect(() => {
     if (!user) { setProjects([]); return }
     fetchProjects()
   }, [user])
+
+  // Re-fetch feed when redirected from Upload with refresh flag
+  useEffect(() => {
+    if (location.state?.refresh && user) {
+      // Reset feed state and fetch fresh
+      setProjects([])
+      setNextCursor(null)
+      setHasMore(true)
+      setSearchTerm('')
+      fetchProjects()
+      // Clear the navigation state so a manual back navigation doesn't trigger again
+      window.history.replaceState({}, '')
+    }
+  }, [location.state?.refresh])
 
   // high volume
   useEffect(() => {
@@ -98,15 +117,30 @@ const ProjectGrid = ({ user, socket }) => {
     currentUserEmailRef.current = user?.email || null
   }, [user?.email])
 
-  // ── Socket.IO: join project rooms when projects load ──
+  // ── Socket.IO: join project rooms when projects load / change ──
   useEffect(() => {
     if (!socket || projects.length === 0) return
-    projects.forEach(p => socket.emit('join-project', p._id))
+    const ids = projects.map(p => String(p._id))
+    projectIdsRef.current = ids
+    ids.forEach(id => socket.emit('join-project', id))
     return () => {
-      projects.forEach(p => socket.emit('leave-project', p._id))
+      ids.forEach(id => socket.emit('leave-project', id))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [socket, projects.length])
+
+  // ── Socket.IO: re-join project rooms on reconnect ──────────────────────────
+  // Socket.IO auto-reconnect creates a new server-side socket that forgets all
+  // rooms. We must re-emit join-project for every project when the socket
+  // reconnects so real-time comment sync keeps working.
+  useEffect(() => {
+    if (!socket) return
+    const handleReconnect = () => {
+      projectIdsRef.current.forEach(id => socket.emit('join-project', id))
+    }
+    socket.on('connect', handleReconnect)
+    return () => socket.off('connect', handleReconnect)
+  }, [socket])
 
   // ── Socket.IO: listen for real-time comment events ───────────────────────
   useEffect(() => {

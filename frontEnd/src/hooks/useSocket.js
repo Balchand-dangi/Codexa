@@ -32,10 +32,12 @@ const useSocket = (user) => {
             transports: ['websocket', 'polling'],
         })
 
-        newSocket.on('connect', () => {
-            // Join personal notification room
+        // Join personal notification room — do this on every 'connect'
+        // so the room membership is restored after auto-reconnect too
+        const rejoinUser = () => {
             newSocket.emit('join-user', user.email)
-        })
+        }
+        newSocket.on('connect', rejoinUser)
 
         newSocket.on('connect_error', (err) => {
             console.warn('[Socket] Connection error:', err.message)

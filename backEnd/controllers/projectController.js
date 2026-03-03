@@ -201,22 +201,25 @@ exports.getMyProjects = async (req, res) => {
 // Upload a new project
 exports.uploadProject = async (req, res) => {
     try {
-        const userExit = await User.findOne({ email: req.body.email });
-        if (!userExit) {
+        const userEmail = req.user.email; // Always use authenticated user's email
+        const userExists = await User.findOne({ email: userEmail });
+        if (!userExists) {
             return res.status(401).send({ message: 'Unauthorized ! Please log in first' });
         }
-        const error = validProject(req.body);
+        // Force project email to match the authenticated user — ignore any client-provided email
+        const projectData = { ...req.body, email: userEmail };
+        const error = validProject(projectData, userEmail);
         if (error) {
             return res.status(400).json({ message: error });
         }
-        const existingProject = await Project.findOne({ title: req.body.title, description: req.body.description });
+        const existingProject = await Project.findOne({ title: projectData.title, description: projectData.description });
         if (existingProject) {
             return res.json({ message: 'This project already uploaded' });
         }
-        await Project.create(req.body);
+        await Project.create(projectData);
         await deleteByPatterns([
             'FEED:*',
-            `MY_PROJECTS:${req.body.email}:*`,
+            `MY_PROJECTS:${userEmail}:*`,
             'ADMIN_PROJECTS:*'
         ]);
         res.status(200).json({ message: 'Project successfully uploaded' });
@@ -517,6 +520,7 @@ exports.submitStageProof = async (req, res) => {
             const created = await Notification.insertMany(notificationDocs);
             if (io) {
                 created.forEach(notification => {
+                    deleteKeys([`notifications:${notification.recipient}`]).catch(() => { })
                     io.to(`user:${notification.recipient}`).emit('new-notification', notification);
                 });
             }

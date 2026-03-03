@@ -70,8 +70,8 @@ function App() {
     loadWorkflowPrompt();
   }, [user]);
 
- 
- const formatTimeline = (stage) => {
+
+  const formatTimeline = (stage) => {
     if (stage.timelineType === 'duration') {
       return `${stage.durationDays} day${stage.durationDays === 3 ? '' : 's'} from stage start`;
     }
@@ -179,7 +179,7 @@ function App() {
         <Route path="/signInForm" element={<SignInForm setUser={setUser} />} />
 
         <Route path="/teamStatus" element={user ? <TeamStatus /> : <SignInForm setUser={setUser} />} />
-        <Route path="/upload" element={user ? <Upload /> : <SignInForm setUser={setUser} />} />
+        <Route path="/upload" element={user ? <Upload user={user} /> : <SignInForm setUser={setUser} />} />
 
         <Route path="/verify-email/:token" element={<VerifyEmail />} />
         <Route path="/ComingSoon" element={<ComingSoon />} />

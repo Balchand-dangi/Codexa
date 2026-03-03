@@ -27,6 +27,15 @@ const NotificationBell = ({ socket }) => {
     fetchNotifications();
   }, []);
 
+  // stop scrolling when dropdown is open
+  useEffect(() => {
+    if (showDropdown) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+  }, [showDropdown]);
+
   useEffect(() => {
     if (!showDropdown) return;
     const handleOutside = (e) => {
@@ -79,7 +88,13 @@ const NotificationBell = ({ socket }) => {
     try {
       await axios.delete(`/api/notifications/${notificationId}`, { withCredentials: true });
       toast.success('Notification deleted');
-      setNotifications(prev => prev.filter(n => n._id !== notificationId));
+      setNotifications(prev => {
+        const target = prev.find(n => n._id === notificationId);
+        if (target && !target.isRead) {
+          setUnreadCount(count => Math.max(0, count - 1));
+        }
+        return prev.filter(n => n._id !== notificationId);
+      });
     } catch (err) {
       toast.error('Failed to delete notification, your limit has been exceeded.');
       console.error('Error deleting notification:', err);
@@ -191,7 +206,7 @@ const NotificationBell = ({ socket }) => {
                       <p className="text-sm text-slate-200 leading-snug">{renderNotificationText(notification)}</p>
 
                       {notification.type === 'collaboration_request' && (
-                        <p className="text-xs text-slate-500 mt-1 break-all">
+                        <p className="text-xs text-slate-400 mt-1 break-all">
                           Contact:{' '}
                           <a href={`mailto:${notification.sender}`} className="text-violet-400 hover:underline ml-1" onClick={(e) => e.stopPropagation()}>
                             {notification.sender}
@@ -199,7 +214,7 @@ const NotificationBell = ({ socket }) => {
                         </p>
                       )}
 
-                      {notification.commentText && <p className="text-xs text-slate-500 mt-1 italic break-words">"{notification.commentText}"</p>}
+                      {notification.commentText && <p className="text-xs text-slate-400 mt-1 italic break-words">"{notification.commentText}"</p>}
 
                       {notification.type === 'collaboration_request' && notification.status === 'pending' && (
                         <div className="flex gap-2 mt-3 flex-wrap">

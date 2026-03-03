@@ -545,6 +545,7 @@ exports.approveStageSubmission = async (req, res) => {
 
         const io = getIO();
         if (io) {
+            await deleteKeys([`notifications:${ownerEmail}`]).catch(() => { });
             io.to(`user:${ownerEmail}`).emit('new-notification', notification);
         }
 
@@ -596,6 +597,7 @@ exports.rejectStageSubmission = async (req, res) => {
 
         const io = getIO();
         if (io) {
+            await deleteKeys([`notifications:${ownerEmail}`]).catch(() => { });
             io.to(`user:${ownerEmail}`).emit('new-notification', notification);
         }
 

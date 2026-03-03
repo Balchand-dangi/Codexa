@@ -1,11 +1,15 @@
 const validator = require('validator')
 
-function validProject(data){
+function validProject(data, authenticatedEmail){
     const mandatoryField = ["email","title", "description","techStack","college","category"]
     const isAllowed = mandatoryField.every((k)=> Object.keys(data).includes(k))
 
     if(!isAllowed){
         return "Field missing"
+    }
+
+    if(data.email !== authenticatedEmail){
+        return 'Enter registered email'
     }
 
     if(!validator.isEmail(data.email.trim())){

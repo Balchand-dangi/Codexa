@@ -17,6 +17,15 @@ const clearFeedCache = async () => {
     }
 }
 
+// Matches the cache key in notificationController.js
+const clearNotificationCache = async (userEmail) => {
+    try {
+        await deleteKeys([`notifications:${userEmail}`])
+    } catch (err) {
+        console.log('Notification cache clear error:', err.message)
+    }
+}
+
 const likesCacheKey = projectId => `PROJECT_LIKES:${projectId}`
 const commentsCacheKey = projectId => `PROJECT_COMMENTS:${projectId}`
 
@@ -44,6 +53,7 @@ exports.likeProject = async (req, res) => {
                 projectId, projectTitle: project.title, type: 'like',
                 message: `${userName} liked your project "${project.title}"`
             })
+            await clearNotificationCache(project.email)
             if (io) io.to(`user:${project.email}`).emit('new-notification', notification)
         }
 
@@ -128,6 +138,7 @@ exports.addComment = async (req, res) => {
                 message: `${userName} commented on your project "${project.title}"`,
                 commentText: trimmedText
             })
+            await clearNotificationCache(project.email)
             if (io) io.to(`user:${project.email}`).emit('new-notification', notification)
         }
 
@@ -214,6 +225,7 @@ exports.sendCollaborationRequest = async (req, res) => {
             collaborationRequestId: collaborationRequest._id
         })
 
+        await clearNotificationCache(project.email)
         if (io) io.to(`user:${project.email}`).emit('new-notification', notification)
 
         res.status(201).json({ message: 'Collaboration request sent successfully' })

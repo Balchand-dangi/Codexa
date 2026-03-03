@@ -60,13 +60,16 @@ const Navbar = ({ user, setUser, socket }) => {
             <img className="h-10 w-auto rounded-sm" src={codexa} alt="DevHubLogo" />
           </Link>
 
-          {/* Hamburger Button - Mobile */}
-          <button
-            className="md:hidden text-2xl text-white"
-            onClick={() => setMenuOpen(!menuOpen)}
-          >
-            {menuOpen ? '✕' : '☰'}
-          </button>
+          {/* Mobile: notification bell + hamburger — always visible */}
+          <div className="md:hidden flex items-center gap-2">
+            {user && <NotificationBell socket={socket} />}
+            <button
+              className="text-2xl text-white"
+              onClick={() => setMenuOpen(!menuOpen)}
+            >
+              {menuOpen ? '✕' : '☰'}
+            </button>
+          </div>
 
           {/* Desktop Navigation */}
           <ul className="hidden md:flex space-x-4 text-white font-semibold items-center">
@@ -116,7 +119,7 @@ const Navbar = ({ user, setUser, socket }) => {
             {user && (
               <>
                 {/* Notification Bell - Desktop Only */}
-                 <NotificationBell socket={socket} />
+                <NotificationBell socket={socket} />
 
                 {/* Upload Project Button */}
                 {user.role !== 'admin' && (
@@ -171,7 +174,7 @@ const Navbar = ({ user, setUser, socket }) => {
                           👤 My Profile
                         </Link>
 
-                       {/* Only show My Projects if user is not admin (since admins don't have projects) else show Admin Panel link */}
+                        {/* Only show My Projects if user is not admin (since admins don't have projects) else show Admin Panel link */}
                         {user.role !== 'admin' ? (
                           <Link
                             to="/MyProjects"
@@ -259,15 +262,10 @@ const Navbar = ({ user, setUser, socket }) => {
               Support
             </NavLink>
 
-      
 
 
-            {/* Mobile Notification Bell - Only when menu is open */}
-            {user && menuOpen && (
-              <div className="py-1 border-t border-slate-700">
-                <NotificationBell socket={socket} />
-              </div>
-            )}
+
+
 
             {!user && (
               <div className="space-y-3 pt-3">
@@ -311,11 +309,11 @@ const Navbar = ({ user, setUser, socket }) => {
                 {user.role !== "admin" && (
                   <Link to="/upload" onClick={() => setMenuOpen(false)}>
                     <button
-              
-                  className="w-full  mt-2 px-4 py-2 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-semibold rounded-lg hover:bg-red-600 transition"
-                >
-                  Upload project
-                </button>
+
+                      className="w-full  mt-2 px-4 py-2 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-semibold rounded-lg hover:bg-red-600 transition"
+                    >
+                      Upload project
+                    </button>
                   </Link>
                 )}
                 <button
