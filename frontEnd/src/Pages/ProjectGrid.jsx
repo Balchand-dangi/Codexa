@@ -21,6 +21,7 @@ const ProjectGrid = ({ user, socket }) => {
   const [collabMessage, setCollabMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [loadingComments, setLoadingComments] = useState(false)
   const [error, setError] = useState(null)
   const commentSoundRef = useRef(null)
   const activeCommentProjectIdRef = useRef(selectedCommentProject?._id ? String(selectedCommentProject._id) : null)
@@ -189,7 +190,10 @@ const ProjectGrid = ({ user, socket }) => {
       }))
     }
 
-    const handleDeleteComment = ({ commentId, projectId }) => {
+    const handleDeleteComment = ({ commentId, projectId, deleterEmail }) => {
+      // Ignore own deletion echo from socket (already handled optimistically)
+      if (deleterEmail === currentUserEmailRef.current) return
+
       const pid = String(projectId)
       setComments(prev => ({
         ...prev,
@@ -410,6 +414,7 @@ const ProjectGrid = ({ user, socket }) => {
   const openCommentPage = async (project) => {
     // Open the panel immediately so the user sees it right away
     setSelectedCommentProject(project)
+    setLoadingComments(true)
 
     // Always fetch fresh comments from the server (not from feed cache)
     // The getComments endpoint has its own 3-min cache that addComment correctly invalidates
@@ -424,6 +429,8 @@ const ProjectGrid = ({ user, socket }) => {
       }))
     } catch (err) {
       console.error('Failed to load comments:', err)
+    } finally {
+      setLoadingComments(false)
     }
   }
 
@@ -716,6 +723,7 @@ const ProjectGrid = ({ user, socket }) => {
           onBottomStateChange={handleCommentPageBottomStateChange}
           onClose={() => setSelectedCommentProject(null)}
           user={user}
+          loading={loadingComments}
         />
       )}
     </div>

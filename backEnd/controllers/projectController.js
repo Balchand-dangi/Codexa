@@ -43,6 +43,36 @@ const buildMyProjectsCacheKey = ({ userEmail, page, limit }) => `MY_PROJECTS:${u
 const buildWorkflowNoticeCacheKey = userEmail => `WORKFLOW_NOTICE:${userEmail}`;
 const buildProjectStatusCacheKey = ({ userEmail, projectId }) => `MY_PROJECT_STATUS:${userEmail}:${projectId}`;
 
+// Helper: get fresh commentsCount for a list of project IDs
+// Always queried fresh so counts are never stale regardless of FEED/MY_PROJECTS cache TTL
+const getFreshCommentCounts = async (projectIds) => {
+    if (!projectIds || projectIds.length === 0) return {}
+    const ids = projectIds.map(id => new mongoose.Types.ObjectId(id))
+    const rows = await Comment.aggregate([
+        { $match: { projectId: { $in: ids } } },
+        { $group: { _id: '$projectId', count: { $sum: 1 } } }
+    ])
+    const map = {}
+    rows.forEach(({ _id, count }) => { map[_id.toString()] = count })
+    return map
+}
+
+// Helper: get fresh likes data for a list of project IDs
+// Always queried fresh so likesCount and userLiked are never stale
+const getFreshLikesData = async (projectIds, userEmail) => {
+    if (!projectIds || projectIds.length === 0) return { countsMap: {}, userLikedMap: {} }
+    const ids = projectIds.map(id => new mongoose.Types.ObjectId(id))
+    const allLikes = await Like.find({ projectId: { $in: ids } }, { projectId: 1, userEmail: 1 }).lean()
+    const countsMap = {}
+    const userLikedMap = {}
+    allLikes.forEach(like => {
+        const pid = like.projectId.toString()
+        countsMap[pid] = (countsMap[pid] || 0) + 1
+        if (like.userEmail === userEmail) userLikedMap[pid] = true
+    })
+    return { countsMap, userLikedMap }
+}
+
 // Get all projects with stats (CURSOR-BASED PAGINATION for feed)
 exports.getAllProjects = async (req, res) => {
     try {
@@ -53,31 +83,23 @@ exports.getAllProjects = async (req, res) => {
 
         const cacheKey = buildFeedCacheKey({ cursor, search })
 
-        // Helper: get fresh commentsCount for a list of project IDs
-        // Always queried fresh so counts are never stale regardless of FEED cache TTL
-        const getFreshCommentCounts = async (projectIds) => {
-            const rows = await Comment.aggregate([
-                { $match: { projectId: { $in: projectIds } } },
-                { $group: { _id: '$projectId', count: { $sum: 1 } } }
-            ])
-            const map = {}
-            rows.forEach(({ _id, count }) => { map[_id.toString()] = count })
-            return map
-        }
-
         // ── CACHE HIT ────────────────────────────────────────────────────────
         const cached = await getCache(cacheKey)
         if (cached) {
             const parsed = JSON.parse(cached)
 
-            // commentsCount is NOT stored in cache — always fetch it fresh
+            // likes and commentsCount are NOT stored in cache — always fetch fresh
             const projectIds = parsed.data.map(p => p._id)
-            const commentsCountMap = await getFreshCommentCounts(projectIds)
+            const [{ countsMap, userLikedMap }, commentsCountMap] = await Promise.all([
+                getFreshLikesData(projectIds, userEmail),
+                getFreshCommentCounts(projectIds)
+            ])
 
             parsed.data.forEach(project => {
-                project.userLiked = project.likes.some(like => like.userEmail === userEmail)
-                delete project.likes
-                project.commentsCount = commentsCountMap[project._id?.toString?.()] || 0
+                const pid = project._id?.toString?.()
+                project.likesCount = countsMap[pid] || 0
+                project.userLiked = userLikedMap[pid] || false
+                project.commentsCount = commentsCountMap[pid] || 0
             })
 
             return res.json(parsed)
@@ -106,26 +128,17 @@ exports.getAllProjects = async (req, res) => {
         const projectIds = results.map(p => p._id)
 
         // Likes + fresh comment counts in parallel
-        const [allLikes, commentsCountMap] = await Promise.all([
-            Like.find({ projectId: { $in: projectIds } }).lean(),
+        const [{ countsMap: likesCountsMap, userLikedMap }, commentsCountMap] = await Promise.all([
+            getFreshLikesData(projectIds, userEmail),
             getFreshCommentCounts(projectIds)
         ])
 
-        const likesMap = {}
-        allLikes.forEach(like => {
-            const id = like.projectId.toString()
-            if (!likesMap[id]) likesMap[id] = []
-            likesMap[id].push(like)
-        })
-
         const projectsWithStats = results.map(project => {
-            const projectId = project._id.toString()
-            const projectLikes = likesMap[projectId] || []
+            const pid = project._id.toString()
             return {
                 ...project,
-                likes: projectLikes,       // kept temporarily for userLiked; stripped before caching
-                likesCount: projectLikes.length,
-                // commentsCount intentionally OMITTED here — added after cache write
+                likesCount: likesCountsMap[pid] || 0,
+                // likes and commentsCount intentionally OMITTED from cache
             }
         })
 
@@ -137,14 +150,14 @@ exports.getAllProjects = async (req, res) => {
             }
         }
 
-        // Cache WITHOUT commentsCount (so comment activity never makes the feed cache stale)
+        // Cache WITHOUT likes or commentsCount (so like/comment activity never makes feed cache stale)
         await setCache(cacheKey, JSON.stringify(response), 900)
 
         // Add userLiked + fresh commentsCount before sending (not stored in cache)
         response.data.forEach(project => {
-            project.userLiked = project.likes.some(like => like.userEmail === userEmail)
-            delete project.likes
-            project.commentsCount = commentsCountMap[project._id.toString()] || 0
+            const pid = project._id.toString()
+            project.userLiked = userLikedMap[pid] || false
+            project.commentsCount = commentsCountMap[pid] || 0
         })
 
         res.json(response)
@@ -166,7 +179,15 @@ exports.getMyProjects = async (req, res) => {
 
         const cached = await getCache(cacheKey);
         if (cached) {
-            return res.status(200).json(JSON.parse(cached));
+            const parsed = JSON.parse(cached);
+            const projectIds = parsed.data.map(p => p._id);
+            const commentsCountMap = await getFreshCommentCounts(projectIds);
+
+            parsed.data.forEach(project => {
+                project.commentsCount = commentsCountMap[project._id?.toString?.()] || 0;
+            });
+
+            return res.status(200).json(parsed);
         }
 
         const [myProjects, totalCount] = await Promise.all([
@@ -188,7 +209,16 @@ exports.getMyProjects = async (req, res) => {
             }
         };
 
+        // Cache WITHOUT commentsCount (to keep counts fresh)
         await setCache(cacheKey, JSON.stringify(response), 300);
+
+        // Add fresh counts before sending
+        const projectIds = myProjects.map(p => p._id);
+        const commentsCountMap = await getFreshCommentCounts(projectIds);
+        response.data.forEach(project => {
+            project.commentsCount = commentsCountMap[project._id.toString()] || 0;
+        });
+
         res.json(response);
     } catch (error) {
         console.error('Error fetching user projects:', error);

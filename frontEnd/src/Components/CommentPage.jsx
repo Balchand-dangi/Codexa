@@ -11,13 +11,12 @@ function CommentPage({
   onBottomStateChange,
   onClose,
   user,
-  
+  loading
 }) {
 
   const textareaRef = useRef(null)
   const commentsEndRef = useRef(null)
   const containerRef = useRef(null)
-
   const isFirstLoad = useRef(true)
   const isAtBottomRef = useRef(true)
 
@@ -131,7 +130,15 @@ function CommentPage({
           className="flex-1 overflow-y-auto px-5 py-4 space-y-3"
         >
 
-          {projectComments.length === 0 ? (
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-4">
+              <div className="relative w-12 h-12">
+                <div className="absolute inset-0 rounded-full border-4 border-slate-700" />
+                <div className="absolute inset-0 rounded-full border-4 border-violet-500 border-t-transparent animate-spin" />
+              </div>
+              <p className="text-slate-400 text-sm font-medium">Loading comments...</p>
+            </div>
+          ) : projectComments.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
               <div className="text-5xl">💬</div>
               <p className="text-slate-400 font-medium">No comments yet</p>

@@ -44,7 +44,6 @@ exports.likeProject = async (req, res) => {
 
         await Like.create({ projectId, userEmail, userName })
 
-        await clearFeedCache() // Clear feed cache after like
         await deleteKeys([likesCacheKey(projectId)])
 
         if (project.email !== userEmail) {
@@ -72,7 +71,6 @@ exports.unlikeProject = async (req, res) => {
         const result = await Like.findOneAndDelete({ projectId, userEmail })
 
         if (!result) return res.status(404).json({ message: 'Like not found' })
-        await clearFeedCache() // Clear feed cache after unlike
         await deleteKeys([likesCacheKey(projectId)])
 
         res.status(200).json({ message: 'Project unliked successfully' })
@@ -188,7 +186,11 @@ exports.deleteComment = async (req, res) => {
         await clearFeedCache() // Clear feed cache after comment deletion
         await deleteKeys([commentsCacheKey(comment.projectId)])
 
-        if (io) io.to(`project:${comment.projectId}`).emit('delete-comment', { commentId, projectId: comment.projectId })
+        if (io) io.to(`project:${comment.projectId}`).emit('delete-comment', {
+            commentId,
+            projectId: comment.projectId,
+            deleterEmail: userEmail
+        })
 
         res.status(200).json({ message: 'Comment deleted successfully' })
     } catch (err) {

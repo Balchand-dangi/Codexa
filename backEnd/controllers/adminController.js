@@ -146,44 +146,32 @@ exports.getAllProjects = async (req, res) => {
             matchQuery.$or = [{ title: regex }, { email: regex }, { description: regex }, { category: regex }];
         }
 
-        const [result] = await Projects.aggregate([
+        // Step 1: count without expensive $lookup
+        const totalCount = await Projects.countDocuments(matchQuery);
+
+        // Step 2: fetch only the page slice, then join teamMembers for those few docs
+        const projects = await Projects.aggregate([
             { $match: matchQuery },
             { $sort: { createdAt: -1 } },
+            { $skip: skip },
+            { $limit: limit },
             {
-                $facet: {
-                    data: [
-                        { $skip: skip },
-                        { $limit: limit },
+                $lookup: {
+                    from: 'collaborationRequests',
+                    let: { pid: '$_id' },
+                    pipeline: [
                         {
-                            $lookup: {
-                                from: 'collaborationRequests',
-                                let: { pid: '$_id' },
-                                pipeline: [
-                                    {
-                                        $match: {
-                                            $expr: { $eq: ['$$pid', '$projectId'] },
-                                            status: 'accepted'
-                                        }
-                                    },
-                                    {
-                                        $project: {
-                                            _id: 0,
-                                            name: '$requesterName',
-                                            email: '$requesterEmail'
-                                        }
-                                    }
-                                ],
-                                as: 'teamMembers'
+                            $match: {
+                                $expr: { $eq: ['$$pid', '$projectId'] },
+                                status: 'accepted'
                             }
-                        }
+                        },
+                        { $project: { _id: 0, name: '$requesterName', email: '$requesterEmail' } }
                     ],
-                    totalCount: [{ $count: 'count' }]
+                    as: 'teamMembers'
                 }
             }
         ]);
-
-        const projects = result.data;
-        const totalCount = result.totalCount[0]?.count || 0;
 
         const response = {
             data: projects,
