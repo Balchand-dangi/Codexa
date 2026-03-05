@@ -10,8 +10,15 @@ const Navbar = ({ user, setUser, socket }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 768);
   const profileRef = useRef(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const onResize = () => setIsDesktop(window.innerWidth >= 768);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   // Close profile dropdown on outside click/tap
   useEffect(() => {
@@ -62,7 +69,7 @@ const Navbar = ({ user, setUser, socket }) => {
 
           {/* Mobile: notification bell + hamburger — always visible */}
           <div className="md:hidden flex items-center gap-2">
-            {user && <NotificationBell socket={socket} />}
+            {user && !isDesktop && <NotificationBell socket={socket} />}
             <button
               className="text-2xl text-white"
               onClick={() => setMenuOpen(!menuOpen)}
@@ -119,7 +126,7 @@ const Navbar = ({ user, setUser, socket }) => {
             {user && (
               <>
                 {/* Notification Bell - Desktop Only */}
-                <NotificationBell socket={socket} />
+                {isDesktop && <NotificationBell socket={socket} />}
 
                 {/* Upload Project Button */}
                 {user.role !== 'admin' && (
@@ -336,3 +343,4 @@ const Navbar = ({ user, setUser, socket }) => {
 };
 
 export default Navbar;
+

@@ -357,10 +357,10 @@ const ProjectGrid = ({ user, socket }) => {
     const confirmed = await new Promise(resolve => {
       toast((t) => (
         <div className="flex flex-col gap-2">
-          <p className="font-semibold text-slate-500">Delete comment?</p>
+          <p className="font-semibold text-slate-300">Delete comment ?</p>
           {commentText && (
-            <p className="text-xs text-slate-500 italic line-clamp-2">
-              "{commentText.length > 60 ? commentText.slice(0, 60) + '…' : commentText}"
+            <p className="text-xs text-slate-400 italic line-clamp-2">
+              "{commentText.length > 60 ? commentText.slice(0, 40) + '…' : commentText}"
             </p>
           )}
           <div className="flex gap-2">

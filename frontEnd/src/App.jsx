@@ -26,7 +26,6 @@ function App() {
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [workflowPrompt, setWorkflowPrompt] = useState(null);
   const [workflowActionLoading, setWorkflowActionLoading] = useState(false);
-  const navigate = useNavigate();
 
   // Single shared socket connection — alive when user is logged in
   const socket = useSocket(user);
@@ -144,7 +143,7 @@ function App() {
         {(t) => (
           <ToastBar toast={t}>
             {({ icon, message }) => (
-              <div className="relative flex items-start gap-2 pr-7">
+              <div className="relative flex text-red-500 items-start gap-2 pr-7">
                 {icon}
                 <div className="flex-1">{message}</div>
                 {shouldShowToastClose(t, message) && (
