@@ -162,7 +162,7 @@ const NotificationBell = ({ socket }) => {
 
   return (
     <div className="relative" ref={panelRef}>
-      <button onClick={() => { const next = !showDropdown; setShowDropdown(next); if (next) fetchNotifications(); }} className="relative p-2 rounded-xl hover:bg-slate-700/60 transition">
+      <button onClick={() => { const next = !showDropdown; setShowDropdown(next); if (next) fetchNotifications(); }} className="relative p-2 cursor-pointer rounded-lg bg-slate-700/40 hover:bg-slate-700/60  transition">
         <MdNotifications className="w-6 h-6 text-slate-300" />
         {unreadCount > 0 && (
           <span className="absolute -top-0.5 -right-0.5 bg-violet-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">

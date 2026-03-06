@@ -640,9 +640,10 @@ const ProjectGrid = ({ user, socket }) => {
                       className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-violet-500/10 transition-colors group"
                     >
                       {userLikes[project._id] ? (
-                        <BiSolidLike className="w-5 h-5 text-violet-400 group-hover:scale-125 transition-transform" />
+                        <BiSolidLike className="w-5 h-5  text-violet-400 group-hover:scale-125 transition-transform"
+                        />
                       ) : (
-                        <BiLike className="w-5 h-5 text-slate-400 group-hover:text-violet-400 group-hover:scale-125 transition-all" />
+                        <BiLike className="w-5 h-5 text-slate-400 group-hover:text-violet-400 group-hover:scale-115 transition-all" />
                       )}
                       <span className={`text-sm font-semibold ${userLikes[project._id] ? 'text-violet-400' : 'text-slate-400'}`}>
                         {projectStats[project._id]?.likes || 0}
@@ -652,8 +653,9 @@ const ProjectGrid = ({ user, socket }) => {
                     <button
                       onClick={() => openCommentPage(project)}
                       className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-emerald-500/10 transition-colors group"
+                       title="Discussion forum"
                     >
-                      <MdOutlineInsertComment className="w-5 h-5 text-slate-400 group-hover:text-emerald-400 group-hover:scale-125 transition-all" />
+                      <MdOutlineInsertComment className="w-5 h-5 text-slate-400 group-hover:text-emerald-400 group-hover:scale-115 transition-all"/>
                       <span className="text-sm font-semibold text-slate-400 group-hover:text-emerald-400">
                         {projectStats[project._id]?.comments || 0}
                       </span>

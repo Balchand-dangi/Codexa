@@ -95,7 +95,7 @@ function MyProjects() {
             </div>
               <Link
                 to='/'
-                className='px-4 py-2.5 sm:px-6 sm:py-3 bg-gradient-to-r from-slate-600 to-slate-700 text-white rounded-2xl text-sm sm:text-base font-bold hover:from-slate-700 hover:to-slate-800 transition-all shadow-lg hover:shadow-slate-500/25 w-full sm:w-auto text-center'
+                className='px-4 py-2.5 sm:px-6 sm:py-3 bg-gradient-to-r from-slate-700  to-slate-800  text-white rounded-2xl text-sm sm:text-base font-bold hover:from-slate-700 hover:to-slate-800 transition-all shadow-lg hover:shadow-slate-500/25 w-full sm:w-auto text-center'
               >
                 ← Back to Dashboard
               </Link>

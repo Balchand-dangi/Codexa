@@ -117,7 +117,7 @@ function CommentPage({
 
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white text-2xl px-2 py-1 hover:bg-slate-700 rounded-lg"
+            className="text-slate-400 hover:text-white/90 text-2xl cursor-pointer px-2 py-1 hover:bg-slate-700 rounded-lg"
           >
             ✕
           </button>

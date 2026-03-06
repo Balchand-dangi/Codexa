@@ -351,27 +351,7 @@ function ProjectStatus({ user }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-24 px-4 pb-10">
       <div className="max-w-7xl mx-auto space-y-6">
-        <div className="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-5">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-violet-600/30 border border-violet-500/40 flex items-center justify-center">
-                <HiOutlineClipboardDocumentCheck className="w-6 h-6 text-violet-300" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-white">{projectTitle}</h1>
-                <p className="text-slate-400 text-sm">Global stages + project task board</p>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button onClick={() => navigate(-1)} className="px-4 py-2 text-slate-200 bg-slate-700 rounded-xl hover:bg-slate-600 transition">
-                Back
-              </button>
-              <button onClick={openCreateModal} disabled={readOnly} className="px-4 py-2 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition disabled:opacity-50">
-                + Add task
-              </button>
-            </div>
-          </div>
-        </div>
+
 
         <div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
@@ -398,10 +378,10 @@ function ProjectStatus({ user }) {
                 draggable={!isMobile && !readOnly && workflow.isActive && ['in-progress', 'pending'].includes(stage.state)} onDragStart={() => setDragStageId(stage.stageId)}
                 onDragEnd={() => setDragStageId(null)}
                 className={`relative min-w-[260px] rounded-xl border p-3 ${stage.state === 'completed' ? 'bg-emerald-500/10 border-emerald-500/30' :
-                    stage.state === 'in-progress' ? 'bg-violet-500/10 cursor-move border-violet-500/30' :
-                      stage.state === 'pending' ? 'bg-blue-500/10 cursor-move border-blue-500/30' :
-                        stage.state === 'pending-review' ? 'bg-amber-500/10 border-amber-500/30' :
-                          'bg-slate-900/60 border-slate-700'
+                  stage.state === 'in-progress' ? 'bg-violet-500/10 cursor-move border-violet-500/30' :
+                    stage.state === 'pending' ? 'bg-blue-500/10 cursor-move border-blue-500/30' :
+                      stage.state === 'pending-review' ? 'bg-amber-500/10 border-amber-500/30' :
+                        'bg-slate-900/60 border-slate-700'
                   }`}
               >
                 {stage.state === 'in-progress' && (
@@ -409,7 +389,7 @@ function ProjectStatus({ user }) {
                 )}
                 <p className="text-xs text-slate-400 mb-1">Stage {idx + 1}</p>
                 <span><h3 className="text-white font-semibold">{stage.title}</h3></span>
-                { !readOnly && workflow.isActive && ['in-progress', 'pending'].includes(stage.state) && (
+                {!readOnly && workflow.isActive && ['in-progress', 'pending'].includes(stage.state) && (
                   <span onClick={() => openSubmissionModal(stage)} className="mt-2 inline-flex items-center gap-1 text-xs text-emerald-400 cursor-pointer">
                     <HiOutlineClipboardDocumentCheck className="w-4 h-4" />
                     Submit proof
@@ -438,6 +418,28 @@ function ProjectStatus({ user }) {
             <span className="ml-2 text-xs text-slate-300">
               Pending: {stageCounts.pending || 0} | In Progress: {stageCounts['in-progress'] || 0} | Completed: {stageCounts.completed || 0}
             </span>
+          </div>
+        </div>
+
+        <div className="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-5">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-violet-600/30 border border-violet-500/40 flex items-center justify-center">
+                <HiOutlineClipboardDocumentCheck className="w-6 h-6 text-violet-300" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white">{projectTitle}</h1>
+                <p className="text-slate-400 text-sm">Project task board</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => navigate(-1)} className="px-4 py-2 cursor-pointer text-slate-200 bg-slate-700 rounded-xl hover:bg-slate-600 transition">
+                ← Back
+              </button>
+              <button onClick={openCreateModal} disabled={readOnly} className="cursor-pointer px-4 py-2 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition disabled:opacity-50">
+                + Add task
+              </button>
+            </div>
           </div>
         </div>
 
@@ -491,43 +493,44 @@ function ProjectStatus({ user }) {
         </div>
 
         <div className="flex justify-end gap-3">
-          <button onClick={() => navigate(-1)} className="px-6 py-2.5 bg-slate-700 text-slate-200 rounded-xl hover:bg-slate-600 transition">
+          <button onClick={() => navigate(-1)} className="px-6 py-2.5 bg-red-800/90 text-white rounded-xl hover:bg-red-800 transition">
             Cancel
           </button>
-          <button onClick={saveTaskBoard} disabled={saving || readOnly} className="px-6 py-2.5 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition disabled:opacity-50">
-            {readOnly ? 'Read Only (Admin)' : saving ? 'Saving...' : 'Save Board'}
+          <button onClick={saveTaskBoard} disabled={saving || readOnly} title='Save all your tasks' className="px-6 py-2.5 bg-green-700 text-white rounded-xl hover:bg-green-700/80 transition disabled:opacity-50">
+            {readOnly ? 'Read Only (Admin/team member)' : saving ? 'Saving...' : 'Save Board'}
           </button>
         </div>
       </div>
 
       {openModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-xl bg-slate-800 border border-slate-700 rounded-xl p-6 shadow-2xl">
+          <div className="w-full max-w-xl bg-slate-900 border border-slate-700/90 rounded-xl p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-bold text-white">{editingTaskId ? 'Edit Task' : 'Add Task'}</h2>
-              <button onClick={closeTaskModal} className="text-slate-400 hover:bg-slate-700 hover:text-white rounded p-0.5">
+              <button onClick={closeTaskModal} className="text-slate-400 hover:bg-slate-800 hover:text-white/90 rounded p-0.5">
                 <HiXMark className="w-7 h-7" />
               </button>
             </div>
             <form onSubmit={handleSubmitTask} className="space-y-4">
-              <input value={form.title} onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))} placeholder="Title" required className="w-full bg-slate-900/70 border border-slate-600 text-slate-100 rounded-md px-3 py-2" />
-              <textarea value={form.description} onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))} placeholder="Description" className="w-full min-h-24 bg-slate-900/70 border border-slate-600 text-slate-100 rounded-md px-3 py-2" />
+              <input value={form.title} onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))} placeholder="Title" required className="w-full bg-slate-800 border border-slate-600 text-slate-100 rounded-md px-3 py-2" />
+              <textarea value={form.description} onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))} placeholder="Description" className="w-full min-h-24 bg-slate-800 border border-slate-600 text-slate-100 rounded-md px-3 py-2" />
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <select value={form.priority} onChange={(e) => setForm(prev => ({ ...prev, priority: e.target.value }))} className="bg-slate-900/70 border border-slate-600 text-slate-100 rounded-md px-3 py-2">
+                <select value={form.priority} onChange={(e) => setForm(prev => ({ ...prev, priority: e.target.value }))} className="bg-slate-800 border border-slate-600 text-slate-100 rounded-md px-3 py-2">
                   <option value="low">Low</option>
                   <option value="medium">Medium</option>
                   <option value="high">High</option>
                 </select>
-                <select value={form.status} onChange={(e) => setForm(prev => ({ ...prev, status: e.target.value }))} className="bg-slate-900/70 border border-slate-600 text-slate-100 rounded-md px-3 py-2">
+                <select value={form.status} onChange={(e) => setForm(prev => ({ ...prev, status: e.target.value }))} className="bg-slate-800 border border-slate-600 text-slate-100 rounded-md px-3 py-2">
                   <option value="todo">To-Do</option>
                   <option value="in-progress">In Progress</option>
                   <option value="completed">Completed</option>
                 </select>
-                <input type="date" value={form.dueDate} onChange={(e) => setForm(prev => ({ ...prev, dueDate: e.target.value }))} className="bg-slate-900/70 border border-slate-600 text-slate-100 rounded-md px-3 py-2" />
+                <input type="date" value={form.dueDate} onChange={(e) => setForm(prev => ({ ...prev, dueDate: e.target.value }))} className="bg-slate-800 border border-slate-600 text-slate-100 rounded-md px-3 py-2" />
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <button type="submit" className="px-4 py-2.5 bg-violet-600 text-white rounded-md hover:bg-violet-700 transition">{editingTaskId ? 'Update Task' : 'Create Task'}</button>
-                <button type="button" onClick={closeTaskModal} className="px-4 py-2.5 bg-slate-700 text-slate-100 rounded-md hover:bg-slate-600 transition">Cancel</button>
+                <button type="button" onClick={closeTaskModal} className="px-4 py-2.5 bg-red-800/90 text-white rounded-md hover:bg-red-800 transition">Cancel</button>
+                <button type="submit" className="px-4 py-2.5 bg-violet-700 text-white rounded-md hover:bg-violet-800 transition">{editingTaskId ? 'Update Task' : 'Create Task'}</button>
+                
               </div>
             </form>
           </div>

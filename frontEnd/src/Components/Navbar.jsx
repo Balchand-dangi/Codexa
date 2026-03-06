@@ -71,7 +71,7 @@ const Navbar = ({ user, setUser, socket }) => {
           <div className="md:hidden flex items-center gap-2">
             {user && !isDesktop && <NotificationBell socket={socket} />}
             <button
-              className="text-2xl text-white"
+              className="text-2xl px-2  rounded-lg border border-slate-600 hover:bg-slate-700/60 p-1 text-white"
               onClick={() => setMenuOpen(!menuOpen)}
             >
               {menuOpen ? '✕' : '☰'}
@@ -131,7 +131,7 @@ const Navbar = ({ user, setUser, socket }) => {
                 {/* Upload Project Button */}
                 {user.role !== 'admin' && (
                   <Link to="/upload">
-                    <button className="px-4 py-2 bg-violet-500 text-white font-semibold rounded-lg hover:bg-violet-600 transition">
+                    <button className="px-4 cursor-pointer py-2 bg-violet-600 text-white font-semibold rounded-lg hover:bg-violet-500/90 transition">
                       Upload Project
                     </button>
                   </Link>
@@ -141,7 +141,7 @@ const Navbar = ({ user, setUser, socket }) => {
                 <div className="relative" ref={profileRef}>
                   <div
                     onClick={() => setShowProfileMenu(!showProfileMenu)}
-                    className="flex items-center space-x-2 bg-white/20 hover:bg-white/30 px-3 py-2 rounded-lg transition cursor-pointer"
+                    className="flex items-center space-x-2 bg-slate-700/60 hover:bg-slate-700/90 px-3 py-2 rounded-lg transition cursor-pointer"
                   >
                     {/* Avatar Icon */}
                     <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center font-bold text-indigo-700">
@@ -165,7 +165,7 @@ const Navbar = ({ user, setUser, socket }) => {
                     <>
                       <div className="absolute right-0 mt-2 w-52 bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl py-2 z-[9999] overflow-hidden">
                         <div className="px-4 py-3 border-b border-slate-700">
-                          <p className="text-xs text-slate-500 mb-0.5">Signed in as
+                          <p className="text-xs text-slate-400 mb-0.5">Signed in as
                             <span className="font-bold text-violet-400"> {user.role === 'admin' ? 'Admin' : 'User'}</span>
                           </p>
                           <p className="text-sm font-semibold text-slate-200 truncate">
@@ -317,7 +317,7 @@ const Navbar = ({ user, setUser, socket }) => {
                   <Link to="/upload" onClick={() => setMenuOpen(false)}>
                     <button
 
-                      className="w-full  mt-2 px-4 py-2 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-semibold rounded-lg hover:bg-red-600 transition"
+                      className="w-full mt-2 px-4 py-2 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-semibold rounded-lg hover:bg-red-600 transition"
                     >
                       Upload project
                     </button>

@@ -143,7 +143,7 @@ function App() {
         {(t) => (
           <ToastBar toast={t}>
             {({ icon, message }) => (
-              <div className="relative flex text-red-500 items-start gap-2 pr-7">
+              <div className="relative flex items-start gap-2 pr-7">
                 {icon}
                 <div className="flex-1">{message}</div>
                 {shouldShowToastClose(t, message) && (
