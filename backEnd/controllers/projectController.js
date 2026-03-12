@@ -43,6 +43,16 @@ const buildMyProjectsCacheKey = ({ userEmail, page, limit }) => `MY_PROJECTS:${u
 const buildWorkflowNoticeCacheKey = userEmail => `WORKFLOW_NOTICE:${userEmail}`;
 const buildProjectStatusCacheKey = ({ userEmail, projectId }) => `MY_PROJECT_STATUS:${userEmail}:${projectId}`;
 
+const normalizeProjectLinks = (links = {}) => {
+    const github = String(links?.github || '').trim();
+    const liveDemo = String(links?.liveDemo || '').trim();
+
+    return {
+        github,
+        liveDemo
+    };
+};
+
 // Helper: get fresh commentsCount for a list of project IDs
 // Always queried fresh so counts are never stale regardless of FEED/MY_PROJECTS cache TTL
 const getFreshCommentCounts = async (projectIds) => {
@@ -360,6 +370,7 @@ exports.getMyProjectStatus = async (req, res) => {
         const response = {
             projectId: project._id,
             projectTitle: project.title,
+            links: normalizeProjectLinks(project.links),
             workflow: {
                 currentVersion: config.version,
                 acceptedVersion: req.user.workflowAcceptedVersion || 0,
@@ -389,20 +400,25 @@ exports.updateMyProjectStatus = async (req, res) => {
     try {
         const { projectId } = req.params;
         const userEmail = req.user.email;
-        const { tasks } = req.body;
+        const { tasks, links } = req.body;
 
         if (!mongoose.Types.ObjectId.isValid(projectId)) {
             return res.status(400).json({ message: 'Invalid project ID' });
         }
 
-        if (!Array.isArray(tasks)) {
+        if (tasks !== undefined && !Array.isArray(tasks)) {
             return res.status(400).json({ message: 'tasks must be an array' });
+        }
+
+        if (links !== undefined && (typeof links !== 'object' || Array.isArray(links) || links === null)) {
+            return res.status(400).json({ message: 'links must be an object' });
         }
 
         const validStatuses = new Set(['todo', 'in-progress', 'completed']);
         const validPriorities = new Set(['low', 'medium', 'high']);
 
-        const normalizedTasks = tasks
+        const normalizedTasks = Array.isArray(tasks)
+            ? tasks
             .map((task, index) => {
                 const safeStatus = validStatuses.has(task?.status) ? task.status : task?.completed ? 'completed' : 'todo';
                 const safePriority = validPriorities.has(task?.priority) ? task.priority : 'medium';
@@ -422,7 +438,8 @@ exports.updateMyProjectStatus = async (req, res) => {
                     task.title.length > 0 &&
                     !Number.isNaN(task.createdAt.getTime()) &&
                     (task.dueDate === null || !Number.isNaN(task.dueDate.getTime()))
-            );
+            )
+            : null;
 
         const project = await Project.findOne({ _id: projectId, email: userEmail });
         if (!project) {
@@ -433,9 +450,19 @@ exports.updateMyProjectStatus = async (req, res) => {
             project.status = {};
         }
 
-        project.status.tasks = normalizedTasks;
+        if (normalizedTasks) {
+            project.status.tasks = normalizedTasks;
+            project.recalculateProgress();
+        }
+
+        if (links !== undefined) {
+            project.links = {
+                ...(project.links?.toObject?.() || project.links || {}),
+                ...normalizeProjectLinks(links)
+            };
+        }
+
         project.status.updatedBy = userEmail;
-        project.recalculateProgress();
 
         await project.save();
         await deleteByPatterns([
@@ -445,6 +472,7 @@ exports.updateMyProjectStatus = async (req, res) => {
 
         res.status(200).json({
             message: 'Project status updated successfully',
+            links: normalizeProjectLinks(project.links),
             status: {
                 tasks: project.status.tasks,
                 overallProgress: project.status.overallProgress,

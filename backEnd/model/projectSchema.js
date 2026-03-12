@@ -33,6 +33,17 @@ const projectSchema = new mongoose.Schema({
         required: true
     },
 
+    links: {
+        github: {
+            type: String,
+            default: ''
+        },
+        liveDemo: {
+            type: String,
+            default: ''
+        }
+    },
+
     status: {
         tasks: [{
             id: {

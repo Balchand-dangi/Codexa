@@ -79,6 +79,10 @@ const clearFeedCache = async () => deleteByPattern('FEED:*');
 const clearWorkflowCaches = async () => deleteByPatterns(['WORKFLOW_NOTICE:*', 'MY_PROJECT_STATUS:*']);
 const buildAdminUsersCacheKey = ({ page, limit, search }) => `ADMIN_USERS:${page}:${limit}:${search || 'none'}`;
 const buildAdminProjectsCacheKey = ({ page, limit, search }) => `ADMIN_PROJECTS:${page}:${limit}:${search || 'none'}`;
+const normalizeProjectLinks = (links = {}) => ({
+    github: String(links?.github || '').trim(),
+    liveDemo: String(links?.liveDemo || '').trim()
+});
 
 // Get all users (Admin only) - WITH PAGINATION + SEARCH
 exports.getAllUsers = async (req, res) => {
@@ -302,6 +306,7 @@ exports.getProjectStatus = async (req, res) => {
         res.status(200).json({
             projectId: project._id,
             projectTitle: project.title,
+            links: normalizeProjectLinks(project.links),
             workflow: {
                 currentVersion: config.version,
                 acceptedVersion,

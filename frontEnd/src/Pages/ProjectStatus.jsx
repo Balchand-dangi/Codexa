@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useNavigate, useParams } from 'react-router-dom';
-import { HiOutlineCalendarDays, HiOutlineClipboardDocumentCheck, HiPencil, HiTrash, HiXMark } from 'react-icons/hi2';
+import { HiOutlineArrowTopRightOnSquare, HiOutlineCalendarDays, HiOutlineClipboardDocumentCheck, HiOutlineLink, HiPencil, HiTrash, HiXMark } from 'react-icons/hi2';
 
 const COLUMNS = [
   { key: 'todo', title: 'To-Do' },
@@ -16,6 +16,11 @@ const emptyForm = {
   priority: 'medium',
   status: 'todo',
   dueDate: ''
+};
+
+const emptyLinks = {
+  github: '',
+  liveDemo: ''
 };
 
 const toInputDate = (date) => {
@@ -60,6 +65,7 @@ function ProjectStatus({ user }) {
   const navigate = useNavigate();
 
   const [projectTitle, setProjectTitle] = useState('Project Tasks');
+  const [links, setLinks] = useState(emptyLinks);
   const [tasks, setTasks] = useState([]);
   const [globalStages, setGlobalStages] = useState([]);
   const [stageSubmissions, setStageSubmissions] = useState([]);
@@ -90,6 +96,10 @@ function ProjectStatus({ user }) {
 
       const apiTasks = Array.isArray(res.data?.status?.tasks) ? res.data.status.tasks : [];
       setProjectTitle(res.data?.projectTitle || 'Project Tasks');
+      setLinks({
+        github: String(res.data?.links?.github || '').trim(),
+        liveDemo: String(res.data?.links?.liveDemo || '').trim()
+      });
       setTasks(apiTasks.map(normalizeTask).filter(t => t.title));
       setGlobalStages((res.data?.globalStages || []).sort((a, b) => a.order - b.order));
       setStageSubmissions(Array.isArray(res.data?.status?.stageSubmissions) ? res.data.status.stageSubmissions : []);
@@ -269,6 +279,28 @@ function ProjectStatus({ user }) {
     }
   };
 
+  const saveProjectLinks = async () => {
+    if (readOnly) return;
+    setSaving(true);
+    try {
+      await axios.patch(
+        `/api/my-projects/${projectId}/status`,
+        {
+          links: {
+            github: links.github.trim(),
+            liveDemo: links.liveDemo.trim()
+          }
+        },
+        { withCredentials: true }
+      );
+      toast.success('Project links updated');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to update project links');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const openSubmissionModal = (stage) => {
     if (readOnly) return;
     if (!workflow.isActive) {
@@ -431,8 +463,11 @@ function ProjectStatus({ user }) {
                 <h1 className="text-2xl font-bold text-white">{projectTitle}</h1>
                 <p className="text-slate-400 text-sm">Project task board</p>
               </div>
+
+            
             </div>
-            <div className="flex gap-2">
+
+	            <div className="flex gap-2">
               <button onClick={() => navigate(-1)} className="px-4 py-2 cursor-pointer text-slate-200 bg-slate-700 rounded-xl hover:bg-slate-600 transition">
                 ← Back
               </button>
@@ -441,6 +476,78 @@ function ProjectStatus({ user }) {
               </button>
             </div>
           </div>
+          <div className="mt-5 grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <label className="block">
+                <span className="text-xs uppercase tracking-[0.2em] text-slate-400">GitHub</span>
+                <div className="mt-2 relative">
+                  <HiOutlineLink className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="url"
+                    value={links.github}
+                    onChange={(e) => setLinks(prev => ({ ...prev, github: e.target.value }))}
+                    readOnly={readOnly}
+                    placeholder="https://github.com/username/repo"
+                    className="w-full bg-slate-900/70 border border-slate-700 text-slate-100 rounded-xl pl-10 pr-3 py-2.5 read-only:opacity-70"
+                  />
+                </div>
+              </label>
+
+              <label className="block">
+                <span className="text-xs uppercase tracking-[0.2em] text-slate-400">Live Demo</span>
+                <div className="mt-2 relative">
+                  <HiOutlineLink className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="url"
+                    value={links.liveDemo}
+                    onChange={(e) => setLinks(prev => ({ ...prev, liveDemo: e.target.value }))}
+                    readOnly={readOnly}
+                    placeholder="https://your-demo-site.com"
+                    className="w-full bg-slate-900/70 border border-slate-700 text-slate-100 rounded-xl pl-10 pr-3 py-2.5 read-only:opacity-70"
+                  />
+                </div>
+              </label>
+            </div>
+
+            {!readOnly && (
+              <div className="flex items-end">
+                <button
+                  onClick={saveProjectLinks}
+                  disabled={saving}
+                  className="w-full lg:w-auto px-4 py-2.5 bg-sky-600 text-white rounded-xl hover:bg-sky-700 transition disabled:opacity-50"
+                >
+                  {saving ? 'Saving...' : 'Update Links'}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {(links.github || links.liveDemo) && (
+            <div className="mt-4 flex flex-wrap gap-3">
+              {links.github && (
+                <a
+                  href={links.github}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-600 text-slate-100 bg-slate-900/70 hover:border-slate-500 transition"
+                >
+                  GitHub
+                  <HiOutlineArrowTopRightOnSquare className="w-4 h-4" />
+                </a>
+              )}
+              {links.liveDemo && (
+                <a
+                  href={links.liveDemo}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-emerald-500/40 text-emerald-200 bg-emerald-500/10 hover:bg-emerald-500/20 transition"
+                >
+                  Live Demo
+                  <HiOutlineArrowTopRightOnSquare className="w-4 h-4" />
+                </a>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
