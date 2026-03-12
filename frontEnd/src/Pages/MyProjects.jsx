@@ -111,9 +111,8 @@ function MyProjects() {
         {/* Loading State */}
         {loading && (
           <div className="flex flex-col items-center justify-center min-h-[300px] md:min-h-[400px] gap-4 p-8 mx-auto">
-            <div className="relative w-12 h-12 sm:w-16 sm:h-16">
+            <div className="relative w-10 h-10 sm:w-14 sm:h-14">
               <div className="absolute inset-0 rounded-full border-4 border-slate-700 border-t-transparent animate-spin" />
-              <div className="absolute inset-2 w-8 h-8 bg-gradient-to-r from-violet-500 to-purple-500 rounded-full animate-pulse opacity-75" />
             </div>
             <p className='text-slate-400 text-center text-lg sm:text-xl'>Loading your projects...</p>
           </div>

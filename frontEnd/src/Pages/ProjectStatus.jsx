@@ -374,17 +374,22 @@ function ProjectStatus({ user }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-24 px-4 flex items-center justify-center text-slate-300">
-        Loading project status...
+      <div className="flex flex-col items-center justify-center  bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 min-h-screen gap-4 p-8 mx-auto">
+        <div className="relative w-10 h-10 sm:w-14 sm:h-14">
+          <div className="absolute inset-0 rounded-full border-4 border-slate-700 border-t-transparent animate-spin" />
+        </div>
+        <p className='text-slate-400 text-center text-lg sm:text-xl'>Loading project status...</p>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-24 px-4 pb-10">
-      <div className="max-w-7xl mx-auto space-y-6">
 
-
+      <div className="max-w-7xl mx-auto space-y-6 relative">
+        <button onClick={() => navigate(-1)} className="px-4 py-2 cursor-pointer text-slate-200 bg-slate-700 rounded-xl hover:bg-slate-600 transition">
+          ← Back
+        </button>
         <div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
             <h2 className="text-white font-semibold text-lg">Global Stages Tracker</h2>
@@ -398,8 +403,8 @@ function ProjectStatus({ user }) {
               <span className="text-slate-300">Stage completion</span>
               <span className="text-emerald-400 font-bold">{stageProgress}%</span>
             </div>
-            <div className="mt-2 h-2.5 bg-slate-700 rounded-full overflow-hidden">
-              <div className="h-2.5 bg-emerald-500 transition-all duration-500" style={{ width: `${stageProgress}%` }} />
+            <div className="mt-2.5 h-2 bg-slate-700 rounded-full overflow-hidden">
+              <div className="h-2 bg-emerald-500 transition-all duration-500" style={{ width: `${stageProgress}%` }} />
             </div>
           </div>
 
@@ -453,29 +458,7 @@ function ProjectStatus({ user }) {
           </div>
         </div>
 
-        <div className="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-5">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-violet-600/30 border border-violet-500/40 flex items-center justify-center">
-                <HiOutlineClipboardDocumentCheck className="w-6 h-6 text-violet-300" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-white">{projectTitle}</h1>
-                <p className="text-slate-400 text-sm">Project task board</p>
-              </div>
-
-            
-            </div>
-
-	            <div className="flex gap-2">
-              <button onClick={() => navigate(-1)} className="px-4 py-2 cursor-pointer text-slate-200 bg-slate-700 rounded-xl hover:bg-slate-600 transition">
-                ← Back
-              </button>
-              <button onClick={openCreateModal} disabled={readOnly} className="cursor-pointer px-4 py-2 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition disabled:opacity-50">
-                + Add task
-              </button>
-            </div>
-          </div>
+        <div className='border border-slate-700/90 my-15 bg-slate-800/60  rounded-2xl p-4 '>
           <div className="mt-5 grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <label className="block">
@@ -523,7 +506,7 @@ function ProjectStatus({ user }) {
           </div>
 
           {(links.github || links.liveDemo) && (
-            <div className="mt-4 flex flex-wrap gap-3">
+            <div className="mt-4 pb-10 flex flex-wrap gap-3">
               {links.github && (
                 <a
                   href={links.github}
@@ -550,54 +533,119 @@ function ProjectStatus({ user }) {
           )}
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-          {COLUMNS.map(column => (
-            <div
-              key={column.key}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={() => handleDropTask(column.key)}
-              className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4 min-h-[180px]"
-            >
-              <div className="flex items-center  justify-between mb-3">
-                <h2 className="text-xl font-bold text-white">{column.title}</h2>
-                <span className="text-xs text-slate-300 bg-slate-700 px-2 py-1 rounded-full">{tasksByColumn[column.key].length}</span>
+        <div className="bg-slate-800/60 border  border-slate-700 rounded-2xl p-5">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between pb-5 gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-violet-600/30 border border-violet-500/40 flex items-center justify-center">
+                <HiOutlineClipboardDocumentCheck className="w-6 h-6 text-violet-300" />
               </div>
-              <div className="space-y-3">
-                {tasksByColumn[column.key].map(task => (
-                  <div
-                    key={task.id}
-                    draggable={!readOnly}
-                    onDragStart={() => setDraggingId(task.id)}
-                    onDragEnd={() => setDraggingId(null)}
-                    className={`rounded-xl  border p-3 cursor-move ${draggingId === task.id ? 'border-violet-500' : 'border-slate-700'}`}
-                  >
-                    <h3 className="text-white  font-semibold">{task.title}</h3>
-                    {task.description && <p className="text-slate-400 text-sm mt-1">{task.description}</p>}
-                    <div className="flex items-center justify-between gap-2 mt-3">
-                      <span className="text-xs px-2 py-1 rounded-md capitalize bg-violet-500/15 text-violet-300 border border-violet-500/30">{task.priority}</span>
-                      <span className="text-xs text-slate-400 flex items-center gap-1">
-                        <HiOutlineCalendarDays className="w-4 h-4" />
-                        {task.dueDate || 'No due date'}
-                      </span>
-                    </div>
-                    <div className="flex gap-2 mt-3">
-                      <button onClick={() => openEditModal(task)} disabled={readOnly} className="px-3 py-1.5 bg-violet-500/20 text-violet-300 border border-violet-500/40 rounded-lg text-sm disabled:opacity-50">
-                        <span className="inline-flex items-center gap-1"><HiPencil className="w-4 h-4" /> Edit</span>
-                      </button>
-                      <button
-                        onClick={() => setTasks(prev => prev.filter(t => t.id !== task.id))}
-                        disabled={readOnly}
-                        className="px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/30 rounded-xl text-sm disabled:opacity-50 inline-flex items-center gap-1"
-                      >
-                        <HiTrash className="w-4 h-4" /> Delete
-                      </button>
-                    </div>
-                  </div>
-                ))}
+              <div>
+                <h1 className="text-2xl font-bold text-white">{projectTitle}</h1>
+                <p className="text-slate-400 text-sm">Project task board</p>
+              </div>
+
+
+            </div>
+
+            <div className="flex gap-2">
+
+              <button onClick={openCreateModal} disabled={readOnly} className="cursor-pointer px-4 py-2 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition disabled:opacity-50">
+                + Add task
+              </button>
+            </div>
+          </div>
+
+
+
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        
+          <div className="col-span-1 xl:col-span-3 bg-slate-800/60 border mb-4 border-slate-700 rounded-2xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-xl font-bold text-white">Task Progress</h2>
+              <div className="text-sm text-slate-300">
+                {overallStats.completedTasks} / {overallStats.totalTasks}
               </div>
             </div>
-          ))}
+            <div className="flex items-center justify-between text-sm mb-2">
+              <span className="text-slate-300">Overall completion</span>
+              <span className="text-violet-400 font-bold">{overallStats.progress}%</span>
+            </div>
+            <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+              <div className="h-2 bg-violet-500 transition-all duration-500" style={{ width: `${overallStats.progress}%` }} />
+            </div>
+          </div>
+            {COLUMNS.map(column => (
+              <div
+                key={column.key}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={() => handleDropTask(column.key)}
+                className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4 min-h-[180px]"
+              >
+                <div className="flex items-center  justify-between mb-3">
+                  <h2 className="text-xl font-bold text-white">{column.title}</h2>
+                  <span className="text-xs text-slate-300 bg-slate-700 px-2 py-1 rounded-full">{tasksByColumn[column.key].length}</span>
+                </div>
+                <div className="space-y-3">
+                  {tasksByColumn[column.key].length === 0 ? (
+                    <p className="text-sm text-slate-400 text-center py-6">
+                      No task added yet.
+                    </p>
+                  ) : (
+                    tasksByColumn[column.key].map(task => (
+                      <div
+                        key={task.id}
+                        draggable={!readOnly}
+                        onDragStart={() => setDraggingId(task.id)}
+                        onDragEnd={() => setDraggingId(null)}
+                        className={`rounded-xl border p-3 cursor-move ${draggingId === task.id ? 'border-violet-500' : 'border-slate-700'
+                          }`}
+                      >
+                        <h3 className="text-white font-semibold">{task.title}</h3>
+
+                        {task.description && (
+                          <p className="text-slate-400 text-sm mt-1">{task.description}</p>
+                        )}
+
+                        <div className="flex items-center justify-between gap-2 mt-3">
+                          <span className="text-xs px-2 py-1 rounded-md capitalize bg-violet-500/15 text-violet-300 border border-violet-500/30">
+                            {task.priority}
+                          </span>
+
+                          <span className="text-xs text-slate-400 flex items-center gap-1">
+                            <HiOutlineCalendarDays className="w-4 h-4" />
+                            {task.dueDate || 'No due date'}
+                          </span>
+                        </div>
+
+                        <div className="flex gap-2 mt-3">
+                          <button
+                            onClick={() => openEditModal(task)}
+                            disabled={readOnly}
+                            className="px-3 py-1.5 bg-violet-500/20 text-violet-300 border border-violet-500/40 rounded-lg text-sm disabled:opacity-50"
+                          >
+                            <span className="inline-flex items-center gap-1">
+                              <HiPencil className="w-4 h-4" /> Edit
+                            </span>
+                          </button>
+
+                          <button
+                            onClick={() => setTasks(prev => prev.filter(t => t.id !== task.id))}
+                            disabled={readOnly}
+                            className="px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/30 rounded-xl text-sm disabled:opacity-50 inline-flex items-center gap-1"
+                          >
+                            <HiTrash className="w-4 h-4" /> Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
+
+
 
         <div className="flex justify-end gap-3">
           <button onClick={() => navigate(-1)} className="px-6 py-2.5 bg-red-800/90 text-white rounded-xl hover:bg-red-800 transition">
@@ -637,7 +685,7 @@ function ProjectStatus({ user }) {
               <div className="grid grid-cols-2 gap-3">
                 <button type="button" onClick={closeTaskModal} className="px-4 py-2.5 bg-red-800/90 text-white rounded-md hover:bg-red-800 transition">Cancel</button>
                 <button type="submit" className="px-4 py-2.5 bg-violet-700 text-white rounded-md hover:bg-violet-800 transition">{editingTaskId ? 'Update Task' : 'Create Task'}</button>
-                
+
               </div>
             </form>
           </div>
