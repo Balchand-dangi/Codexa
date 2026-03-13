@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://codexa-web.onrender.com/sitemap.xml
