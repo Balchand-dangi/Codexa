@@ -148,11 +148,9 @@ function CommentPage({
 
             projectComments.map(comment => (
               <div key={comment._id} className="bg-slate-700/40 border border-slate-700 rounded-xl p-3.5">
-                {/* ✅ Your existing mobile + desktop UI unchanged */}
-                {/* (I am not touching this part as you requested) */}
-
+               
                 {/* MOBILE */}
-                <div className="grid grid-cols-[auto_1fr_auto] grid-rows-2 gap-x-2 sm:hidden">
+                <div className="grid grid-cols-[auto_1fr_auto] grid-rows-2 gap-x-2 sm:hidden ">
 
                   <div className="row-span-2 w-8 h-8 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
                     {comment.userName?.charAt(0).toUpperCase() || '?'}
@@ -247,10 +245,10 @@ function CommentPage({
           )}
 
           <div ref={commentsEndRef} />
-
+   
         </div>
 
-        {/* Input */}
+        {/* Input */}  
         <div className="px-5 py-4 border-t border-slate-700">
 
           <textarea

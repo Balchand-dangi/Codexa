@@ -12,6 +12,8 @@ const Navbar = ({ user, setUser, socket }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 768);
   const profileRef = useRef(null);
+  const mobileToggleRef = useRef(null);
+  const mobileMenuRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -35,6 +37,44 @@ const Navbar = ({ user, setUser, socket }) => {
       document.removeEventListener('touchstart', handleOutside)
     }
   }, [showProfileMenu]);
+
+  useEffect(() => {
+    if (!menuOpen || isDesktop) return;
+
+    const handleOutside = (e) => {
+      const clickedToggle = mobileToggleRef.current?.contains(e.target);
+      const clickedMenu = mobileMenuRef.current?.contains(e.target);
+
+      if (!clickedToggle && !clickedMenu) {
+        setMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutside);
+    document.addEventListener('touchstart', handleOutside);
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('touchstart', handleOutside);
+    };
+  }, [menuOpen, isDesktop]);
+
+  useEffect(() => {
+    if (isDesktop && menuOpen) {
+      setMenuOpen(false);
+    }
+  }, [isDesktop, menuOpen]);
+
+  useEffect(() => {
+    if (!menuOpen || isDesktop) return;
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [menuOpen, isDesktop]);
 
   const displayName =
     user?.name ||
@@ -68,7 +108,7 @@ const Navbar = ({ user, setUser, socket }) => {
           </Link>
 
           {/* Mobile: notification bell + hamburger — always visible */}
-          <div className="md:hidden flex items-center gap-2">
+          <div className="md:hidden flex items-center gap-2" ref={mobileToggleRef}>
             {user && !isDesktop && <NotificationBell socket={socket} />}
             <button
               className="text-2xl px-2  rounded-lg border border-slate-600 hover:bg-slate-700/60 p-1 text-white"
@@ -221,8 +261,13 @@ const Navbar = ({ user, setUser, socket }) => {
           </div>
         </div>
 
+        {menuOpen && !isDesktop && (
+          <div className="fixed top-[60px] left-0 right-0 bottom-0 bg-slate-950/35 backdrop-blur-sm z-[-1]" />
+        )}
+
         {/* Mobile Menu with slide animation */}
         <div
+          ref={mobileMenuRef}
           className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${menuOpen ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'}`}
         >
           <div className="bg-slate-800 border border-slate-700 px-4 py-3 space-y-3">

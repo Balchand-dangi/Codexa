@@ -2,11 +2,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import { MdNotifications } from 'react-icons/md';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
+
 const NotificationBell = ({ socket }) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showDropdown, setShowDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 768);
   const panelRef = useRef(null);
 
   const fetchNotifications = async () => {
@@ -27,14 +29,25 @@ const NotificationBell = ({ socket }) => {
     fetchNotifications();
   }, []);
 
-  // stop scrolling when dropdown is open
   useEffect(() => {
-    if (showDropdown) {
+    const handleResize = () => setIsDesktop(window.innerWidth >= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+
+    if (showDropdown && !isDesktop) {
       document.body.style.overflow = 'hidden';
     } else {
-      document.body.style.overflow = 'auto';
+      document.body.style.overflow = originalOverflow;
     }
-  }, [showDropdown]);
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [showDropdown, isDesktop]);
 
   useEffect(() => {
     if (!showDropdown) return;
@@ -172,7 +185,11 @@ const NotificationBell = ({ socket }) => {
       </button>
 
       {showDropdown && (
-        <div className="fixed top-[60px] right-2 sm:right-4 bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl z-[9999] overflow-hidden w-[calc(100vw-16px)] sm:w-96 max-h-[75vh] flex flex-col">
+        <>
+          {!isDesktop && (
+            <div className="fixed top-[60px] left-0 right-0 bottom-0 bg-slate-950/35 backdrop-blur-sm z-[9998]" />
+          )}
+          <div className="fixed top-[60px] right-2 sm:right-4 bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl z-[9999] overflow-hidden w-[calc(100vw-16px)] sm:w-96 max-h-[75vh] flex flex-col">
           <div className="sticky top-0 bg-slate-800 border-b border-slate-700 px-4 py-3 flex justify-between items-center z-30 flex-shrink-0">
             <div className="flex items-center gap-2">
               <h3 className="font-bold text-white">Notifications</h3>
@@ -233,7 +250,8 @@ const NotificationBell = ({ socket }) => {
               ))
             )}
           </div>
-        </div>
+          </div>
+        </>
       )}
     </div>
   );
