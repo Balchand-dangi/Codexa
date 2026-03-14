@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import feature from '../../Components/FeaturesDoc'
+
 
 function About() {
 
@@ -13,10 +13,10 @@ function About() {
                     {/* Hero Section */}
                     <div className="text-center mb-16">
                         <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-violet-400 via-purple-400 to-emerald-400 bg-clip-text text-transparent">
-                            About Codexa
+                            About Codexa-Web - Developer Collaboration Platform
                         </h1>
                         <p className="text-xl md:text-2xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
-                            Connecting developers, students, and innovators to build, collaborate, and grow together.
+                            Codexa Web is a developer collaboration platform where students and developers discover real-world software projects, connect with teammates, and build applications together.
                         </p>
                     </div>
 
@@ -26,7 +26,7 @@ function About() {
                         <div className="grid md:grid-cols-2 gap-12 items-center">
                             <div>
                                 <p className="text-lg leading-relaxed text-slate-300 mb-6">
-                                    Codexa is more than just a platform—it's a community built for <strong>developers, students, and tech enthusiasts</strong>.
+                                    Codexa web is more than just a platform—it's a community built for <strong>developers, students, and tech enthusiasts</strong>.
                                     We solve the biggest challenges in collaborative development: finding the right teammates, showcasing real projects,
                                     and turning ideas into working code.
                                 </p>
@@ -119,12 +119,12 @@ function About() {
                                 inspiration, or a place to showcase your work—Codexa has you covered.
                             </p>
                             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                                <a href="/upload" className="px-8 py-4 bg-violet-600 text-white font-bold rounded-xl hover:bg-violet-700 transition-all shadow-lg">
+                                <Link to="/upload" className="px-8 py-4 bg-violet-600 text-white font-bold rounded-xl hover:bg-violet-700 transition-all shadow-lg">
                                     Create Project
-                                </a>
-                                <a href="/" className="px-8 py-4 border-2 border-slate-600 text-slate-300 font-bold rounded-xl hover:bg-slate-700 hover:border-violet-500 transition-all">
+                                </Link>
+                                <Link to="/" className="px-8 py-4 border-2 border-slate-600 text-slate-300 font-bold rounded-xl hover:bg-slate-700 hover:border-violet-500 transition-all">
                                     Browse Projects
-                                </a>
+                                </Link>
                             </div>
                         </div>
 
