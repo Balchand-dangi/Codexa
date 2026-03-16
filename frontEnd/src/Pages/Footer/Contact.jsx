@@ -9,7 +9,7 @@ function Contact() {
             Get in Touch
           </h2>
           <p className="text-center text-slate-400 max-w-2xl mx-auto mb-10 text-sm md:text-base">
-            Have a question, found a bug, or want to collaborate on improving Codexa Web? 
+            Have a question, found a bug, or want to collaborate on improving Codexa Web?
             Reach out using any of the options below and I’ll get back to you as soon as possible.
           </p>
 
@@ -22,7 +22,7 @@ function Contact() {
                 <div>
                   <h3 className="font-semibold text-lg text-white">Balchand Dangi</h3>
                   <p className="text-sm text-slate-400 mt-1">Founder & Developer of Codexa Web</p>
-                  
+
                 </div>
               </div>
             </div>
@@ -66,7 +66,11 @@ function Contact() {
             </div>
           </div>
         </div>
-      </div>      
+        <footer className="text-center text-slate-400 mt-12 text-sm">
+          © 2026 Balchand Dangi. All rights reserved.
+        </footer>
+      </div>
+
       <div className="h-px bg-slate-700/50 pb-1" />
     </div>
   )
