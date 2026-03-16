@@ -15,11 +15,45 @@ function Upload({ user }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
-    setIsSubmitting(true);
 
-    const techStackArray = techStack.split(',').map(item => item.trim()).filter(Boolean)
-    const categoryArray = category.split(',').map(item => item.trim()).filter(Boolean)
-    const projectData = { title, description, techStack: techStackArray, category: categoryArray, college }
+    // Frontend validation
+    if (!title.trim()) {
+      toast.error("Project title is required");
+      return;
+    }
+    if (title.length < 5 || title.length > 50) {
+      toast.error("Title must be between 5-50 characters");
+      return;
+    }
+
+    if (!description.trim()) {
+      toast.error("Project description is required");
+      return;
+    }
+    if (description.length < 20 || description.length > 300) {
+      toast.error("Description must be between 20-300 characters");
+      return;
+    }
+
+    const techStackArray = techStack.split(',').map(item => item.trim()).filter(Boolean);
+    if (techStackArray.length === 0) {
+      toast.error("Tech stack must contain at least one skill");
+      return;
+    }
+
+    if (!college.trim()) {
+      toast.error("College/University name is required");
+      return;
+    }
+
+    const categoryArray = category.split(',').map(item => item.trim()).filter(Boolean);
+    if (categoryArray.length === 0) {
+      toast.error("Category must contain at least one value");
+      return;
+    }
+
+    setIsSubmitting(true);
+    const projectData = { title, description, techStack: techStackArray, category: categoryArray, college };
 
     try {
       const response = await axios.post('/api/uploadProject', projectData, { withCredentials: true })
@@ -54,7 +88,7 @@ function Upload({ user }) {
               </svg>
               Back
             </button>
-            
+
             {/* Centered content */}
             <div className="text-center pt-12">
               <span className="w-12 h-12 bg-gradient-to-br from-violet-500 to-emerald-500 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3 shadow-lg">
@@ -66,21 +100,23 @@ function Upload({ user }) {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-3">
-            <input 
-              type="email" 
-              placeholder="Your registered email" 
-              value={user?.email || ''} 
+            <input
+              type="email"
+              placeholder="Your registered email"
+              value={user?.email || ''}
               readOnly
               className={`${inputClass} opacity-60 cursor-not-allowed`}
               title="Email is taken from your logged-in account"
             />
-            <input 
-              type="text" 
-              placeholder="Project title" 
-              value={title} 
-              onChange={(e) => setTitle(e.target.value)} 
-              className={inputClass} 
-              required 
+            <input
+              type="text"
+              placeholder="Project title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className={inputClass}
+              minLength="5"
+              maxLength="50"
+              required
             />
             <textarea
               placeholder="Project description"
@@ -88,28 +124,33 @@ function Upload({ user }) {
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
               className={`${inputClass} resize-none h-auto`}
+              minLength="20"
+              maxLength="300"
               required
             />
-            <input 
-              type="text" 
-              placeholder="Tech stack (comma separated, e.g. React, Node.js)" 
-              value={techStack} 
-              onChange={(e) => setTechStack(e.target.value)} 
-              className={inputClass} 
+            <input
+              type="text"
+              placeholder="Tech stack (comma separated, e.g. React, Node.js)"
+              value={techStack}
+              onChange={(e) => setTechStack(e.target.value)}
+              className={inputClass}
+              required
             />
-            <input 
-              type="text" 
-              placeholder="College / University name" 
-              value={college} 
-              onChange={(e) => setCollege(e.target.value)} 
-              className={inputClass} 
+            <input
+              type="text"
+              placeholder="College / University name"
+              value={college}
+              onChange={(e) => setCollege(e.target.value)}
+              className={inputClass}
+              required
             />
-            <input 
-              type="text" 
-              placeholder="Category (e.g. AIML, Full Stack, Cybersecurity)" 
-              value={category} 
-              onChange={(e) => setCategory(e.target.value)} 
-              className={inputClass} 
+            <input
+              type="text"
+              placeholder="Category (e.g. AIML, Full Stack, Cybersecurity)"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className={inputClass}
+              required
             />
 
             <button

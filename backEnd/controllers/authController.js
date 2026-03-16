@@ -26,8 +26,9 @@ exports.verify = async (req, res) => {
 // Sign up new user
 exports.signUp = async (req, res) => {
     try {
-        validUser(req.body);
         const email = req.body.email.trim().toLowerCase();
+        const normalizedData = { ...req.body, email };
+        validUser(normalizedData);
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(400).json({ message: "Email already registered" });
@@ -102,17 +103,18 @@ exports.verifyEmail = async (req, res) => {
 // Sign in user
 exports.signIn = async (req, res) => {
     try {
-        const data = await User.findOne({ email: req.body.email })
+        const email = req.body.email.trim().toLowerCase();
+        const data = await User.findOne({ email })
         if (!data) {
-            return res.status(401).json('Invalid credential')
+            return res.status(401).json({ message: 'Invalid credential' })
         }
 
         if (!data.isVerified) {
-            return res.status(400).json('Please verify your email before logging in')
+            return res.status(400).json({ message: 'Please verify your email before logging in' })
         }
         const isAllowed = await bcrypt.compare(req.body.password, data.password)
         if (!isAllowed) {
-            return res.status(401).json('Invalid credential')
+            return res.status(401).json({ message: 'Invalid credential' })
         }
         // jwt
         const token = jwt.sign({ _id: data._id, email: data.email, role: data.role }, process.env.SECRET_KEY, { expiresIn: "7d" })
@@ -132,7 +134,7 @@ exports.signIn = async (req, res) => {
         });
     }
     catch (err) {
-        res.status(401).send(err.message)
+        res.status(401).json({ message: err.message || 'Sign in failed' })
     }
 }
 
@@ -140,7 +142,7 @@ exports.signIn = async (req, res) => {
 exports.logOut = async (req, res) => {
     try {
         const { token } = req.cookies;
-        if (!token) return res.status(400).json({ error: "No token found login first" });
+        if (!token) return res.status(400).json({ message: "No token found, please login first" });
 
         const payload = jwt.verify(token, process.env.SECRET_KEY);  //to extract expiry time and also verify that token is not tempered and expired
 
@@ -151,20 +153,20 @@ exports.logOut = async (req, res) => {
         // Clear cookie in browser
         res.clearCookie("token", {
             httpOnly: true,
-            secure: true,
+            secure: process.env.NODE_ENV === "production",
             sameSite: "strict"
         });
 
         res.status(200).json({ message: "Logged out successfully" });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(401).json({ message: "Logout failed" });
     }
 };
 
 // Forgot password
 exports.forgotPassword = async (req, res) => {
     try {
-        const email = req.body.email.trim().toLowerCase();
+        const email = (req.body.email || '').trim().toLowerCase();
 
         const user = await User.findOne({ email });
 
@@ -175,10 +177,10 @@ exports.forgotPassword = async (req, res) => {
             });
         }
 
-        // Only send reset to verified users
+        // Only send reset to verified users - but return same message for security
         if (!user.isVerified) {
-            return res.status(400).json({
-                message: "Please verify your email first before resetting password."
+            return res.status(200).json({
+                message: "If your email exists, you will receive a password reset link."
             });
         }
 

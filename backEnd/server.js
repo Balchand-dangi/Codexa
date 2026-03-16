@@ -27,6 +27,9 @@ const FRONTEND_URL = (process.env.FRONTEND_URL || '').trim()
 const app = express()
 const httpServer = http.createServer(app)
 
+// Trust proxy for accurate client IP detection behind proxies/load balancers
+app.set('trust proxy', 1);
+
 // Socket.IO — attach to HTTP server with same CORS config
 const io = new Server(httpServer, {
     cors: {
@@ -51,14 +54,14 @@ app.use(cors({
 app.use(cookieParser())
 
 // Routes with rate limiting and authentication where needed. Caching is handled inside controllers for routes that have mixed interactions (feed + non-feed) to ensure cache consistency, while pure feed routes have caching implemented directly in controllers for optimal performance.
-app.use('/api/auth', rate_limiter_strict, authRouter) 
+app.use('/api/auth', rate_limiter_strict, authRouter)
 app.use('/api/uploadProject', userAuth, rate_limiter_strict, projectRouter)
-app.use('/api/getProjects', rate_limiter_light, getProjects)   
-app.use('/api/project', userAuth, projectInteractionRouter) 
-app.use('/api/notifications', userAuth, rate_limiter_light, notificationRouter)   
+app.use('/api/getProjects', rate_limiter_light, getProjects)
+app.use('/api/project', userAuth, projectInteractionRouter)
+app.use('/api/notifications', userAuth, rate_limiter_light, notificationRouter)
 app.use('/api/myProfile', userAuth, rate_limiter_strict, myprofileRouter)
-app.use('/api/my-projects', userAuth, rate_limiter_light, myProjectsRouter)  
-app.use('/api/admin', rate_limiter_light, adminMiddleware, adminRouter) 
+app.use('/api/my-projects', userAuth, rate_limiter_light, myProjectsRouter)
+app.use('/api/admin', rate_limiter_light, adminMiddleware, adminRouter)
 
 // Serve static files
 app.use(express.static(path.join(__dirname, '../frontEnd/dist')))

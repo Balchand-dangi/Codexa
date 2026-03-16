@@ -26,6 +26,11 @@ const useSocket = (user) => {
             return
         }
 
+        // Avoid duplicate connections
+        if (socketRef.current?.connected) {
+            return
+        }
+
         // Create connection — connects to same origin as the page
         const newSocket = io(window.location.origin, {
             withCredentials: true,
@@ -47,9 +52,9 @@ const useSocket = (user) => {
         setSocket(newSocket)  // ← triggers re-render so children get the live socket
 
         return () => {
-            newSocket.disconnect()
-            socketRef.current = null
-            setSocket(null)
+            if (socketRef.current) {
+                socketRef.current.disconnect()
+            }
         }
     }, [user?.email])
 

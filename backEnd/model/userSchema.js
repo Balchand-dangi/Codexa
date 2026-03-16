@@ -25,7 +25,7 @@ const userSchema = new mongoose.Schema({
     age: {
         type: Number,
         required: true,
-        min: 15,
+        min: 10,
         max: 70
     },
 
@@ -44,11 +44,11 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
-    role:{
-    type: String,
-    enum: ['user', 'admin'],
-    default: 'user'
-   },
+    role: {
+        type: String,
+        enum: ['user', 'admin'],
+        default: 'user'
+    },
 
     workflowAcceptedVersion: {
         type: Number,

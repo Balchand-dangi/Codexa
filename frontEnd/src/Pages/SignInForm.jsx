@@ -14,6 +14,17 @@ function SignInForm({ setUser }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (isSubmitting) return;
+
+        // Frontend validation
+        if (!email.trim()) {
+            toast.error("Email is required");
+            return;
+        }
+        if (!password) {
+            toast.error("Password is required");
+            return;
+        }
+
         setIsSubmitting(true);
         try {
             const response = await axios.post('/api/auth/signIn', { email, password }, { withCredentials: true });

@@ -4,7 +4,12 @@ const redisClient = require('../config/redis');
 const createRateLimiter = ({ windowSizeMs, maxRequests, prefix }) => {
   return async (req, res, next) => {
     try {
-      const identifier = req.user?.email || req.ip;
+      // Use email if authenticated, otherwise use IP
+      // For production, consider using x-forwarded-for or other headers
+      let identifier = req.user?.email;
+      if (!identifier) {
+        identifier = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || 'unknown';
+      }
       const key = `${prefix}:${identifier}`;
 
       const currentTime = Date.now();
@@ -44,7 +49,7 @@ const createRateLimiter = ({ windowSizeMs, maxRequests, prefix }) => {
   };
 };
 
-// 🔥 Create different limiters
+//  Create different limiters
 const rate_limiter_strict = createRateLimiter({
   windowSizeMs: 30 * 60 * 1000,
   maxRequests: 60,

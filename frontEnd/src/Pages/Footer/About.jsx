@@ -122,7 +122,7 @@ function About() {
                                 <Link to="/upload" className="px-8 py-4 bg-violet-600 text-white font-bold rounded-xl hover:bg-violet-700 transition-all shadow-lg">
                                     Create Project
                                 </Link>
-                                <Link to="/" className="px-8 py-4 border-2 border-slate-600 text-slate-300 font-bold rounded-xl hover:bg-slate-700 hover:border-violet-500 transition-all">
+                                <Link to="/Home" className="px-8 py-4 border-2 border-slate-600 text-slate-300 font-bold rounded-xl hover:bg-slate-700 hover:border-violet-500 transition-all">
                                     Browse Projects
                                 </Link>
                             </div>

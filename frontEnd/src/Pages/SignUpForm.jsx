@@ -18,10 +18,50 @@ const SignupForm = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (isSubmitting) return;
-        setIsSubmitting(true);
         setSuccessMsg("");
 
-        const userData = { name, email, password, age, skills, college };
+        // Frontend validation
+        if (!name.trim()) {
+            toast.error("Name is required");
+            return;
+        }
+        if (name.length < 3 || name.length > 20) {
+            toast.error("Name must be between 3-20 characters");
+            return;
+        }
+        if (!email.trim()) {
+            toast.error("Email is required");
+            return;
+        }
+        if (!password) {
+            toast.error("Password is required");
+            return;
+        }
+        if (password.length < 8) {
+            toast.error("Password must be at least 8 characters");
+            return;
+        }
+        if (!age) {
+            toast.error("Age is required");
+            return;
+        }
+        const ageNum = parseInt(age);
+        if (ageNum < 10 || ageNum > 70) {
+            toast.error("Age must be between 10-70");
+            return;
+        }
+        if (!skills.trim()) {
+            toast.error("Skills are required");
+            return;
+        }
+        if (!college.trim()) {
+            toast.error("College name is required");
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        const userData = { name, email, password, age: ageNum, skills, college };
         try {
             const response = await axios.post("/api/auth/signUp", userData);
             const msg = response.data.message || response.data;
@@ -50,8 +90,8 @@ const SignupForm = () => {
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-3">
-                        <input type="text" placeholder="Full name" value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
-                        <input type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} />
+                        <input type="text" placeholder="Full name" value={name} onChange={(e) => setName(e.target.value)} className={inputClass} required />
+                        <input type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} required />
 
                         <div className="relative">
                             <input
@@ -60,6 +100,7 @@ const SignupForm = () => {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 className={inputClass + " pr-10"}
+                                required
                             />
                             <span className="absolute right-3 top-3 cursor-pointer text-slate-400 hover:text-white transition"
                                 onClick={() => setShowPassword(!showPassword)}>
@@ -67,9 +108,9 @@ const SignupForm = () => {
                             </span>
                         </div>
 
-                        <input type="number" placeholder="Age" value={age} onChange={(e) => setAge(e.target.value)} className={inputClass} />
-                        <input type="text" placeholder="Skills (e.g. React, Node.js)" value={skills} onChange={(e) => setSkills(e.target.value)} className={inputClass} />
-                        <input type="text" placeholder="College / University name" value={college} onChange={(e) => setCollege(e.target.value)} className={inputClass} />
+                        <input type="number" placeholder="Age" value={age} onChange={(e) => setAge(e.target.value)} className={inputClass} min="10" max="70" required />
+                        <input type="text" placeholder="Skills (e.g. React, Node.js)" value={skills} onChange={(e) => setSkills(e.target.value)} className={inputClass} required />
+                        <input type="text" placeholder="College / University name" value={college} onChange={(e) => setCollege(e.target.value)} className={inputClass} required />
 
                         {successMsg && (
                             <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm rounded-xl px-4 py-3">
