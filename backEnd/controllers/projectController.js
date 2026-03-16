@@ -3,7 +3,7 @@ const Project = require('../model/projectSchema');
 const User = require('../model/userSchema');
 const Notification = require('../model/notificationSchema');
 const ProjectStageConfig = require('../model/projectStageSchema');
-const { Like, Comment } = require('../model/projectInteractionSchema');
+const { Like, Comment, CollaborationRequest } = require('../model/projectInteractionSchema');
 const validProject = require('../utils/validateProject');
 const { getIO } = require('../socket');
 const { getCache, setCache, deleteByPatterns, deleteKeys } = require('../utils/cache');
@@ -51,6 +51,45 @@ const normalizeProjectLinks = (links = {}) => {
         github,
         liveDemo
     };
+};
+
+const normalizeComparableDate = (value) => {
+    if (!value) return null;
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date.toISOString();
+};
+
+const hasTaskChanged = (incomingTask, existingTask) => {
+    if (!existingTask) return true;
+
+    return (
+        String(incomingTask?.title || '').trim() !== String(existingTask?.title || '').trim() ||
+        String(incomingTask?.description || '').trim() !== String(existingTask?.description || '').trim() ||
+        String(incomingTask?.priority || '') !== String(existingTask?.priority || '') ||
+        String(incomingTask?.status || '') !== String(existingTask?.status || '') ||
+        normalizeComparableDate(incomingTask?.dueDate) !== normalizeComparableDate(existingTask?.dueDate)
+    );
+};
+
+const getAccessibleProjectFilter = async (userEmail, projectId = null) => {
+    const acceptedRequests = await CollaborationRequest.find(
+        { requesterEmail: userEmail, status: 'accepted' },
+        { projectId: 1 }
+    ).lean();
+
+    const acceptedProjectIds = acceptedRequests.map(request => request.projectId);
+    const accessConditions = [
+        { email: userEmail },
+        { 'team_members.email': userEmail }
+    ];
+
+    if (acceptedProjectIds.length > 0) {
+        accessConditions.push({ _id: { $in: acceptedProjectIds } });
+    }
+
+    return projectId
+        ? { _id: projectId, $or: accessConditions }
+        : { $or: accessConditions };
 };
 
 // Helper: get fresh commentsCount for a list of project IDs
@@ -200,13 +239,15 @@ exports.getMyProjects = async (req, res) => {
             return res.status(200).json(parsed);
         }
 
+        const myProjectsFilter = await getAccessibleProjectFilter(userEmail);
+
         const [myProjects, totalCount] = await Promise.all([
-            Project.find({ email: userEmail })
+            Project.find(myProjectsFilter)
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(limit)
                 .lean(),
-            Project.countDocuments({ email: userEmail })
+            Project.countDocuments(myProjectsFilter)
         ]);
 
         const response = {
@@ -356,7 +397,7 @@ exports.getMyProjectStatus = async (req, res) => {
         }
 
         const [project, config] = await Promise.all([
-            Project.findOne({ _id: projectId, email: userEmail }).lean(),
+            Project.findOne(await getAccessibleProjectFilter(userEmail, projectId)).lean(),
             ensureStageConfig()
         ]);
 
@@ -400,6 +441,7 @@ exports.updateMyProjectStatus = async (req, res) => {
     try {
         const { projectId } = req.params;
         const userEmail = req.user.email;
+        const userName = req.user.name;
         const { tasks, links } = req.body;
 
         if (!mongoose.Types.ObjectId.isValid(projectId)) {
@@ -414,23 +456,39 @@ exports.updateMyProjectStatus = async (req, res) => {
             return res.status(400).json({ message: 'links must be an object' });
         }
 
+        const project = await Project.findOne(await getAccessibleProjectFilter(userEmail, projectId));
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found' });
+        }
+
         const validStatuses = new Set(['todo', 'in-progress', 'completed']);
         const validPriorities = new Set(['low', 'medium', 'high']);
+        const existingTasksMap = new Map(
+            Array.isArray(project.status?.tasks)
+                ? project.status.tasks.map(task => [String(task.id), task])
+                : []
+        );
 
         const normalizedTasks = Array.isArray(tasks)
             ? tasks
             .map((task, index) => {
                 const safeStatus = validStatuses.has(task?.status) ? task.status : task?.completed ? 'completed' : 'todo';
                 const safePriority = validPriorities.has(task?.priority) ? task.priority : 'medium';
+                const taskId = String(task?.id || `${Date.now()}-${index}`);
+                const existingTask = existingTasksMap.get(taskId);
+                const createdAt = task?.createdAt ? new Date(task.createdAt) : existingTask?.createdAt ? new Date(existingTask.createdAt) : new Date();
+                const taskChanged = hasTaskChanged(task, existingTask);
 
                 return {
-                    id: String(task?.id || `${Date.now()}-${index}`),
+                    id: taskId,
                     title: String(task?.title || '').trim(),
                     description: String(task?.description || '').trim(),
                     priority: safePriority,
                     status: safeStatus,
                     dueDate: task?.dueDate ? new Date(task.dueDate) : null,
-                    createdAt: task?.createdAt ? new Date(task.createdAt) : new Date()
+                    createdAt,
+                    createdByName: existingTask?.createdByName || String(task?.createdByName || '').trim() || userName,
+                    updatedByName: taskChanged ? userName : existingTask?.updatedByName || existingTask?.createdByName || String(task?.updatedByName || '').trim() || userName
                 };
             })
             .filter(
@@ -440,11 +498,6 @@ exports.updateMyProjectStatus = async (req, res) => {
                     (task.dueDate === null || !Number.isNaN(task.dueDate.getTime()))
             )
             : null;
-
-        const project = await Project.findOne({ _id: projectId, email: userEmail });
-        if (!project) {
-            return res.status(404).json({ message: 'Project not found' });
-        }
 
         if (!project.status) {
             project.status = {};
@@ -512,7 +565,7 @@ exports.submitStageProof = async (req, res) => {
         }
 
         const [project, config] = await Promise.all([
-            Project.findOne({ _id: projectId, email: userEmail }),
+            Project.findOne(await getAccessibleProjectFilter(userEmail, projectId)),
             ensureStageConfig()
         ]);
 
@@ -540,6 +593,7 @@ exports.submitStageProof = async (req, res) => {
             status: 'pending',
             adminFeedback: '',
             submittedBy: userEmail,
+            submittedByName: userName,
             submittedAt: new Date(),
             reviewedBy: '',
             reviewedAt: null
@@ -557,7 +611,7 @@ exports.submitStageProof = async (req, res) => {
 
         project.status.updatedBy = userEmail;
         await project.save();
-        await deleteKeys([buildProjectStatusCacheKey({ userEmail, projectId })]);
+        await deleteByPatterns([`MY_PROJECT_STATUS:*:${projectId}`]);
 
         const admins = await User.find({ role: 'admin' }).select('email name').lean();
         const io = getIO();

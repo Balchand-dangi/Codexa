@@ -44,6 +44,12 @@ const projectSchema = new mongoose.Schema({
         }
     },
 
+    team_members: [{
+        email: {
+            type: String,
+        }
+    }],
+
     status: {
         tasks: [{
             id: {
@@ -75,6 +81,14 @@ const projectSchema = new mongoose.Schema({
             createdAt: {
                 type: Date,
                 default: Date.now
+            },
+            createdByName: {
+                type: String,
+                default: ''
+            },
+            updatedByName: {
+                type: String,
+                default: ''
             }
         }],
         overallProgress: {
@@ -125,6 +139,10 @@ const projectSchema = new mongoose.Schema({
                 default: ''
             },
             submittedBy: {
+                type: String,
+                default: ''
+            },
+            submittedByName: {
                 type: String,
                 default: ''
             },

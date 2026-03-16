@@ -48,7 +48,9 @@ const normalizeTask = (task, index) => ({
   priority: ['low', 'medium', 'high'].includes(task?.priority) ? task.priority : 'medium',
   status: ['todo', 'in-progress', 'completed'].includes(task?.status) ? task.status : 'todo',
   dueDate: task?.dueDate ? toInputDate(task.dueDate) : '',
-  createdAt: task?.createdAt || new Date().toISOString()
+  createdAt: task?.createdAt || new Date().toISOString(),
+  createdByName: String(task?.createdByName || '').trim(),
+  updatedByName: String(task?.updatedByName || '').trim()
 });
 
 const getStageTimelineDates = (stage) => {
@@ -271,6 +273,7 @@ function ProjectStatus({ user }) {
         tasks: tasks.map((t, index) => normalizeTask(t, index)).map(t => ({ ...t, dueDate: t.dueDate || null }))
       };
       await axios.patch(`/api/my-projects/${projectId}/status`, payload, { withCredentials: true });
+      await loadProjectStatus();
       toast.success(`Saved (${overallStats.progress}% completed)`);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to save tasks');
@@ -390,7 +393,7 @@ function ProjectStatus({ user }) {
         <button onClick={() => navigate(-1)} className="px-4 py-2 cursor-pointer text-slate-200 bg-slate-700 rounded-xl hover:bg-slate-600 transition">
           ← Back
         </button>
-        <div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4">
+        <div className="bg-slate-800/60 border  border-slate-700 rounded-2xl p-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
             <h2 className="text-white font-semibold text-lg">Global Stages Tracker</h2>
             <div className="text-sm text-slate-300">
@@ -412,36 +415,70 @@ function ProjectStatus({ user }) {
             {stageStates.map((stage, idx) => (
               <div
                 key={stage.stageId}
-                draggable={!isMobile && !readOnly && workflow.isActive && ['in-progress', 'pending'].includes(stage.state)} onDragStart={() => setDragStageId(stage.stageId)}
+                draggable={!isMobile && !readOnly && workflow.isActive && ['in-progress', 'pending'].includes(stage.state)}
+                onDragStart={() => setDragStageId(stage.stageId)}
                 onDragEnd={() => setDragStageId(null)}
-                className={`relative min-w-[260px] rounded-xl border p-3 ${stage.state === 'completed' ? 'bg-emerald-500/10 border-emerald-500/30' :
-                  stage.state === 'in-progress' ? 'bg-violet-500/10 cursor-move border-violet-500/30' :
-                    stage.state === 'pending' ? 'bg-blue-500/10 cursor-move border-blue-500/30' :
-                      stage.state === 'pending-review' ? 'bg-amber-500/10 border-amber-500/30' :
-                        'bg-slate-900/60 border-slate-700'
+                className={`relative min-w-[260px] rounded-xl border p-3 flex flex-col ${stage.state === 'completed'
+                    ? 'bg-emerald-500/10 border-emerald-500/30'
+                    : stage.state === 'in-progress'
+                      ? 'bg-violet-500/10 cursor-move border-violet-500/30'
+                      : stage.state === 'pending'
+                        ? 'bg-blue-500/10 cursor-move border-blue-500/30'
+                        : stage.state === 'pending-review'
+                          ? 'bg-amber-500/10 border-amber-500/30'
+                          : 'bg-slate-900/60 border-slate-700'
                   }`}
               >
                 {stage.state === 'in-progress' && (
                   <span className="absolute top-2 right-2 w-3.5 h-3.5 bg-emerald-400 rounded-full border-2 border-slate-800 animate-pulse"></span>
                 )}
+
                 <p className="text-xs text-slate-400 mb-1">Stage {idx + 1}</p>
-                <span><h3 className="text-white font-semibold">{stage.title}</h3></span>
+                <span>
+                  <h3 className="text-white font-semibold">{stage.title}</h3>
+                </span>
+
                 {!readOnly && workflow.isActive && ['in-progress', 'pending'].includes(stage.state) && (
-                  <span onClick={() => openSubmissionModal(stage)} className="mt-2 inline-flex items-center gap-1 text-xs text-emerald-400 cursor-pointer">
+                  <span
+                    onClick={() => openSubmissionModal(stage)}
+                    className="mt-2 inline-flex items-center gap-1 text-xs text-emerald-400 cursor-pointer"
+                  >
                     <HiOutlineClipboardDocumentCheck className="w-4 h-4" />
                     Submit proof
                   </span>
                 )}
-                <p className="text-xs text-slate-300 mt-1">{stage.description || 'No description provided'}</p>
+
+                <p className="text-xs text-slate-300 mt-1">
+                  {stage.description || 'No description provided'}
+                </p>
+
                 <p className="text-xs text-slate-400 mt-2 flex items-center gap-1">
                   <HiOutlineCalendarDays className="w-4 h-4" />
                   {stage.timelineType === 'duration'
                     ? `${stage.durationDays} day(s)`
                     : `${formatDate(stage.startDate)} -> ${formatDate(stage.endDate)}`}
                 </p>
+
                 <p className="text-xs text-slate-400 mt-1">Marks: {stage.marks}</p>
+
                 <p className="text-xs mt-2 text-slate-200">{stage.note}</p>
-                {stage.guidelines && <p className="text-xs text-slate-400 mt-2">Guidelines: {stage.guidelines}</p>}
+
+                {stage.guidelines && (
+                  <p className="text-xs text-slate-400 mt-2">
+                    Guidelines: {stage.guidelines}
+                  </p>
+                )}
+
+                {stage.submission && (
+                  <p className="text-xs text-slate-300 mt-auto pt-2">
+                    Submitted by:{' '}
+                    <span className="text-white">
+                      {stage.submission?.submittedByName ||
+                        stage.submission?.submittedBy ||
+                        'Unknown'}
+                    </span>
+                  </p>
+                )}
               </div>
             ))}
           </div>
@@ -558,22 +595,22 @@ function ProjectStatus({ user }) {
 
 
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        
-          <div className="col-span-1 xl:col-span-3 bg-slate-800/60 border mb-4 border-slate-700 rounded-2xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-xl font-bold text-white">Task Progress</h2>
-              <div className="text-sm text-slate-300">
-                {overallStats.completedTasks} / {overallStats.totalTasks}
+
+            <div className="col-span-1 xl:col-span-3 bg-slate-800/60 border mb-4 border-slate-700 rounded-2xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-xl font-bold text-white">Task Progress</h2>
+                <div className="text-sm text-slate-300">
+                  {overallStats.completedTasks} / {overallStats.totalTasks}
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-sm mb-2">
+                <span className="text-slate-300">Overall completion</span>
+                <span className="text-violet-400 font-bold">{overallStats.progress}%</span>
+              </div>
+              <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                <div className="h-2 bg-violet-500 transition-all duration-500" style={{ width: `${overallStats.progress}%` }} />
               </div>
             </div>
-            <div className="flex items-center justify-between text-sm mb-2">
-              <span className="text-slate-300">Overall completion</span>
-              <span className="text-violet-400 font-bold">{overallStats.progress}%</span>
-            </div>
-            <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-              <div className="h-2 bg-violet-500 transition-all duration-500" style={{ width: `${overallStats.progress}%` }} />
-            </div>
-          </div>
             {COLUMNS.map(column => (
               <div
                 key={column.key}
@@ -636,6 +673,10 @@ function ProjectStatus({ user }) {
                             <HiTrash className="w-4 h-4" /> Delete
                           </button>
                         </div>
+                        <div className="mt-3 border-t border-slate-700 pt-3 text-xs text-slate-400 space-y-1">
+                          <p>Created by: <span className="text-slate-200">{task.createdByName || 'Unknown'}</span></p>
+                          <p>Updated by: <span className="text-slate-200">{task.updatedByName || task.createdByName || 'Unknown'}</span></p>
+                        </div>
                       </div>
                     ))
                   )}
@@ -652,7 +693,7 @@ function ProjectStatus({ user }) {
             Cancel
           </button>
           <button onClick={saveTaskBoard} disabled={saving || readOnly} title='Save all your tasks' className="px-6 py-2.5 bg-green-700 text-white rounded-xl hover:bg-green-700/80 transition disabled:opacity-50">
-            {readOnly ? 'Read Only (Admin/team member)' : saving ? 'Saving...' : 'Save Board'}
+            {readOnly ? 'Read Only (Admin)' : saving ? 'Saving...' : 'Save Board'}
           </button>
         </div>
       </div>

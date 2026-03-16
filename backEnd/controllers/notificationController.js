@@ -1,7 +1,8 @@
 const Notification = require('../model/notificationSchema')
+const Project = require('../model/projectSchema')
 const { CollaborationRequest } = require('../model/projectInteractionSchema')
 const mongoose = require('mongoose')
-const { getCache, setCache, deleteKeys } = require('../utils/cache')
+const { getCache, setCache, deleteKeys, deleteByPatterns } = require('../utils/cache')
 
 const userNotificationsCacheKey = (userEmail) => `notifications:${userEmail}`
 
@@ -17,10 +18,10 @@ exports.getNotifications = async (req, res) => {
         }
         const notifications = await Notification.find({ recipient: userEmail })
             .sort({ createdAt: -1 })
-            .limit(30) 
+            .limit(30)
 
         const unreadCount = notifications.filter(n => !n.isRead).length
-        await setCache(key, JSON.stringify({ notifications, unreadCount }),900) // Cache for 15 minutes
+        await setCache(key, JSON.stringify({ notifications, unreadCount }), 900) // Cache for 15 minutes
 
         res.status(200).json({
             notifications,
@@ -153,7 +154,38 @@ exports.acceptCollaboration = async (req, res) => {
         notification.isRead = true
         await notification.save()
 
-        
+        // add user to project as team member
+        if (notification.collaborationRequestId) {
+            const request = await CollaborationRequest.findById(notification.collaborationRequestId)
+
+            if (request) {
+                const senderEmail = request.requesterEmail
+                const project = await Project.findById(request.projectId)
+
+                if (!project) {
+                    return res.status(404).json({ message: 'Project not found' })
+                }
+
+                if (project.email === senderEmail) {
+                    console.warn('Project owner cannot be added as team member:', senderEmail)
+                } else {
+                    const alreadyMember = project.team_members.some(
+                        member => member.email === senderEmail
+                    )
+
+                    if (!alreadyMember) {
+                        project.team_members.push({ email: senderEmail })
+                        await project.save()
+                    }
+                }
+
+                await deleteByPatterns([
+                    `MY_PROJECTS:${senderEmail}:*`,
+                    `MY_PROJECTS:${project.email}:*`
+                ])
+            }
+        }
+
         // Update the collaboration request - WITH ERROR HANDLING
         if (notification.collaborationRequestId) {
             const updatedRequest = await CollaborationRequest.findByIdAndUpdate(
@@ -161,7 +193,7 @@ exports.acceptCollaboration = async (req, res) => {
                 { status: 'accepted' },
                 { new: true, runValidators: true }
             )
-            
+
             if (!updatedRequest) {
                 console.error('Failed to update collaboration request:', notification.collaborationRequestId)
             }
@@ -206,7 +238,7 @@ exports.rejectCollaboration = async (req, res) => {
                 { status: 'rejected' },
                 { new: true, runValidators: true }
             )
-            
+
             if (!updatedRequest) {
                 console.error('Failed to update collaboration request:', notification.collaborationRequestId)
             }

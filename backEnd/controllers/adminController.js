@@ -530,12 +530,12 @@ exports.approveStageSubmission = async (req, res) => {
         submissions[index].reviewedAt = new Date();
 
         await project.save();
-        await deleteKeys([`MY_PROJECT_STATUS:${project.email}:${projectId}`]);
+        await deleteByPattern(`MY_PROJECT_STATUS:*:${projectId}`);
 
-        const ownerEmail = project.email;
+        const recipientEmail = submissions[index].submittedBy || project.email;
         const adminName = req.user.name || 'Admin';
         const notification = await Notification.create({
-            recipient: ownerEmail,
+            recipient: recipientEmail,
             sender: req.user.email,
             senderName: adminName,
             projectId: project._id,
@@ -546,8 +546,8 @@ exports.approveStageSubmission = async (req, res) => {
 
         const io = getIO();
         if (io) {
-            await deleteKeys([`notifications:${ownerEmail}`]).catch(() => { });
-            io.to(`user:${ownerEmail}`).emit('new-notification', notification);
+            await deleteKeys([`notifications:${recipientEmail}`]).catch(() => { });
+            io.to(`user:${recipientEmail}`).emit('new-notification', notification);
         }
 
         res.status(200).json({
@@ -582,12 +582,12 @@ exports.rejectStageSubmission = async (req, res) => {
         submissions[index].reviewedAt = new Date();
 
         await project.save();
-        await deleteKeys([`MY_PROJECT_STATUS:${project.email}:${projectId}`]);
+        await deleteByPattern(`MY_PROJECT_STATUS:*:${projectId}`);
 
-        const ownerEmail = project.email;
+        const recipientEmail = submissions[index].submittedBy || project.email;
         const adminName = req.user.name || 'Admin';
         const notification = await Notification.create({
-            recipient: ownerEmail,
+            recipient: recipientEmail,
             sender: req.user.email,
             senderName: adminName,
             projectId: project._id,
@@ -598,8 +598,8 @@ exports.rejectStageSubmission = async (req, res) => {
 
         const io = getIO();
         if (io) {
-            await deleteKeys([`notifications:${ownerEmail}`]).catch(() => { });
-            io.to(`user:${ownerEmail}`).emit('new-notification', notification);
+            await deleteKeys([`notifications:${recipientEmail}`]).catch(() => { });
+            io.to(`user:${recipientEmail}`).emit('new-notification', notification);
         }
 
         res.status(200).json({

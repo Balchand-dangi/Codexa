@@ -43,7 +43,7 @@ initSocket(io)
 
 // Middleware
 // Allow stage proof image payloads (base64) beyond default 100kb JSON limit.
-app.use(express.json({ limit: '2mb' }))
+app.use(express.json({ limit: '1mb' }))
 app.use(cors({
     origin: FRONTEND_URL,
     credentials: true

@@ -15,6 +15,7 @@ function TeamStatus() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [projectName, setProjectName] = useState('')
+  const [teamLeaderEmail, setTeamLeaderEmail] = useState('')
 
   useEffect(() => {
     const fetchCollaborationRequests = async () => {
@@ -28,6 +29,7 @@ function TeamStatus() {
         })
 
         const groupedRequests = { pending: [], accepted: [], rejected: [] }
+        let ownerEmail = ''
 
         if (response.data.requests && Array.isArray(response.data.requests)) {
           response.data.requests.forEach(request => {
@@ -35,12 +37,16 @@ function TeamStatus() {
             if (projectId && !projectName && request.projectId?.title) {
               setProjectName(request.projectId.title)
             }
+            if (!ownerEmail && request.projectOwnerEmail) {
+              ownerEmail = request.projectOwnerEmail
+            }
             if (groupedRequests[status]) {
               groupedRequests[status].push({ ...request, status })
             }
           })
         }
 
+        setTeamLeaderEmail(ownerEmail)
         setCollaborationRequests(groupedRequests)
       } catch (err) {
         console.error('Error fetching collaboration requests:', err)
@@ -114,7 +120,11 @@ function TeamStatus() {
         <div className="flex items-center justify-between mb-8 mt-4">
           <div>
             <p className="text-slate-500 text-sm mb-1">Team Status</p>
-            <h1 className="text-2xl sm:text-3xl font-bold text-white">{displayTitle}</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white"> {displayTitle}</h1>
+            {/* team leader email */}
+            <h3 className="text-sm text-slate-400 mt-1">
+              Team Leader: {teamLeaderEmail}
+            </h3>
           </div>
           <button
             onClick={() => navigate(-1)}
